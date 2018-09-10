@@ -8,10 +8,10 @@
 		<version>23.1.1</version>
 	</parent>
 
-	<artifactId>imglib2-drosophila-registration</artifactId>
+	<artifactId>fiji-plugin-morphometry</artifactId>
 	<version>0.3.1</version>
 
-	<name>ImgLib2 Drosophila Registration</name>
+	<name>Fiji Plugin Morphometry</name>
 	<description>TODO</description>
 	<inceptionYear>2018</inceptionYear>
 	<organization>
@@ -54,21 +54,21 @@
 
 
 	<scm>
-		<connection>scm:git:git://github.com/tischi/imglib2-drosophila-registration</connection>
-		<developerConnection>scm:git:git@github.com/tischi/imglib2-drosophila-registration</developerConnection>
+		<connection>scm:git:git://github.com/tischi/fiji-plugin-morphometry</connection>
+		<developerConnection>scm:git:git@github.com/tischi/fiji-plugin-morphometry</developerConnection>
 		<tag>HEAD</tag>
-		<url>https://github.com/tischi/imglib2-drosophila-registration</url>
+		<url>https://github.com/tischi/fiji-plugin-morphometry</url>
 	</scm>
 	<issueManagement>
 		<system>GitHub</system>
-		<url>https://github.com/imglib/imglib2-drosophila-registration/issues</url>
+		<url>https://github.com/imglib/fiji-plugin-morphometry/issues</url>
 	</issueManagement>
 	<ciManagement>
 		<system>None</system>
 	</ciManagement>
 
 	<properties>
-		<package-name>de.embl.cba.registration</package-name>
+		<package-name>de.embl.cba.morphometry</package-name>
 		<license.licenseName>bsd_2</license.licenseName>
 		<license.copyrightOwners>EMBL</license.copyrightOwners>
 		<imagej.app.directory>/Applications/Fiji.app/</imagej.app.directory>

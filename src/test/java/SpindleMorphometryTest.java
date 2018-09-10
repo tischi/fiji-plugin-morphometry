@@ -1,5 +1,5 @@
-import de.embl.cba.morphometrics.Utils;
-import de.embl.cba.morphometrics.spindle.SpindleMorphometrySettings;
+import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.ImageJ;
@@ -8,7 +8,7 @@ import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 
-import de.embl.cba.morphometrics.spindle.*;
+import de.embl.cba.morphometry.spindle.*;
 
 import java.io.File;
 
