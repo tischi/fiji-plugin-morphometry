@@ -1,8 +1,8 @@
 import automic.table.TableModel;
 import automic.utils.imagefiles.PatternOpenerWithBioformats;
-import de.embl.cba.morphometrics.Utils;
-import de.embl.cba.morphometrics.spindle.SpindleMorphometry;
-import de.embl.cba.morphometrics.spindle.SpindleMorphometrySettings;
+import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.spindle.SpindleMorphometry;
+import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import ij.ImagePlus;
 import net.imagej.ImageJ;
 import net.imglib2.RandomAccessibleInterval;
