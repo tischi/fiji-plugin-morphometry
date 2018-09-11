@@ -10,7 +10,6 @@ import ij.ImagePlus;
 public abstract class BioFormatsTest {
 
 
-
 	static final String tablePath="/Volumes/almfscreen/kletter/20180904/formattedLog_0906-1_Sorted_Cropped.txt";
 	static final String highZoomPatternTag="High.Zoom";
 

@@ -11,7 +11,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealPoint;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
-import net.imglib2.type.logic.BitType;
+
 import net.imglib2.type.numeric.RealType;
 
 import java.util.Arrays;
@@ -38,7 +38,7 @@ public class DapiRegistration
 
 		AffineTransform3D registration = new AffineTransform3D();
 
-		if ( settings.showIntermediateResults ) show( input, "dapi input data", null, calibration, false );
+		if ( settings.showIntermediateResults ) show( input, "image input data", null, calibration, false );
 
 		RefractiveIndexMismatchCorrections.correctCalibration( calibration, settings.refractiveIndexCorrectionAxialScalingFactor );
 
@@ -59,7 +59,7 @@ public class DapiRegistration
 
 		RefractiveIndexMismatchCorrections.correctIntensity( binned, calibration[ Z ], 0.0D, settings.refractiveIndexIntensityCorrectionDecayLength );
 
-		final RandomAccessibleInterval< BitType > binaryImage = Utils.createBinaryImage( binned, settings.threshold );
+		final RandomAccessibleInterval< UnsignedByteType > binaryImage = Utils.createBinaryImage( binned, settings.threshold );
 
 		if ( settings.showIntermediateResults ) show( binaryImage, "binary", null, calibration, false );
 
@@ -98,7 +98,7 @@ public class DapiRegistration
 
 		registration.preConcatenate( createRollTransform( Transforms.createTransformedView( binned, registration ), maximum ) );
 
-		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( binned, registration ), "registered binned dapi", null, calibration, false );
+		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( binned, registration ), "registered binned image", null, calibration, false );
 
 		final AffineTransform3D scalingToFinalResolution = Transforms.getTransformToIsotropicRegistrationResolution( settings.finalResolutionInMicrometer / settings.resolutionDuringRegistrationInMicrometer, new double[]{ 1, 1, 1 } );
 

@@ -1,132 +1,121 @@
-package de.embl.cba.morphometry.drosophila.shavenbaby;
+package de.embl.cba.morphometry.microglia;
 
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
-import de.embl.cba.morphometry.geometry.EllipsoidParameters;
-import de.embl.cba.morphometry.geometry.Ellipsoids;
+import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import net.imagej.ops.OpService;
-import net.imglib2.Cursor;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.RealPoint;
+import net.imglib2.*;
+import net.imglib2.algorithm.morphology.Closing;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
+import net.imglib2.algorithm.neighborhood.Neighborhood;
+import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.histogram.Histogram1d;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
-import net.imglib2.roi.labeling.LabelRegion;
-import net.imglib2.roi.labeling.LabelRegions;
-import net.imglib2.roi.labeling.LabelingType;
 import net.imglib2.type.NativeType;
 
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
-import net.imglib2.algorithm.neighborhood.Shape;
-import net.imglib2.algorithm.morphology.Closing;
-
 import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static de.embl.cba.morphometry.Constants.X;
-import static de.embl.cba.morphometry.Constants.XYZ;
 import static de.embl.cba.morphometry.Constants.Z;
 import static de.embl.cba.morphometry.Transforms.getScalingFactors;
 import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
 import static java.lang.Math.toRadians;
 
 
-public class ShavenBabyRegistration
+public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 {
 
-	final ShavenBabyRegistrationSettings settings;
+	final MicrogliaMorphometrySettings settings;
 	final OpService opService;
 
-	public ShavenBabyRegistration( ShavenBabyRegistrationSettings settings, OpService opService )
+	public MicrogliaMorphometry( MicrogliaMorphometrySettings settings, OpService opService )
 	{
 		this.settings = settings;
 		this.opService = opService;
 	}
 
-	public < T extends RealType< T > & NativeType< T > >
-	AffineTransform3D computeRegistration( RandomAccessibleInterval< T > input, double[] inputCalibration  )
+	public void run()
 	{
 
-		AffineTransform3D registration = new AffineTransform3D();
+		/**
+		 *  Create working image
+		 */
 
-		double[] registrationCalibration = Utils.get3dDoubleArray( settings.registrationResolution );
+		Utils.log( "Creating working resolution image..." );
 
-		Utils.log( "Refractive index scaling correction..." );
+		final double[] workingCalibration = Utils.get2dDoubleArray( settings.workingVoxelSize );
 
-		RefractiveIndexMismatchCorrections.correctCalibration( inputCalibration, settings.refractiveIndexScalingCorrectionFactor );
+		final RandomAccessibleInterval< T > image = Algorithms.createIsotropicArrayImg( settings.image, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+
+		if ( settings.showIntermediateResults ) show( image, "image isotropic resolution", null, workingCalibration, false );
 
 
 		/**
-		 *  Down-sampling to registration resolution
+		 *  Smooth
 		 */
 
-		
-		Utils.log( "Down-sampling to registration resolution..." );
-
-		final RandomAccessibleInterval< T > downscaled = Algorithms.createIsotropicArrayImg( input, getScalingFactors( inputCalibration, settings.registrationResolution ) );
-
-		if ( settings.showIntermediateResults ) show( downscaled, "at registration resolution", null, registrationCalibration, false );
-
+		// TODO
 
 		/**
 		 *  Compute offset and threshold
 		 */
 
-
 		Utils.log( "Computing offset and threshold..." );
 
-		final IntensityHistogram intensityHistogram = new IntensityHistogram( downscaled, 65535.0, 5.0 );
+		final IntensityHistogram intensityHistogram = new IntensityHistogram( image, settings.maxPossibleValueInDataSet, 2 );
 
 		PositionAndValue mode = intensityHistogram.getMode();
 
 		final PositionAndValue rightHandHalfMaximum = intensityHistogram.getRightHandHalfMaximum();
 
-		double thresholdAfterIntensityCorrection = ( rightHandHalfMaximum.position - mode.position ) * settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
+		double threshold = ( rightHandHalfMaximum.position - mode.position ) * settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
 
 		Utils.log( "Offset: " + mode.position );
-		Utils.log( "Threshold: " + ( thresholdAfterIntensityCorrection + mode.position ) );
-
-		/**
-		 *  Refractive index corrections
-		 */
-		
-		Utils.log( "Refractive index intensity correction..." );
-
-		final RandomAccessibleInterval< T > intensityCorrected = Utils.copyAsArrayImg( downscaled );
-
-		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrected, registrationCalibration[ Z ], mode.position, settings.refractiveIndexIntensityCorrectionDecayLength );
-
-		if ( settings.showIntermediateResults ) show( intensityCorrected, "intensity corrected", null, registrationCalibration, false );
-
+		Utils.log( "Threshold: " + ( threshold + mode.position ) );
 
 		/**
 		 * Create mask
 		 */
 
-		RandomAccessibleInterval< UnsignedByteType > mask = createMask( intensityCorrected, thresholdAfterIntensityCorrection );
+		RandomAccessibleInterval< UnsignedByteType > mask = createMask( image, threshold );
 
-		if ( settings.showIntermediateResults ) show( mask, "mask", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( mask, "mask", null, workingCalibration, false );
+
+
+		/**
+		 * Remove small regions
+		 */
+
+		mask = Algorithms.removeSmallObjects( mask, settings.minimalObjectSize, settings.workingVoxelSize  );
+
+		if ( settings.showIntermediateResults ) show( mask, "mask", null, workingCalibration, false );
+
 
 
 		/**
 		 * Morphological closing
 		 */
 
-		RandomAccessibleInterval< UnsignedByteType > closed = createClosedImage( mask );
+		RandomAccessibleInterval< UnsignedByteType > closed = mask; //createClosedImage( mask );
 
-		if ( settings.showIntermediateResults ) show( closed, "closed", null, registrationCalibration, false );
+//		if ( settings.showIntermediateResults ) show( closed, "closed", null, workingCalibration, false );
+
 
 		/**
 		 * Distance transform
@@ -142,15 +131,13 @@ public class ShavenBabyRegistration
 
 		DistanceTransform.transform( doubleBinary, distance, DistanceTransform.DISTANCE_TYPE.EUCLIDIAN, 1.0D );
 
-		if ( settings.showIntermediateResults )
-			show( distance, "distance transform", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( distance, "distance transform", null, workingCalibration, false );
 
 		/**
 		 * Watershed seeds
 		 */
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = createWatershedSeeds( registrationCalibration, distance, closed );
-
+		final ImgLabeling< Integer, IntType > seedsLabelImg = createWatershedSeeds( workingCalibration, distance, closed );
 
 		/**
 		 * Watershed
@@ -169,89 +156,62 @@ public class ShavenBabyRegistration
 				false,
 				false );
 
-		Utils.applyMask( watershedLabelImg, closed );
-
-		if ( settings.showIntermediateResults ) show( watershedLabelImg, "watershed", null, registrationCalibration, false );
-
+		if ( settings.showIntermediateResults ) show( watershedLabeling.getSource(), "watershed", null, workingCalibration, false );
 
 		/**
-		 * Get central embryo
+		 * Filter object size
 		 */
 
-		Utils.log( "Get central embryo..." );
+		ImgLabeling< Integer, IntType > sizeFilteredLabeling = Algorithms.createSizeFilteredImgLabeling( watershedLabeling, settings.minimalObjectSize, settings.workingVoxelSize );
 
-		final LabelRegion< Integer > centralObjectRegion = getCentralObjectLabelRegion( watershedLabeling );
+		if ( settings.showIntermediateResults ) show( sizeFilteredLabeling.getSource(), "size filtered", null, workingCalibration, false );
 
-		final Img< UnsignedByteType > centralObjectMask = createUnsignedByteTypeMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaled ) );
-
-		if ( settings.showIntermediateResults )
-			show( centralObjectMask, "central object", null, registrationCalibration, false );
-
-		/**
-		 * Compute ellipsoid (probably mainly yaw) alignment
-		 */
-
-		Utils.log( "Fit ellipsoid..." );
-
-		final EllipsoidParameters ellipsoidParameters = Ellipsoids.computeParametersFromBinaryImage( centralObjectMask );
-
-		registration.preConcatenate( Ellipsoids.createAlignmentTransform( ellipsoidParameters ) );
-
-		final RandomAccessibleInterval yawAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ) );
-
-		final RandomAccessibleInterval yawAlignedIntensities = Utils.copyAsArrayImg( Transforms.createTransformedView( downscaled, registration ) );
+	}
 
 
-		/**
-		 *  Long axis orientation
-		 */
+	public void convertToOriginalImagePixelUnits( AffineTransform3D alignmentTransform, double[] spindlePole )
+	{
+		Utils.divide( spindlePole, settings.workingVoxelSize );
+		alignmentTransform.inverse().apply( spindlePole, spindlePole );
+	}
 
-		Utils.log( "Computing long axis orientation..." );
+	public void drawPoint( RandomAccessibleInterval< T > rai, double[] position, double radius, double calibration )
+	{
+		Shape shape = new HyperSphereShape( (int) Math.ceil( radius / calibration ) );
+		final RandomAccessible< Neighborhood< T > > nra = shape.neighborhoodsRandomAccessible( rai );
+		final RandomAccess< Neighborhood< T > > neighborhoodRandomAccess = nra.randomAccess();
 
-		final AffineTransform3D orientationTransform = computeOrientationTransform( yawAlignedMask, yawAlignedIntensities, settings.registrationResolution );
+		neighborhoodRandomAccess.setPosition( Utils.asLongs( position )  );
+		final Neighborhood< T > neighborhood = neighborhoodRandomAccess.get();
 
-		registration = registration.preConcatenate( orientationTransform );
+		final Cursor< T > cursor = neighborhood.cursor();
+		while( cursor.hasNext() )
+		{
+			try
+			{
+				cursor.next().setReal( 200 );
+			}
+			catch ( ArrayIndexOutOfBoundsException e )
+			{
+				Utils.log( "[ERROR] Draw points out of bounds..." );
+				break;
+			}
+		}
+	}
 
+	public static double[] getLeftAndRightMaxLocs( CoordinatesAndValues tubulinProfile, ArrayList< Double > tubulinProfileAbsoluteDerivative )
+	{
+		double[] rangeMinMax = new double[ 2 ];
+		double[] maxLocs = new double[ 2 ];
 
-		/**
-		 *  Roll transform
-		 */
+		rangeMinMax[ 0 ] = 0;
+		rangeMinMax[ 1 ] = Double.MAX_VALUE;
+		maxLocs[ 0 ] = Utils.computeMaxLoc( tubulinProfile.coordinates, tubulinProfileAbsoluteDerivative, rangeMinMax );
 
-		Utils.log( "Computing roll transform..." );
-
-		final RandomAccessibleInterval yawAndOrientationAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ) );
-
-		final CentroidsParameters centroidsParameters = Utils.computeCentroidsParametersAlongXAxis( yawAndOrientationAlignedMask, settings.registrationResolution, settings.rollAngleMaxDistanceToCenter );
-
-		if ( settings.showIntermediateResults )
-			Plots.plot( centroidsParameters.axisCoordinates, centroidsParameters.angles, "x", "angle" );
-		if ( settings.showIntermediateResults )
-			Plots.plot( centroidsParameters.axisCoordinates, centroidsParameters.distances, "x", "distance" );
-		if ( settings.showIntermediateResults )
-			Plots.plot( centroidsParameters.axisCoordinates, centroidsParameters.numVoxels, "x", "numVoxels" );
-		if ( settings.showIntermediateResults )
-			show( yawAndOrientationAlignedMask, "yaw and orientation aligned mask", centroidsParameters.centroids, registrationCalibration, false );
-
-		final AffineTransform3D rollTransform = computeRollTransform( centroidsParameters, settings );
-
-		registration = registration.preConcatenate( rollTransform );
-
-		ArrayList< RealPoint > transformedCentroids = createTransformedCentroidPointList( centroidsParameters, rollTransform );
-
-		if ( settings.showIntermediateResults )
-			show( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ), "yaw and roll aligned mask", transformedCentroids, registrationCalibration, false );
-
-		/**
-		 * Compute final registration
-		 */
-
-		registration = createFinalTransform( inputCalibration, registration, registrationCalibration );
-
-		if ( settings.showIntermediateResults )
-			show( Transforms.createTransformedView( intensityCorrected, registration ), "aligned input data ( " + settings.outputResolution + " um )", origin(), registrationCalibration, false );
-
-		return registration;
-
+		rangeMinMax[ 0 ] = - Double.MAX_VALUE;
+		rangeMinMax[ 1 ] = 0;
+		maxLocs[ 1 ] = Utils.computeMaxLoc( tubulinProfile.coordinates, tubulinProfileAbsoluteDerivative, rangeMinMax );
+		return maxLocs;
 	}
 
 	public RandomAccessibleInterval< UnsignedByteType > createClosedImage( RandomAccessibleInterval< UnsignedByteType > mask )
@@ -261,7 +221,7 @@ public class ShavenBabyRegistration
 		if ( settings.closingRadius > 0 )
 		{
 			Utils.log( "Morphological closing...");
-			Shape closingShape = new HyperSphereShape( ( int ) ( settings.closingRadius / settings.registrationResolution ) );
+			Shape closingShape = new HyperSphereShape( ( int ) ( settings.closingRadius / settings.workingVoxelSize ) );
 			Closing.close( Views.extendBorder( mask ), Views.iterable( closed ), closingShape, 1 );
 		}
 
@@ -285,7 +245,7 @@ public class ShavenBabyRegistration
 
 		double threshold = 0;
 
-		if ( settings.thresholdModality.equals( ShavenBabyRegistrationSettings.HUANG_AUTO_THRESHOLD ) )
+		if ( settings.thresholdModality.equals( SpindleMorphometrySettings.HUANG_AUTO_THRESHOLD ) )
 		{
 			final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( downscaled ) );
 
@@ -301,12 +261,14 @@ public class ShavenBabyRegistration
 		return threshold;
 	}
 
-	public ImgLabeling< Integer, IntType > createWatershedSeeds( double[] registrationCalibration, RandomAccessibleInterval< DoubleType > distance, RandomAccessibleInterval< UnsignedByteType > mask )
+	public ImgLabeling< Integer, IntType > createWatershedSeeds( double[] registrationCalibration,
+																 RandomAccessibleInterval< DoubleType > distance,
+																 RandomAccessibleInterval< UnsignedByteType > mask )
 	{
 		Utils.log( "Seeds for watershed...");
 
-		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.registrationResolution, 2 );
-		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.registrationResolution, 2 );
+		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.workingVoxelSize, 2 );
+		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.workingVoxelSize, 2 );
 
 		final RandomAccessibleInterval< UnsignedByteType >  seeds = Utils.createSeeds(
 				distance,
@@ -317,6 +279,7 @@ public class ShavenBabyRegistration
 		final ImgLabeling< Integer, IntType > seedsLabelImg = Algorithms.createLabelImg( seeds );
 
 		if ( settings.showIntermediateResults ) show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, registrationCalibration, false );
+
 		return seedsLabelImg;
 	}
 
@@ -348,7 +311,7 @@ public class ShavenBabyRegistration
 		return transformedRealPoints;
 	}
 
-	public static AffineTransform3D computeRollTransform( CentroidsParameters centroidsParameters, ShavenBabyRegistrationSettings settings )
+	public static AffineTransform3D computeRollTransform( CentroidsParameters centroidsParameters, SpindleMorphometrySettings settings )
 	{
 		final double rollAngle = computeRollAngle( centroidsParameters, settings.rollAngleMinDistanceToAxis, settings.rollAngleMinDistanceToCenter, settings.rollAngleMaxDistanceToCenter );
 
@@ -384,53 +347,22 @@ public class ShavenBabyRegistration
 		return medianAngle;
 	}
 
-	public static ArrayList< RealPoint > origin()
-	{
-		final ArrayList< RealPoint > origin = new ArrayList<>();
-		origin.add( new RealPoint( new double[]{ 0, 0, 0 } ) );
-		return origin;
-	}
-
 	private AffineTransform3D createFinalTransform( double[] inputCalibration, AffineTransform3D registration, double[] registrationCalibration )
 	{
 		final AffineTransform3D transform =
-				Transforms.getScalingTransform( inputCalibration, settings.registrationResolution )
+				Transforms.getScalingTransform( inputCalibration, settings.workingVoxelSize )
 				.preConcatenate( registration )
 				.preConcatenate( Transforms.getScalingTransform( registrationCalibration, settings.outputResolution ) );
 
 		return transform;
 	}
 
-	private Img< UnsignedByteType > createUnsignedByteTypeMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
+
+	private double[] getRegistrationCalibration()
 	{
-		final Img< UnsignedByteType > centralObjectImg = ArrayImgs.bits( dimensions );
-
-		final Cursor< Void > regionCursor = centralObjectRegion.cursor();
-		final net.imglib2.RandomAccess< UnsignedByteType > access = centralObjectImg.randomAccess();
-		while ( regionCursor.hasNext() )
-		{
-			regionCursor.fwd();
-			access.setPosition( regionCursor );
-			access.get().set( true );
-		}
-		return centralObjectImg;
-	}
-
-	private LabelRegion< Integer > getCentralObjectLabelRegion( ImgLabeling< Integer, IntType > labeling )
-	{
-		int centralLabel = getCentralLabel( labeling );
-
-		final LabelRegions< Integer > labelRegions = new LabelRegions<>( labeling );
-
-		return labelRegions.getLabelRegion( centralLabel );
-	}
-
-	private static int getCentralLabel( ImgLabeling< Integer, IntType > labeling )
-	{
-		final net.imglib2.RandomAccess< LabelingType< Integer > > labelingRandomAccess = labeling.randomAccess();
-		for ( int d : XYZ ) labelingRandomAccess.setPosition( labeling.dimension( d ) / 2, d );
-		int centralIndex = labelingRandomAccess.get().getIndex().getInteger();
-		return labeling.getMapping().labelsAtIndex( centralIndex ).iterator().next();
+		double[] registrationCalibration = new double[ 3 ];
+		Arrays.fill( registrationCalibration, settings.workingVoxelSize );
+		return registrationCalibration;
 	}
 
 	//

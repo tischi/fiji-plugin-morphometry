@@ -74,11 +74,11 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 
 	}
 
-	public static < S extends NumericType< S >, T extends NumericType< T > >
-	RandomAccessibleInterval< T > getWithAdjustedOrigin( RandomAccessibleInterval< S > source, RandomAccessibleInterval< T > target )
+	public static < S extends RealType< S > & NativeType< S >, T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > getWithAdjustedOrigin( RandomAccessibleInterval< S > reference, RandomAccessibleInterval< T > target )
 	{
-		long[] offset = new long[ source.numDimensions() ];
-		source.min( offset );
+		long[] offset = new long[ reference.numDimensions() ];
+		reference.min( offset );
 		RandomAccessibleInterval translated = Views.translate( target, offset );
 		return translated;
 	}
@@ -117,12 +117,12 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 	public static < T extends NumericType< T > >
 	FinalInterval createScaledInterval( RandomAccessibleInterval< T > rai, Scale scale )
 	{
-		long[] min = new long[ 3 ];
-		long[] max = new long[ 3 ];
+		long[] min = new long[ rai.numDimensions() ];
+		long[] max = new long[ rai.numDimensions() ];
 		rai.min( min );
 		rai.max( max );
 
-		for ( int d : XYZ )
+		for ( int d = 0; d < rai.numDimensions(); ++d  )
 		{
 			min[ d ] *= scale.getScale( d );
 			max[ d ] *= scale.getScale( d );
