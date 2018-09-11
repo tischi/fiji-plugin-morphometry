@@ -49,7 +49,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		this.opService = opService;
 	}
 
-	public void run()
+	public RandomAccessibleInterval< T > run()
 	{
 
 		/**
@@ -100,8 +100,9 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		 * Remove small objects from mask
 		 */
 
-
 		mask = Algorithms.removeSmallObjectsAndReturnMask( mask, settings.minimalObjectSize, settings.workingVoxelSize );
+
+		if ( settings.showIntermediateResults ) show( mask, "size filtered mask", null, workingCalibration, false );
 
 		/**
 		 * Morphological closing
@@ -132,7 +133,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		 * Watershed seeds
 		 */
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = createWatershedSeeds( workingCalibration, distance, closed );
+		final ImgLabeling< Integer, IntType > seedsImgLabeling = createWatershedSeeds( workingCalibration, distance, closed );
 
 		/**
 		 * Watershed
@@ -142,12 +143,12 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		// prepare result label image
 		final Img< IntType > watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
-		final ImgLabeling< Integer, IntType > watershedLabeling = new ImgLabeling<>( watershedLabelImg );
+		final ImgLabeling< Integer, IntType > watershedImgLabeling = new ImgLabeling<>( watershedLabelImg );
 
 		opService.image().watershed(
-				watershedLabeling,
-				Utils.invertedView( distance ),
-				seedsLabelImg,
+				watershedImgLabeling,
+				Utils.invertedView( image ),
+				seedsImgLabeling,
 				false,
 				false );
 
@@ -156,13 +157,16 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		if ( settings.showIntermediateResults ) show( watershedLabelImg, "watershed", null, workingCalibration, false );
 
 		/**
-		 * Filter object size
+		 * Generate output image
 		 */
 
-		ImgLabeling< Integer, IntType > sizeFilteredLabeling = Algorithms.removeSmallObjectsAndReturnImgLabeling( watershedLabeling, settings.minimalObjectSize, settings.workingVoxelSize );
+		ArrayList< RandomAccessibleInterval< T > > randomAccessibleIntervals = new ArrayList<>();
+		randomAccessibleIntervals.add( image );
+		randomAccessibleIntervals.add( (RandomAccessibleInterval) seedsImgLabeling.getSource() );
+		randomAccessibleIntervals.add( (RandomAccessibleInterval) watershedImgLabeling.getSource() );
+		RandomAccessibleInterval< T > stack = Views.stack( randomAccessibleIntervals );
 
-		if ( settings.showIntermediateResults ) show( sizeFilteredLabeling.getSource(), "size filtered", null, workingCalibration, false );
-
+		return stack;
 	}
 
 

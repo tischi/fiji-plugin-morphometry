@@ -247,8 +247,8 @@ public class Algorithms
 
 		ImgLabeling< Integer, IntType > labelImg = createImgLabeling( sizeFilteredObjects );
 		return labelImg;
-
 	}
+
 
 	private static RandomAccessibleInterval< BitType > removeSmallObjectsAndReturnMask( ImgLabeling< Integer, IntType > labeling, double size, double calibration )
 	{
