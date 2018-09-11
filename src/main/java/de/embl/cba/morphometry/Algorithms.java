@@ -18,6 +18,7 @@ import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.roi.labeling.LabelingType;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
@@ -30,7 +31,6 @@ import java.util.List;
 
 import static de.embl.cba.morphometry.Constants.XYZ;
 import static de.embl.cba.morphometry.Transforms.createTransformedInterval;
-import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
 import static java.lang.Math.abs;
 import static java.lang.Math.acos;
 
@@ -241,46 +241,68 @@ public class Algorithms
 		return centralObjectImg;
 	}
 
-	public static ImgLabeling< Integer, IntType > createSizeFilteredImgLabeling( ImgLabeling< Integer, IntType > inputLabeling, double size, double calibration )
+	public static ImgLabeling< Integer, IntType > removeSmallObjectsAndReturnImgLabeling( ImgLabeling< Integer, IntType > labeling, double size, double calibration )
 	{
-		RandomAccessibleInterval< UnsignedByteType > sizeFilteredObjects = createSizeFilteredBinary( inputLabeling, size, calibration );
+		RandomAccessibleInterval< BitType > sizeFilteredObjects = removeSmallObjectsAndReturnMask( labeling, size, calibration );
 
-		ImgLabeling< Integer, IntType > outputLabeling = createLabelImg( sizeFilteredObjects );
-
-		return outputLabeling;
+		ImgLabeling< Integer, IntType > labelImg = createImgLabeling( sizeFilteredObjects );
+		return labelImg;
 
 	}
 
-	private static RandomAccessibleInterval< UnsignedByteType > createSizeFilteredBinary( ImgLabeling< Integer, IntType > inputLabeling, double size, double calibration )
+	private static RandomAccessibleInterval< BitType > removeSmallObjectsAndReturnMask( ImgLabeling< Integer, IntType > labeling, double size, double calibration )
 	{
-		RandomAccessibleInterval< UnsignedByteType > sizeFilteredObjects = ArrayImgs.unsignedBytes( Intervals.dimensionsAsLongArray( inputLabeling ) );
-		sizeFilteredObjects = Transforms.getWithAdjustedOrigin( inputLabeling.getSource(), sizeFilteredObjects  );
+		RandomAccessibleInterval< BitType > sizeFilteredObjectsMask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( labeling ) );
+		sizeFilteredObjectsMask = Transforms.getWithAdjustedOrigin( labeling.getSource(), sizeFilteredObjectsMask  );
 
-		long pixelSize = ( long ) ( size / Math.pow( calibration, inputLabeling.numDimensions() ) );
+		long pixelSize = ( long ) ( size / Math.pow( calibration, labeling.numDimensions() ) );
 
-		final LabelRegions< Integer > labelRegions = new LabelRegions<>( inputLabeling );
-
+		final LabelRegions< Integer > labelRegions = new LabelRegions<>( labeling );
 		for ( LabelRegion labelRegion : labelRegions )
 		{
 			if ( labelRegion.size() > pixelSize )
 			{
-				drawObject( sizeFilteredObjects, labelRegion );
+				drawObject( sizeFilteredObjectsMask, labelRegion );
 			}
 		}
-		return sizeFilteredObjects;
+
+		return sizeFilteredObjectsMask;
 	}
 
-	private static void drawObject( RandomAccessibleInterval< UnsignedByteType > img, LabelRegion labelRegion )
+	public static RandomAccessibleInterval< BitType > removeSmallObjectsAndReturnMask( RandomAccessibleInterval< BitType > img, double size, double calibration )
+	{
+		return removeSmallObjectsAndReturnMask( createImgLabeling( img ), size, calibration );
+	}
+
+	private static void drawObject( RandomAccessibleInterval< BitType > img, LabelRegion labelRegion )
 	{
 		final Cursor< Void > regionCursor = labelRegion.cursor();
-		final RandomAccess< UnsignedByteType > access = img.randomAccess();
+		final RandomAccess< BitType > access = img.randomAccess();
+		BitType bitTypeTrue = new BitType( true );
 		while ( regionCursor.hasNext() )
 		{
 			regionCursor.fwd();
 			access.setPosition( regionCursor );
-			access.get().set( 255 );
+			access.get().set( bitTypeTrue );
 		}
 	}
+
+
+	public static Img< BitType > createBitTypeMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
+	{
+		final Img< BitType > centralObjectImg = ArrayImgs.bits( dimensions );
+
+		final Cursor< Void > regionCursor = centralObjectRegion.cursor();
+		final RandomAccess< BitType > access = centralObjectImg.randomAccess();
+		while ( regionCursor.hasNext() )
+		{
+			regionCursor.fwd();
+			access.setPosition( regionCursor );
+			access.get().set( true );
+		}
+		return centralObjectImg;
+	}
+
 
 	public static ArrayList< RealPoint > origin()
 	{
@@ -312,7 +334,7 @@ public class Algorithms
 	}
 
 	public static < T extends RealType< T > & NativeType< T >  >
-	ImgLabeling< Integer, IntType > createLabelImg( RandomAccessibleInterval< T > rai )
+	ImgLabeling< Integer, IntType > createImgLabeling( RandomAccessibleInterval< T > rai )
 	{
 		RandomAccessibleInterval< IntType > labelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( rai ) );
 		labelImg = Transforms.getWithAdjustedOrigin( rai, labelImg );
@@ -338,15 +360,5 @@ public class Algorithms
 		ConnectedComponents.labelAllConnectedComponents( ( RandomAccessible ) Views.extendBorder( rai ), labeling, labelCreator, ConnectedComponents.StructuringElement.EIGHT_CONNECTED );
 
 		return labeling;
-	}
-
-	public static RandomAccessibleInterval< UnsignedByteType > removeSmallObjects( RandomAccessibleInterval<UnsignedByteType> mask, double minimalObjectSize, double workingVoxelSize )
-	{
-
-		ImgLabeling< Integer, IntType > labelImg = createLabelImg( mask );
-		RandomAccessibleInterval< UnsignedByteType > sizeFilteredBinary = createSizeFilteredBinary( labelImg, minimalObjectSize, workingVoxelSize );
-
-		return  sizeFilteredBinary;
-
 	}
 }

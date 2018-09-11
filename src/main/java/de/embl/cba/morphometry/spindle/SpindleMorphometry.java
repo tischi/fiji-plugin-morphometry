@@ -24,9 +24,9 @@ import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
@@ -90,7 +90,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * Create mask
 		 */
 
-		RandomAccessibleInterval< UnsignedByteType > mask = createMask( dapi, threshold );
+		RandomAccessibleInterval< BitType > mask = createMask( dapi, threshold );
 
 		if ( settings.showIntermediateResults ) show( mask, "mask", null, workingCalibration, false );
 
@@ -98,8 +98,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * Morphological closing
 		 */
 
-//		RandomAccessibleInterval< UnsignedByteType > closed = createClosedImage( mask );
-		RandomAccessibleInterval< UnsignedByteType > closed =  mask ;
+//		RandomAccessibleInterval< BitType > closed = createClosedImage( mask );
+		RandomAccessibleInterval< BitType > closed =  mask ;
 
 //		if ( settings.showIntermediateResults ) show( closed, "closed", null, workingCalibration, false );
 
@@ -110,11 +110,11 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Extracting metaphase plate object..." );
 
-		final ImgLabeling< Integer, IntType > labelImg = Algorithms.createLabelImg( closed );
+		final ImgLabeling< Integer, IntType > labelImg = Algorithms.createImgLabeling( closed );
 
 		final LabelRegion< Integer > largestObject = Algorithms.getLargestObject( labelImg );
 
-		final Img< UnsignedByteType > dapiMask = Algorithms.createUnsignedByteTypeMaskFromLabelRegion( largestObject, Intervals.dimensionsAsLongArray( labelImg ) );
+		final Img< BitType > dapiMask = Algorithms.createBitTypeMaskFromLabelRegion( largestObject, Intervals.dimensionsAsLongArray( labelImg ) );
 
 		if ( settings.showIntermediateResults ) show( dapiMask, "meta-phase object", null, workingCalibration, false );
 
@@ -291,9 +291,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return maxLocs;
 	}
 
-	public RandomAccessibleInterval< UnsignedByteType > createClosedImage( RandomAccessibleInterval< UnsignedByteType > mask )
+	public RandomAccessibleInterval< BitType > createClosedImage( RandomAccessibleInterval< BitType > mask )
 	{
-		RandomAccessibleInterval< UnsignedByteType > closed = Utils.copyAsArrayImg( mask );
+		RandomAccessibleInterval< BitType > closed = Utils.copyAsArrayImg( mask );
 
 		if ( settings.closingRadius > 0 )
 		{
@@ -306,11 +306,11 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 	public < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< UnsignedByteType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
+	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
 	{
 		Utils.log( "Creating mask...");
 
-		RandomAccessibleInterval< UnsignedByteType > mask = Converters.convert( downscaled, ( i, o ) -> o.set( i.getRealDouble() > threshold ? 255 : 0 ), new UnsignedByteType() );
+		RandomAccessibleInterval< BitType > mask = Converters.convert( downscaled, ( i, o ) -> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
 
 		mask = opService.morphology().fillHoles( mask );
 
@@ -340,20 +340,20 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	public ImgLabeling< Integer, IntType > createWatershedSeeds( double[] registrationCalibration,
 																 RandomAccessibleInterval< DoubleType > distance,
-																 RandomAccessibleInterval< UnsignedByteType > mask )
+																 RandomAccessibleInterval< BitType > mask )
 	{
 		Utils.log( "Seeds for watershed...");
 
 		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.workingVoxelSize, 2 );
 		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.workingVoxelSize, 2 );
 
-		final RandomAccessibleInterval< UnsignedByteType >  seeds = Utils.createSeeds(
+		final RandomAccessibleInterval< BitType >  seeds = Utils.createSeeds(
 				distance,
 				new HyperSphereShape( 1 ),
 				globalDistanceThreshold,
 				localMaximaDistanceThreshold );
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = Algorithms.createLabelImg( seeds );
+		final ImgLabeling< Integer, IntType > seedsLabelImg = Algorithms.createImgLabeling( seeds );
 
 		if ( settings.showIntermediateResults ) show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, registrationCalibration, false );
 		return seedsLabelImg;
