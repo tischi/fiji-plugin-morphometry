@@ -18,10 +18,9 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
-
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
@@ -93,26 +92,22 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		 * Create mask
 		 */
 
-		RandomAccessibleInterval< UnsignedByteType > mask = createMask( image, threshold );
+		RandomAccessibleInterval< BitType > mask = createMask( image, threshold );
 
 		if ( settings.showIntermediateResults ) show( mask, "mask", null, workingCalibration, false );
-
 
 		/**
-		 * Remove small regions
+		 * Remove small objects from mask
 		 */
 
-		mask = Algorithms.removeSmallObjects( mask, settings.minimalObjectSize, settings.workingVoxelSize  );
 
-		if ( settings.showIntermediateResults ) show( mask, "mask", null, workingCalibration, false );
-
-
+		mask = Algorithms.removeSmallObjectsAndReturnMask( mask, settings.minimalObjectSize, settings.workingVoxelSize );
 
 		/**
 		 * Morphological closing
 		 */
 
-		RandomAccessibleInterval< UnsignedByteType > closed = mask; //createClosedImage( mask );
+		RandomAccessibleInterval< BitType > closed = mask; //createClosedImage( mask );
 
 //		if ( settings.showIntermediateResults ) show( closed, "closed", null, workingCalibration, false );
 
@@ -156,13 +151,15 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 				false,
 				false );
 
-		if ( settings.showIntermediateResults ) show( watershedLabeling.getSource(), "watershed", null, workingCalibration, false );
+		Utils.applyMask( watershedLabelImg, closed );
+
+		if ( settings.showIntermediateResults ) show( watershedLabelImg, "watershed", null, workingCalibration, false );
 
 		/**
 		 * Filter object size
 		 */
 
-		ImgLabeling< Integer, IntType > sizeFilteredLabeling = Algorithms.createSizeFilteredImgLabeling( watershedLabeling, settings.minimalObjectSize, settings.workingVoxelSize );
+		ImgLabeling< Integer, IntType > sizeFilteredLabeling = Algorithms.removeSmallObjectsAndReturnImgLabeling( watershedLabeling, settings.minimalObjectSize, settings.workingVoxelSize );
 
 		if ( settings.showIntermediateResults ) show( sizeFilteredLabeling.getSource(), "size filtered", null, workingCalibration, false );
 
@@ -214,9 +211,9 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		return maxLocs;
 	}
 
-	public RandomAccessibleInterval< UnsignedByteType > createClosedImage( RandomAccessibleInterval< UnsignedByteType > mask )
+	public RandomAccessibleInterval< BitType > createClosedImage( RandomAccessibleInterval< BitType > mask )
 	{
-		RandomAccessibleInterval< UnsignedByteType > closed = Utils.copyAsArrayImg( mask );
+		RandomAccessibleInterval< BitType > closed = Utils.copyAsArrayImg( mask );
 
 		if ( settings.closingRadius > 0 )
 		{
@@ -229,11 +226,13 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 	}
 
 	public < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< UnsignedByteType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
+	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
 	{
 		Utils.log( "Creating mask...");
 
-		RandomAccessibleInterval< UnsignedByteType > mask = Converters.convert( downscaled, ( i, o ) -> o.set( i.getRealDouble() > threshold ? 255 : 0 ), new UnsignedByteType() );
+		RandomAccessibleInterval< BitType > mask =
+				Converters.convert( downscaled, ( i, o )
+						-> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
 
 		mask = opService.morphology().fillHoles( mask );
 
@@ -263,20 +262,20 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 	public ImgLabeling< Integer, IntType > createWatershedSeeds( double[] registrationCalibration,
 																 RandomAccessibleInterval< DoubleType > distance,
-																 RandomAccessibleInterval< UnsignedByteType > mask )
+																 RandomAccessibleInterval< BitType > mask )
 	{
 		Utils.log( "Seeds for watershed...");
 
 		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.workingVoxelSize, 2 );
 		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.workingVoxelSize, 2 );
 
-		final RandomAccessibleInterval< UnsignedByteType >  seeds = Utils.createSeeds(
+		final RandomAccessibleInterval< BitType >  seeds = Utils.createSeeds(
 				distance,
 				new HyperSphereShape( 1 ),
 				globalDistanceThreshold,
 				localMaximaDistanceThreshold );
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = Algorithms.createLabelImg( seeds );
+		final ImgLabeling< Integer, IntType > seedsLabelImg = Algorithms.createImgLabeling( seeds );
 
 		if ( settings.showIntermediateResults ) show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, registrationCalibration, false );
 

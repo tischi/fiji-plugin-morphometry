@@ -11,7 +11,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealPoint;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
-
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 
 import java.util.Arrays;
@@ -59,7 +59,7 @@ public class DapiRegistration
 
 		RefractiveIndexMismatchCorrections.correctIntensity( binned, calibration[ Z ], 0.0D, settings.refractiveIndexIntensityCorrectionDecayLength );
 
-		final RandomAccessibleInterval< UnsignedByteType > binaryImage = Utils.createBinaryImage( binned, settings.threshold );
+		final RandomAccessibleInterval< BitType > binaryImage = Utils.createBinaryImage( binned, settings.threshold );
 
 		if ( settings.showIntermediateResults ) show( binaryImage, "binary", null, calibration, false );
 

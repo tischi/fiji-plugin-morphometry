@@ -6,8 +6,8 @@ import net.imglib2.Cursor;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.view.Views;
 
 import static de.embl.cba.morphometry.Constants.*;
@@ -19,7 +19,7 @@ import static java.lang.Math.*;
 public class Ellipsoids
 {
 
-	public static EllipsoidParameters computeParametersFromBinaryImage( RandomAccessibleInterval< UnsignedByteType > binaryImg )
+	public static EllipsoidParameters computeParametersFromBinaryImage( RandomAccessibleInterval< BitType > binaryImg )
 	{
 
 		double[] sums = new double[ 3 ];
@@ -63,18 +63,20 @@ public class Ellipsoids
 		return moments;
 	}
 
-	public static long computeSumsAndSumSquares( RandomAccessibleInterval< UnsignedByteType > binaryImg, double[] sums, double[] sumSquares )
+	public static long computeSumsAndSumSquares( RandomAccessibleInterval< BitType > binaryImg, double[] sums, double[] sumSquares )
 	{
 
-		Cursor< UnsignedByteType > cursor = Views.iterable( binaryImg ).localizingCursor();
+		Cursor< BitType > cursor = Views.iterable( binaryImg ).localizingCursor();
 
 		long[] xyzPosition = new long[ 3 ];
+
+		BitType one = new BitType( true );
 
 		long numPixels = 0;
 
 		while ( cursor.hasNext() )
 		{
-			if ( cursor.next().get() > 0 )
+			if ( cursor.next().valueEquals( one ) )
 			{
 				numPixels++;
 

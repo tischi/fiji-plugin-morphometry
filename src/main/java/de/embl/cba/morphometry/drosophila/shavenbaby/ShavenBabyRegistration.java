@@ -22,7 +22,7 @@ import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.roi.labeling.LabelingType;
 import net.imglib2.type.NativeType;
-
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
@@ -115,7 +115,7 @@ public class ShavenBabyRegistration
 		 * Create mask
 		 */
 
-		RandomAccessibleInterval< UnsignedByteType > mask = createMask( intensityCorrected, thresholdAfterIntensityCorrection );
+		RandomAccessibleInterval< BitType > mask = createMask( intensityCorrected, thresholdAfterIntensityCorrection );
 
 		if ( settings.showIntermediateResults ) show( mask, "mask", null, registrationCalibration, false );
 
@@ -124,7 +124,7 @@ public class ShavenBabyRegistration
 		 * Morphological closing
 		 */
 
-		RandomAccessibleInterval< UnsignedByteType > closed = createClosedImage( mask );
+		RandomAccessibleInterval< BitType > closed = createClosedImage( mask );
 
 		if ( settings.showIntermediateResults ) show( closed, "closed", null, registrationCalibration, false );
 
@@ -182,7 +182,7 @@ public class ShavenBabyRegistration
 
 		final LabelRegion< Integer > centralObjectRegion = getCentralObjectLabelRegion( watershedLabeling );
 
-		final Img< UnsignedByteType > centralObjectMask = createUnsignedByteTypeMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaled ) );
+		final Img< BitType > centralObjectMask = createBitTypeMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaled ) );
 
 		if ( settings.showIntermediateResults )
 			show( centralObjectMask, "central object", null, registrationCalibration, false );
@@ -254,9 +254,9 @@ public class ShavenBabyRegistration
 
 	}
 
-	public RandomAccessibleInterval< UnsignedByteType > createClosedImage( RandomAccessibleInterval< UnsignedByteType > mask )
+	public RandomAccessibleInterval< BitType > createClosedImage( RandomAccessibleInterval< BitType > mask )
 	{
-		RandomAccessibleInterval< UnsignedByteType > closed = Utils.copyAsArrayImg( mask );
+		RandomAccessibleInterval< BitType > closed = Utils.copyAsArrayImg( mask );
 
 		if ( settings.closingRadius > 0 )
 		{
@@ -269,11 +269,11 @@ public class ShavenBabyRegistration
 	}
 
 	public < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< UnsignedByteType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
+	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
 	{
 		Utils.log( "Creating mask...");
 
-		RandomAccessibleInterval< UnsignedByteType > mask = Converters.convert( downscaled, ( i, o ) -> o.set( i.getRealDouble() > threshold ? 255 : 0 ), new UnsignedByteType() );
+		RandomAccessibleInterval< BitType > mask = Converters.convert( downscaled, ( i, o ) -> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
 
 		mask = opService.morphology().fillHoles( mask );
 
@@ -301,20 +301,20 @@ public class ShavenBabyRegistration
 		return threshold;
 	}
 
-	public ImgLabeling< Integer, IntType > createWatershedSeeds( double[] registrationCalibration, RandomAccessibleInterval< DoubleType > distance, RandomAccessibleInterval< UnsignedByteType > mask )
+	public ImgLabeling< Integer, IntType > createWatershedSeeds( double[] registrationCalibration, RandomAccessibleInterval< DoubleType > distance, RandomAccessibleInterval< BitType > mask )
 	{
 		Utils.log( "Seeds for watershed...");
 
 		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.registrationResolution, 2 );
 		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.registrationResolution, 2 );
 
-		final RandomAccessibleInterval< UnsignedByteType >  seeds = Utils.createSeeds(
+		final RandomAccessibleInterval< BitType >  seeds = Utils.createSeeds(
 				distance,
 				new HyperSphereShape( 1 ),
 				globalDistanceThreshold,
 				localMaximaDistanceThreshold );
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = Algorithms.createLabelImg( seeds );
+		final ImgLabeling< Integer, IntType > seedsLabelImg = Algorithms.createImgLabeling( seeds );
 
 		if ( settings.showIntermediateResults ) show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, registrationCalibration, false );
 		return seedsLabelImg;
@@ -401,12 +401,12 @@ public class ShavenBabyRegistration
 		return transform;
 	}
 
-	private Img< UnsignedByteType > createUnsignedByteTypeMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
+	private Img< BitType > createBitTypeMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
 	{
-		final Img< UnsignedByteType > centralObjectImg = ArrayImgs.bits( dimensions );
+		final Img< BitType > centralObjectImg = ArrayImgs.bits( dimensions );
 
 		final Cursor< Void > regionCursor = centralObjectRegion.cursor();
-		final net.imglib2.RandomAccess< UnsignedByteType > access = centralObjectImg.randomAccess();
+		final net.imglib2.RandomAccess< BitType > access = centralObjectImg.randomAccess();
 		while ( regionCursor.hasNext() )
 		{
 			regionCursor.fwd();
@@ -415,6 +415,22 @@ public class ShavenBabyRegistration
 		}
 		return centralObjectImg;
 	}
+
+	private Img< UnsignedByteType > createUnsignedByteTypeMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
+	{
+		final Img< UnsignedByteType > centralObjectImg = ArrayImgs.unsignedBytes( dimensions );
+
+		final Cursor< Void > regionCursor = centralObjectRegion.cursor();
+		final net.imglib2.RandomAccess< UnsignedByteType > access = centralObjectImg.randomAccess();
+		while ( regionCursor.hasNext() )
+		{
+			regionCursor.fwd();
+			access.setPosition( regionCursor );
+			access.get().set( 255 );
+		}
+		return centralObjectImg;
+	}
+
 
 	private LabelRegion< Integer > getCentralObjectLabelRegion( ImgLabeling< Integer, IntType > labeling )
 	{
