@@ -24,11 +24,12 @@ import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelingType;
 import net.imglib2.type.NativeType;
-import net.imglib2.type.logic.BitType;
+
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
 import net.imglib2.view.IntervalView;
@@ -136,14 +137,14 @@ public class Utils
 
 	public static < T extends RealType< T > & NativeType< T > >
 	CoordinatesAndValues computeAverageIntensitiesAlongAxis(
-			RandomAccessibleInterval< T > rai, RandomAccessibleInterval< BitType > mask, int axis, double calibration )
+			RandomAccessibleInterval< T > rai, RandomAccessibleInterval< UnsignedByteType > mask, int axis, double calibration )
 	{
 		final CoordinatesAndValues coordinatesAndValues = new CoordinatesAndValues();
 
 		for ( long coordinate = rai.min( axis ); coordinate <= rai.max( axis ); ++coordinate )
 		{
 			final IntervalView< T > intensitySlice = Views.hyperSlice( rai, axis, coordinate );
-			final IntervalView< BitType > maskSlice = Views.hyperSlice( mask, axis, coordinate );
+			final IntervalView< UnsignedByteType > maskSlice = Views.hyperSlice( mask, axis, coordinate );
 
 			coordinatesAndValues.coordinates.add( (double) coordinate * calibration );
 			coordinatesAndValues.values.add( computeAverage( intensitySlice, maskSlice ) );
@@ -155,7 +156,7 @@ public class Utils
 
 
 	public static CentroidsParameters computeCentroidsParametersAlongXAxis(
-			RandomAccessibleInterval< BitType > rai,
+			RandomAccessibleInterval< UnsignedByteType > rai,
 			double calibration,
 			double maxDistanceToCenter )
 	{
@@ -241,9 +242,9 @@ public class Utils
 	}
 
 
-	private static double[] computeCentroidPerpendicularToAxis( RandomAccessibleInterval< BitType > rai, int axis, long coordinate )
+	private static double[] computeCentroidPerpendicularToAxis( RandomAccessibleInterval< UnsignedByteType > rai, int axis, long coordinate )
 	{
-		final IntervalView< BitType > slice = Views.hyperSlice( rai, axis, coordinate );
+		final IntervalView< UnsignedByteType > slice = Views.hyperSlice( rai, axis, coordinate );
 
 		int numHyperSliceDimensions = rai.numDimensions() - 1;
 
@@ -251,7 +252,7 @@ public class Utils
 
 		int numPoints = 0;
 
-		final Cursor< BitType > cursor = slice.cursor();
+		final Cursor< UnsignedByteType > cursor = slice.cursor();
 
 		while( cursor.hasNext() )
 		{
@@ -279,9 +280,9 @@ public class Utils
 		}
 	}
 
-	private static long computeNumberOfVoxelsPerpendicularToAxis( RandomAccessibleInterval< BitType > rai, int axis, long coordinate )
+	private static long computeNumberOfVoxelsPerpendicularToAxis( RandomAccessibleInterval< UnsignedByteType > rai, int axis, long coordinate )
 	{
-		final IntervalView< BitType > slice = Views.hyperSlice( rai, axis, coordinate );
+		final IntervalView< UnsignedByteType > slice = Views.hyperSlice( rai, axis, coordinate );
 
 		int numHyperSliceDimensions = rai.numDimensions() - 1;
 
@@ -289,7 +290,7 @@ public class Utils
 
 		int numPoints = 0;
 
-		final Cursor< BitType > cursor = slice.cursor();
+		final Cursor< UnsignedByteType > cursor = slice.cursor();
 
 		while ( cursor.hasNext() )
 		{
@@ -333,7 +334,7 @@ public class Utils
 
 
 	public static  < T extends RealType< T > & NativeType< T > >
-	void applyMask( RandomAccessibleInterval< T > rai, RandomAccessibleInterval< BitType > mask )
+	void applyMask( RandomAccessibleInterval< T > rai, RandomAccessibleInterval< UnsignedByteType > mask )
 	{
 		LoopBuilder.setImages( rai, mask ).forEachPixel( ( i, m ) ->  i.setReal( ( m.get() ? i.getRealDouble() : 0 ) ) );
 	}
@@ -346,16 +347,16 @@ public class Utils
 		return projection.average();
 	}
 
-	public static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< BitType > createBinaryImage(
+	public static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< UnsignedByteType > createBinaryImage(
 			RandomAccessibleInterval< T > input, double doubleThreshold )
 	{
-		final ArrayImg< BitType, LongArray > binaryImage = ArrayImgs.bits( Intervals.dimensionsAsLongArray( input ) );
+		final ArrayImg< UnsignedByteType, LongArray > binaryImage = ArrayImgs.bits( Intervals.dimensionsAsLongArray( input ) );
 
 		T threshold = input.randomAccess().get().copy();
 		threshold.setReal( doubleThreshold );
 
-		final BitType one = new BitType( true );
-		final BitType zero = new BitType( false );
+		final UnsignedByteType one = new UnsignedByteType( true );
+		final UnsignedByteType zero = new UnsignedByteType( false );
 
 		LoopBuilder.setImages( input, binaryImage ).forEachPixel( ( i, b ) ->
 				{
@@ -447,6 +448,16 @@ public class Utils
 		return calibration;
 	}
 
+	public static double[] get2dCalibration( ImagePlus imp )
+	{
+		double[] calibration = new double[ 2 ];
+
+		calibration[ X ] = imp.getCalibration().pixelWidth;
+		calibration[ Y ] = imp.getCalibration().pixelHeight;
+
+		return calibration;
+	}
+
 	public static void correctCalibrationForSubSampling( double[] calibration, int subSampling )
 	{
 		for ( int d : XYZ )
@@ -523,9 +534,9 @@ public class Utils
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	double computeAverage( final RandomAccessibleInterval< T > rai, final RandomAccessibleInterval< BitType > mask )
+	double computeAverage( final RandomAccessibleInterval< T > rai, final RandomAccessibleInterval< UnsignedByteType > mask )
 	{
-		final Cursor< BitType > cursor = Views.iterable( mask ).cursor();
+		final Cursor< UnsignedByteType > cursor = Views.iterable( mask ).cursor();
 		final RandomAccess< T > randomAccess = rai.randomAccess();
 
 		randomAccess.setPosition( cursor );
@@ -569,7 +580,7 @@ public class Utils
 		return realPoints;
 	}
 
-	public static < T extends NumericType< T > & NativeType< T > >
+	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > copyAsArrayImg( RandomAccessibleInterval< T > rai )
 	{
 
@@ -643,10 +654,10 @@ public class Utils
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< BitType > createSeeds( RandomAccessibleInterval< T > distance, Shape shape, double globalThreshold, double localThreshold )
+	RandomAccessibleInterval< UnsignedByteType > createSeeds( RandomAccessibleInterval< T > distance, Shape shape, double globalThreshold, double localThreshold )
 	{
 
-		RandomAccessibleInterval< BitType > maxima = ArrayImgs.bits( Intervals.dimensionsAsLongArray( distance ) );
+		RandomAccessibleInterval< UnsignedByteType > maxima = ArrayImgs.unsignedBytes( Intervals.dimensionsAsLongArray( distance ) );
 		maxima = Transforms.getWithAdjustedOrigin( distance, maxima );
 
 		RandomAccessible< Neighborhood< T > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendPeriodic( distance ) );
@@ -654,7 +665,7 @@ public class Utils
 
 		final Cursor< Neighborhood< T > > neighborhoodCursor = Views.iterable( neighborhoodsInterval ).cursor();
 		final RandomAccess< T > distanceRandomAccess = distance.randomAccess();
-		final RandomAccess< BitType > maximaRandomAccess = maxima.randomAccess();
+		final RandomAccess< UnsignedByteType > maximaRandomAccess = maxima.randomAccess();
 
 		while ( neighborhoodCursor.hasNext() )
 		{
@@ -666,53 +677,24 @@ public class Utils
 
 			if ( centerValue.getRealDouble() > globalThreshold )
 			{
-				maximaRandomAccess.get().set( true );
+				maximaRandomAccess.get().set( 255 );
 			}
 			else if ( isLateralBoundaryPixel( neighborhood, distance ) && distanceRandomAccess.get().getRealDouble() >  0 )
 			{
-				maximaRandomAccess.get().set( true );
+				maximaRandomAccess.get().set( 255 );
 			}
 			else if ( isCenterLargestOrEqual( centerValue, neighborhood ) )
 			{
 				if ( centerValue.getRealDouble() > localThreshold )
 				{
 					// local maximum and larger than local Threshold
-					maximaRandomAccess.get().set( true );
+					maximaRandomAccess.get().set( 255 );
 				}
 			}
 
 		}
 
 		return maxima;
-	}
-
-	public static < T extends IntegerType >
-	ImgLabeling< Integer, IntType > createLabelImg( RandomAccessibleInterval< T > rai )
-	{
-		RandomAccessibleInterval< IntType > labelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( rai ) );
-		labelImg = Transforms.getWithAdjustedOrigin( rai, labelImg );
-		final ImgLabeling< Integer, IntType > labeling = new ImgLabeling<>( labelImg );
-
-		final java.util.Iterator< Integer > labelCreator = new java.util.Iterator< Integer >()
-		{
-			int id = 0;
-
-			@Override
-			public boolean hasNext()
-			{
-				return true;
-			}
-
-			@Override
-			public synchronized Integer next()
-			{
-				return id++;
-			}
-		};
-
-		ConnectedComponents.labelAllConnectedComponents( Views.extendBorder( rai ), labeling, labelCreator, ConnectedComponents.StructuringElement.EIGHT_CONNECTED );
-
-		return labeling;
 	}
 
 	private static < T extends RealType< T > & NativeType< T > >
@@ -785,11 +767,17 @@ public class Utils
 		return intImg;
 	}
 
+	public static double[] get2dDoubleArray( double value )
+	{
+		double[] array = new double[ 2 ];
+		Arrays.fill( array, value );
+		return array;
+	}
 
 	public static double[] get3dDoubleArray( double value )
 	{
-		double[] registrationCalibration = new double[ 3 ];
-		Arrays.fill( registrationCalibration, value );
-		return registrationCalibration;
+		double[] array = new double[ 3 ];
+		Arrays.fill( array, value );
+		return array;
 	}
 }
