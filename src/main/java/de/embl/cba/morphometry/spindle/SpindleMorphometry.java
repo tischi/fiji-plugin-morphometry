@@ -114,7 +114,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final LabelRegion< Integer > largestObject = Algorithms.getLargestObject( labelImg );
 
-		final Img< BitType > dapiMask = Algorithms.createBitTypeMaskFromLabelRegion( largestObject, Intervals.dimensionsAsLongArray( labelImg ) );
+		final Img< BitType > dapiMask = Algorithms.createMaskFromLabelRegion( largestObject, Intervals.dimensionsAsLongArray( labelImg ) );
 
 		if ( settings.showIntermediateResults ) show( dapiMask, "meta-phase object", null, workingCalibration, false );
 

@@ -24,7 +24,7 @@ public class ShavenBabyRegistrationSettings
 	public double rollAngleMinDistanceToCenter = drosophilaLength / 2.0 * 0.5;
 	public double rollAngleMaxDistanceToCenter = drosophilaLength / 2.0 - 10.0;
 
-	public double watershedSeedsGlobalDistanceThreshold = drosophilaWidth / 3.0;
+	public double watershedSeedsGlobalDistanceThreshold = drosophilaWidth / 2.0;
 	public double watershedSeedsLocalMaximaDistanceThreshold = 3 * registrationResolution; // at least 3 pixels
 
 	public String thresholdModality = MANUAL_THRESHOLD;
@@ -35,5 +35,5 @@ public class ShavenBabyRegistrationSettings
 	public double outputImageSizeY = 250;
 	public double outputImageSizeZ = 250;
 
-
+	public double minimalObjectSize = drosophilaWidth * drosophilaWidth * drosophilaWidth;
 }
