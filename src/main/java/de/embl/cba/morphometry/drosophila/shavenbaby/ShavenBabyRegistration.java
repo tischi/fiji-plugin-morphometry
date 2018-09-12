@@ -119,14 +119,19 @@ public class ShavenBabyRegistration
 
 		if ( settings.showIntermediateResults ) show( mask, "mask", null, registrationCalibration, false );
 
-
 		/**
 		 * Morphological closing
 		 */
 
-		RandomAccessibleInterval< BitType > closed = createClosedImage( mask );
+		mask = createClosedImage( mask );
 
-		if ( settings.showIntermediateResults ) show( closed, "closed", null, registrationCalibration, false );
+		/**
+		 * Remove small objects
+		 */
+
+		mask = Algorithms.removeSmallObjectsAndReturnMask( mask, settings.minimalObjectSize, settings.registrationResolution );
+
+		if ( settings.showIntermediateResults ) show( mask, "closed and object size filtered", null, registrationCalibration, false );
 
 		/**
 		 * Distance transform
@@ -136,20 +141,19 @@ public class ShavenBabyRegistration
 
 		Utils.log( "Distance transform..." );
 
-		final RandomAccessibleInterval< DoubleType > doubleBinary = Converters.convert( closed, ( i, o ) -> o.set( i.get() ? Double.MAX_VALUE : 0 ), new DoubleType() );
+		final RandomAccessibleInterval< DoubleType > doubleBinary = Converters.convert( mask, ( i, o ) -> o.set( i.get() ? Double.MAX_VALUE : 0 ), new DoubleType() );
 
 		final RandomAccessibleInterval< DoubleType > distance = ArrayImgs.doubles( Intervals.dimensionsAsLongArray( doubleBinary ) );
 
 		DistanceTransform.transform( doubleBinary, distance, DistanceTransform.DISTANCE_TYPE.EUCLIDIAN, 1.0D );
 
-		if ( settings.showIntermediateResults )
-			show( distance, "distance transform", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( distance, "distance transform", null, registrationCalibration, false );
 
 		/**
 		 * Watershed seeds
 		 */
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = createWatershedSeeds( registrationCalibration, distance, closed );
+		final ImgLabeling< Integer, IntType > seedsLabelImg = createWatershedSeeds( registrationCalibration, distance, mask );
 
 
 		/**
@@ -169,7 +173,7 @@ public class ShavenBabyRegistration
 				false,
 				false );
 
-		Utils.applyMask( watershedLabelImg, closed );
+		Utils.applyMask( watershedLabelImg, mask );
 
 		if ( settings.showIntermediateResults ) show( watershedLabelImg, "watershed", null, registrationCalibration, false );
 
@@ -182,10 +186,9 @@ public class ShavenBabyRegistration
 
 		final LabelRegion< Integer > centralObjectRegion = getCentralObjectLabelRegion( watershedLabeling );
 
-		final Img< BitType > centralObjectMask = createBitTypeMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaled ) );
+		RandomAccessibleInterval< BitType > centralObjectMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaled ) );
 
-		if ( settings.showIntermediateResults )
-			show( centralObjectMask, "central object", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( centralObjectMask, "central object", null, registrationCalibration, false );
 
 		/**
 		 * Compute ellipsoid (probably mainly yaw) alignment
@@ -238,17 +241,19 @@ public class ShavenBabyRegistration
 
 		ArrayList< RealPoint > transformedCentroids = createTransformedCentroidPointList( centroidsParameters, rollTransform );
 
-		if ( settings.showIntermediateResults )
-			show( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ), "yaw and roll aligned mask", transformedCentroids, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ), "yaw and roll aligned mask", transformedCentroids, registrationCalibration, false );
+
+		/**
+		 * Show aligned input image at registration resolution
+		 */
+
+		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrected, registration ), "aligned input data ( " + settings.outputResolution + " um )", origin(), registrationCalibration, false );
 
 		/**
 		 * Compute final registration
 		 */
 
 		registration = createFinalTransform( inputCalibration, registration, registrationCalibration );
-
-		if ( settings.showIntermediateResults )
-			show( Transforms.createTransformedView( intensityCorrected, registration ), "aligned input data ( " + settings.outputResolution + " um )", origin(), registrationCalibration, false );
 
 		return registration;
 
@@ -401,7 +406,7 @@ public class ShavenBabyRegistration
 		return transform;
 	}
 
-	private Img< BitType > createBitTypeMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
+	private Img< BitType > createMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
 	{
 		final Img< BitType > centralObjectImg = ArrayImgs.bits( dimensions );
 

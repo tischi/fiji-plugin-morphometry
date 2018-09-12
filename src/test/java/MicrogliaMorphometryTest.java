@@ -25,7 +25,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		imagej.ui().showUI();
 
 //		final String path = MicrogliaMorphometryTest.class.getResource( "microglia/MAX_18C__t1-2.tif" ).getFile();
-		String path = "/Users/tischer/Documents/valerie-blanche-petegnief-CORBEL-microglia-quantification/data/MAX_18C__t1-25.tif";
+		String path = "/Users/tischer/Documents/valerie-blanche-petegnief-CORBEL-microglia-quantification/data/MAX_18C.tif";
 
 		final ImagePlus imagePlus = IJ.openImage( path );
 		final Img< T > img = ImageJFunctions.wrapReal( imagePlus );
@@ -37,7 +37,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		settings.maxShortAxisDist = 6;
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 		settings.watershedSeedsLocalMaximaDistanceThreshold = Double.MAX_VALUE;
-		settings.watershedSeedsGlobalDistanceThreshold = 5.0;
+		settings.watershedSeedsGlobalDistanceThreshold = 2.5;
 		settings.interestPointsRadius = 0.5;
 		settings.outputDirectory = new File( path ).getParentFile();
 		settings.inputDataSetName = "test";
@@ -47,7 +47,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		settings.showIntermediateResults = false;
 
 		ArrayList< RandomAccessibleInterval< T > > timepoints = new ArrayList<>();
-		for ( long t = img.min( 2 ); t <= img.max( 2 ); ++t )
+		for ( long t = img.min( 2 ); t <= 10; ++t )
 		{
 			Utils.log( "# Processing timepoint " + t );
 			settings.image = Views.hyperSlice( img, 2, t); // extract time point
@@ -58,6 +58,8 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		RandomAccessibleInterval< T > movie = Views.addDimension( Views.stack( timepoints ), 0, 0 );
 		movie = Views.permute( movie, 3, 4 );
 		ImagePlus show = ImageJFunctions.show( movie, settings.inputDataSetName );
+		IJ.run(show,"Make Composite", "");
+		IJ.run(show, "Grays", "");
 		IJ.saveAsTiff( show, path + "--output.tif" );
 
 

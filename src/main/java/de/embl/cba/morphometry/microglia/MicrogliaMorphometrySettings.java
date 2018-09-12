@@ -53,4 +53,5 @@ public class MicrogliaMorphometrySettings<T extends RealType<T> & NativeType< T 
 	public String inputDataSetName;
 	public boolean returnEarly;
 	public double minimalObjectSize;
+	public boolean splitTouchingObjects = false;
 }

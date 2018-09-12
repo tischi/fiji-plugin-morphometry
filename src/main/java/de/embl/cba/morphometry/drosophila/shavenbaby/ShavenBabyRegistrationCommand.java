@@ -89,6 +89,10 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	@Parameter
 	public double refractiveIndexIntensityCorrectionDecayLength = settings.refractiveIndexIntensityCorrectionDecayLength;
 
+	@Parameter
+	public double watershedSeedsGlobalDistanceThreshold = settings.watershedSeedsGlobalDistanceThreshold;
+
+
 	public void run()
 	{
 		setSettingsFromUI();
@@ -241,13 +245,14 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		Utils.log( "Computing registration...." );
 		final AffineTransform3D registrationTransform = registration.computeRegistration( shavenBaby, calibration );
 
-		Utils.log( "Applying intensity correction to all channels...." );
-		final RandomAccessibleInterval< T > intensityCorrectedImages = RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, calibration[ 2 ], settings.refractiveIndexIntensityCorrectionDecayLength  );
+//
+//		Utils.log( "Applying intensity correction to all channels...." );
+//		final RandomAccessibleInterval< T > intensityCorrectedImages = RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, calibration[ 2 ], settings.refractiveIndexIntensityCorrectionDecayLength  );
+//
+//		Utils.log( "Applying registration to all channels (at a resolution of " + settings.outputResolution + " micrometer) ..." );
+//		final RandomAccessibleInterval< T > registeredImages = Transforms.transformAllChannels( intensityCorrectedImages, registrationTransform );
 
-		Utils.log( "Applying registration to all channels (at a resolution of " + settings.outputResolution + " micrometer) ..." );
-		final RandomAccessibleInterval< T > registeredImages = Transforms.transformAllChannels( intensityCorrectedImages, registrationTransform );
-
-		return registeredImages;
+		return null; //registeredImages;
 	}
 
 	public RandomAccessibleInterval< T > getImages( ImagePlus imagePlus )
@@ -286,6 +291,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		settings.refractiveIndexIntensityCorrectionDecayLength = refractiveIndexIntensityCorrectionDecayLength;
 		settings.thresholdModality = "";
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = thresholdInUnitsOfBackgroundPeakHalfWidth;
+		settings.watershedSeedsGlobalDistanceThreshold = watershedSeedsGlobalDistanceThreshold;
 	}
 
 

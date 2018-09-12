@@ -17,6 +17,7 @@ import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.roi.labeling.LabelingType;
+import net.imglib2.type.BooleanType;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
@@ -269,7 +270,8 @@ public class Algorithms
 		return sizeFilteredObjectsMask;
 	}
 
-	public static RandomAccessibleInterval< BitType > removeSmallObjectsAndReturnMask( RandomAccessibleInterval< BitType > img, double size, double calibration )
+	public static RandomAccessibleInterval< BitType >
+	removeSmallObjectsAndReturnMask( RandomAccessibleInterval< BitType > img, double size, double calibration )
 	{
 		return removeSmallObjectsAndReturnMask( createImgLabeling( img ), size, calibration );
 	}
@@ -288,7 +290,7 @@ public class Algorithms
 	}
 
 
-	public static Img< BitType > createBitTypeMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
+	public static Img< BitType > createMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
 	{
 		final Img< BitType > centralObjectImg = ArrayImgs.bits( dimensions );
 

@@ -110,51 +110,67 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		RandomAccessibleInterval< BitType > closed = mask; //createClosedImage( mask );
 
-//		if ( settings.showIntermediateResults ) show( closed, "closed", null, workingCalibration, false );
+
+		if ( settings.splitTouchingObjects )
+		{
+
+
+			/**
+			 * Distance transform
+			 *
+			 * Note: EUCLIDIAN distances are returned as squared distances
+			 */
+
+			Utils.log( "Distance transform..." );
+
+			final RandomAccessibleInterval< DoubleType > doubleBinary = Converters.convert( closed, ( i, o ) -> o.set( i.get() ? Double.MAX_VALUE : 0 ), new DoubleType() );
+
+			final RandomAccessibleInterval< DoubleType > distance = ArrayImgs.doubles( Intervals.dimensionsAsLongArray( doubleBinary ) );
+
+			DistanceTransform.transform( doubleBinary, distance, DistanceTransform.DISTANCE_TYPE.EUCLIDIAN, 1.0D );
+
+			if ( settings.showIntermediateResults )
+				show( distance, "distance transform", null, workingCalibration, false );
+
+			/**
+			 * Watershed seeds
+			 */
+
+			final ImgLabeling< Integer, IntType > seedsImgLabeling = createWatershedSeeds( workingCalibration, distance, closed );
+
+			/**
+			 * Watershed
+			 */
+
+			Utils.log( "Watershed..." );
+
+			// prepare result label image
+			final Img< IntType > watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
+			final ImgLabeling< Integer, IntType > watershedImgLabeling = new ImgLabeling<>( watershedLabelImg );
+
+			opService.image().watershed(
+					watershedImgLabeling,
+					Utils.invertedView( image ),
+					seedsImgLabeling,
+					false,
+					false );
+
+			Utils.applyMask( watershedLabelImg, closed );
+
+			if ( settings.showIntermediateResults )
+				show( watershedLabelImg, "watershed", null, workingCalibration, false );
+
+		}
 
 
 		/**
-		 * Distance transform
-		 *
-		 * Note: EUCLIDIAN distances are returned as squared distances
+		 * Compute skeleton
 		 */
 
-		Utils.log( "Distance transform..." );
 
-		final RandomAccessibleInterval< DoubleType > doubleBinary = Converters.convert( closed, ( i, o ) -> o.set( i.get() ? Double.MAX_VALUE : 0 ), new DoubleType() );
+		// TODO
 
-		final RandomAccessibleInterval< DoubleType > distance = ArrayImgs.doubles( Intervals.dimensionsAsLongArray( doubleBinary ) );
 
-		DistanceTransform.transform( doubleBinary, distance, DistanceTransform.DISTANCE_TYPE.EUCLIDIAN, 1.0D );
-
-		if ( settings.showIntermediateResults ) show( distance, "distance transform", null, workingCalibration, false );
-
-		/**
-		 * Watershed seeds
-		 */
-
-		final ImgLabeling< Integer, IntType > seedsImgLabeling = createWatershedSeeds( workingCalibration, distance, closed );
-
-		/**
-		 * Watershed
-		 */
-
-		Utils.log( "Watershed..." );
-
-		// prepare result label image
-		final Img< IntType > watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
-		final ImgLabeling< Integer, IntType > watershedImgLabeling = new ImgLabeling<>( watershedLabelImg );
-
-		opService.image().watershed(
-				watershedImgLabeling,
-				Utils.invertedView( image ),
-				seedsImgLabeling,
-				false,
-				false );
-
-		Utils.applyMask( watershedLabelImg, closed );
-
-		if ( settings.showIntermediateResults ) show( watershedLabelImg, "watershed", null, workingCalibration, false );
 
 		/**
 		 * Generate output image
@@ -162,8 +178,6 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		ArrayList< RandomAccessibleInterval< T > > randomAccessibleIntervals = new ArrayList<>();
 		randomAccessibleIntervals.add( image );
-		randomAccessibleIntervals.add( (RandomAccessibleInterval) seedsImgLabeling.getSource() );
-		randomAccessibleIntervals.add( (RandomAccessibleInterval) watershedImgLabeling.getSource() );
 		RandomAccessibleInterval< T > stack = Views.stack( randomAccessibleIntervals );
 
 		return stack;
@@ -237,8 +251,6 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		RandomAccessibleInterval< BitType > mask =
 				Converters.convert( downscaled, ( i, o )
 						-> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
-
-		mask = opService.morphology().fillHoles( mask );
 
 		return mask;
 	}
