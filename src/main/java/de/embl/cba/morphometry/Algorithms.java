@@ -1,10 +1,12 @@
 package de.embl.cba.morphometry;
 
+import de.embl.cba.morphometry.objects.Measurements;
 import net.imglib2.*;
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
+import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImgFactory;
@@ -13,11 +15,7 @@ import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
 import net.imglib2.loops.LoopBuilder;
 import net.imglib2.realtransform.RealViews;
 import net.imglib2.realtransform.Scale;
-import net.imglib2.roi.labeling.ImgLabeling;
-import net.imglib2.roi.labeling.LabelRegion;
-import net.imglib2.roi.labeling.LabelRegions;
-import net.imglib2.roi.labeling.LabelingType;
-import net.imglib2.type.BooleanType;
+import net.imglib2.roi.labeling.*;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
@@ -28,7 +26,9 @@ import net.imglib2.util.LinAlgHelpers;
 import net.imglib2.view.Views;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static de.embl.cba.morphometry.Constants.XYZ;
 import static de.embl.cba.morphometry.Transforms.createTransformedInterval;
@@ -363,4 +363,33 @@ public class Algorithms
 
 		return labeling;
 	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	void copy( RandomAccessibleInterval< T > source, RandomAccessibleInterval< T > target )
+	{
+		final Cursor< T > cursor = Views.iterable( source ).cursor();
+		final RandomAccess< T > randomAccess = target.randomAccess();
+
+		while( cursor.hasNext() )
+		{
+			cursor.fwd();
+			randomAccess.setPosition( cursor );
+			randomAccess.get().set( cursor.get() );
+		}
+
+	}
+
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
+	{
+		Utils.log( "Creating mask...");
+
+		RandomAccessibleInterval< BitType > mask =
+				Converters.convert( downscaled, ( i, o )
+						-> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
+
+		return mask;
+	}
+
 }

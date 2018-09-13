@@ -22,6 +22,7 @@ import net.imglib2.img.basictypeaccess.array.LongArray;
 import net.imglib2.loops.LoopBuilder;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
+import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelingType;
 import net.imglib2.type.BooleanType;
 import net.imglib2.type.NativeType;
@@ -779,5 +780,37 @@ public class Utils
 		double[] array = new double[ 3 ];
 		Arrays.fill( array, value );
 		return array;
+	}
+
+	public static FinalInterval getInterval( LabelRegion labelRegion )
+	{
+		final long[] min = Intervals.minAsLongArray( labelRegion );
+		final long[] max = Intervals.maxAsLongArray( labelRegion );
+		return new FinalInterval( min, max );
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	void drawPoint( RandomAccessibleInterval< T > rai, double[] position, double radius, double calibration )
+	{
+		Shape shape = new HyperSphereShape( (int) ceil( radius / calibration ) );
+		final RandomAccessible< Neighborhood< T > > nra = shape.neighborhoodsRandomAccessible( rai );
+		final RandomAccess< Neighborhood< T > > neighborhoodRandomAccess = nra.randomAccess();
+
+		neighborhoodRandomAccess.setPosition( asLongs( position )  );
+		final Neighborhood< T > neighborhood = neighborhoodRandomAccess.get();
+
+		final Cursor< T > cursor = neighborhood.cursor();
+		while( cursor.hasNext() )
+		{
+			try
+			{
+				cursor.next().setReal( 200 );
+			}
+			catch ( ArrayIndexOutOfBoundsException e )
+			{
+				log( "[ERROR] Draw points out of bounds..." );
+				break;
+			}
+		}
 	}
 }
