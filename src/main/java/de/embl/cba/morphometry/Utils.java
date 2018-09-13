@@ -813,4 +813,18 @@ public class Utils
 			}
 		}
 	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > getEnlargedRai( RandomAccessibleInterval< T > rai )
+	{
+		long[] min = new long[ 2 ];
+		long[] max = new long[ 2 ];
+		rai.max( max );
+		for ( int d = 0; d < 2; ++d )
+		{
+			max[ d ] *= 1.2;
+		}
+		final FinalInterval interval = new FinalInterval( min, max );
+		return Views.interval( Views.extendZero( rai ), interval );
+	}
 }
