@@ -88,9 +88,9 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		final PositionAndValue rightHandHalfMaximum = intensityHistogram.getRightHandHalfMaximum();
 
 		double threshold = ( rightHandHalfMaximum.position - mode.position ) * settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
-
-		Utils.log( "Offset: " + mode.position );
-		Utils.log( "Threshold: " + ( threshold + mode.position ) );
+		double offset = mode.position;
+		Utils.log( "Offset: " + offset );
+		Utils.log( "Threshold: " + ( threshold + offset ) );
 
 		/**
 		 * Create mask
@@ -115,42 +115,33 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		final ImgLabeling< Integer, IntType > imgLabeling = Algorithms.createImgLabeling( mask );
 
 		/**
+		 * Compute skeleton
+		 */
+
+		RandomAccessibleInterval< BitType > skeleton = opService.morphology().thinGuoHall(  mask );
+
+		if ( settings.showIntermediateResults ) show( skeleton, "skeleton", null, workingCalibration, false );
+
+
+		/**
 		 * Compute object measurements
 		 */
 
 		objectMeasurements = new HashMap<>();
 
-		Measurements.measureObjectSumIntensities( objectMeasurements, imgLabeling, image );
+		Measurements.measureObjectSumIntensities( objectMeasurements, imgLabeling, image, "channel01" );
+
+		Measurements.measureObjectSumIntensities( objectMeasurements, imgLabeling, skeleton, "skeleton" );
 
 		Measurements.measureObjectPixelSizes( objectMeasurements, imgLabeling );
 
 		Measurements.measureObjectPosition( objectMeasurements, imgLabeling, workingCalibration );
 
-		/**
-		 * Compute skeleton
-		 */
+		Measurements.addGlobalBackgroundMeasurement( objectMeasurements, imgLabeling, offset );
 
-		// TODO: maybe faster to do this per object?
 
-//		final RandomAccessibleInterval< BitType > skeleton = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
-//		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
-//		for ( LabelRegion labelRegion : labelRegions )
-//		{
-//			final FinalInterval interval = Utils.getInterval( labelRegion );
-//			final IntervalView< BitType > intervalView = Views.interval( mask, interval );
-//			Img< BitType > intervalImgView = ImgView.wrap( intervalView, Util.getSuitableImgFactory( mask, mask.randomAccess().get() ) );
-//			for ( int i = 0; i < 10; ++i )
-//			{
-//				intervalImgView = new Thin().thin( intervalImgView );
-//				// TODO: rather check whether images are same before and after thinnig.
-//			}
-//
-//			final RandomAccessibleInterval< BitType > withAdjustedOrigin = Transforms.getWithAdjustedOrigin( intervalView, intervalImgView );
-//			Algorithms.copy( withAdjustedOrigin, skeleton );
-//
-//		}
-//
-//		if ( settings.showIntermediateResults ) show( skeleton, "skeleton", null, workingCalibration, false );
+
+
 
 
 		/**
@@ -228,9 +219,11 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		 * Generate output image
 		 */
 
+
 		resultImages = new ArrayList<>();
-		resultImages.add( image );
-		resultImages.add( ( RandomAccessibleInterval ) imgLabeling.getSource() );
+		resultImages.add( Utils.getEnlargedRai( image ) );
+		resultImages.add( Utils.getEnlargedRai( ( RandomAccessibleInterval ) imgLabeling.getSource() ) );
+		resultImages.add( Utils.getEnlargedRai( ( RandomAccessibleInterval ) skeleton ) );
 	}
 
 

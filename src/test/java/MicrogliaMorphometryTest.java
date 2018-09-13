@@ -5,8 +5,6 @@ import de.embl.cba.morphometry.objects.Measurements;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Overlay;
-import ij.gui.PointRoi;
-import ij.gui.Roi;
 import ij.gui.TextRoi;
 import net.imagej.ImageJ;
 import net.imglib2.RandomAccessibleInterval;
@@ -52,11 +50,11 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 
 		settings.showIntermediateResults = false;
 
-
 		ArrayList< RandomAccessibleInterval< T > > timepoints = new ArrayList<>();
 		ArrayList< HashMap > measurements = new ArrayList<>();
 
-		long tMax = 1;
+		long tMax = img.max( 2 );
+
 		for ( long t = img.min( 2 ); t <= tMax; ++t )
 		{
 			Utils.log( "# Processing timepoint " + t );
@@ -82,17 +80,22 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 			for ( Object label : hashMap.keySet() )
 			{
 				final Map< String, Object > objectMeasurements = ( Map< String, Object > ) hashMap.get( label );
-				// TODO: are ROI positions calibrated?
-				String text = "";
 
+				long correctedSumIntensity = getCorrectedSumIntensity( objectMeasurements );
+
+				String text = "";
 				text += label;
-				text += ", " + objectMeasurements.get( Measurements.PIXEL_SIZE );
-				text += ", " + objectMeasurements.get( Measurements.SUM_INTENSITY );
-				final double[] position = ( double[] ) objectMeasurements.get( Measurements.CALIBRATED_POSITION );
-				final TextRoi textRoi = new TextRoi( position[ 0 ] / settings.workingVoxelSize, position[ 1 ] / settings.workingVoxelSize, text );
+				text += ", " + objectMeasurements.get( Measurements.SIZE_PIXEL_UNITS );
+				text += ", " + correctedSumIntensity;
+				text += ", " + objectMeasurements.get( Measurements.SUM_INTENSITY + "_skeleton" );
+
+				double[] pixelPosition = getPixelPosition( settings, objectMeasurements );
+
+				final TextRoi textRoi = new TextRoi( pixelPosition[ 0 ], pixelPosition[ 1 ], text );
 				textRoi.setPosition( 1,1, (int) ( t+1 ) );
 				textRoi.setCurrentFont( font );
 				overlay.add( textRoi );
+
 			}
 		}
 
@@ -100,6 +103,26 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		final Overlay overlay1 = show.getOverlay();
 		int a = 1;
 
+	}
+
+	public double[] getPixelPosition( MicrogliaMorphometrySettings settings, Map< String, Object > objectMeasurements )
+	{
+		final double[] position = ( double[] ) objectMeasurements.get( Measurements.CALIBRATED_POSITION );
+
+		double[] pixelPosition = new double[ position.length ];
+		for ( int d = 0; d < pixelPosition.length; ++d )
+		{
+			pixelPosition[ d ] = position[ d ] / settings.workingVoxelSize;
+		}
+		return pixelPosition;
+	}
+
+	public long getCorrectedSumIntensity( Map< String, Object > objectMeasurements )
+	{
+		final long sumIntensity = ( long ) objectMeasurements.get( Measurements.SUM_INTENSITY + "_channel01" );
+		final long size = ( long ) objectMeasurements.get( Measurements.SIZE_PIXEL_UNITS );
+		final double bgIntensity = ( double ) objectMeasurements.get( Measurements.GOBAL_BACKGROUND_INTENSITY );
+		return (long) ( sumIntensity - ( bgIntensity * size ) );
 	}
 
 	public static void main( String... args )
