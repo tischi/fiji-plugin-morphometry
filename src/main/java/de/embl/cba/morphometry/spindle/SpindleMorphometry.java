@@ -110,7 +110,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Extracting metaphase plate object..." );
 
-		final ImgLabeling< Integer, IntType > labelImg = Algorithms.createImgLabeling( closed );
+		final ImgLabeling< Integer, IntType > labelImg = Utils.asImgLabeling( closed );
 
 		final LabelRegion< Integer > largestObject = Algorithms.getLargestObject( labelImg );
 
@@ -353,7 +353,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				globalDistanceThreshold,
 				localMaximaDistanceThreshold );
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = Algorithms.createImgLabeling( seeds );
+		final ImgLabeling< Integer, IntType > seedsLabelImg = Utils.asImgLabeling( seeds );
 
 		if ( settings.showIntermediateResults ) show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, registrationCalibration, false );
 		return seedsLabelImg;

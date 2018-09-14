@@ -8,6 +8,7 @@ import net.imagej.Dataset;
 import net.imagej.axis.LinearAxis;
 import net.imglib2.*;
 import net.imglib2.algorithm.gauss3.Gauss3;
+import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
@@ -598,6 +599,13 @@ public class Utils
 		return copy;
 	}
 
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > copyAsEmptyArrayImg( RandomAccessibleInterval< T > rai )
+	{
+		RandomAccessibleInterval< T > copy = new ArrayImgFactory( rai.randomAccess().get() ).create( rai );
+		copy = Transforms.getWithAdjustedOrigin( rai, copy );
+		return copy;
+	}
 
 	public static < T extends RealType< T > & NativeType< T > >
 	long[] getCenterLocation( RandomAccessibleInterval< T > rai )
@@ -768,7 +776,7 @@ public class Utils
 		return Views.interval( Views.extendZero( rai ), interval );
 	}
 
-	public static RandomAccessibleInterval< BitType > labelRegionToMask( LabelRegion labelRegion )
+	public static RandomAccessibleInterval< BitType > asMask( LabelRegion labelRegion )
 	{
 		RandomAccessibleInterval< BitType > rai = ArrayImgs.bits( Intervals.dimensionsAsLongArray( labelRegion ) );
 		rai = Transforms.getWithAdjustedOrigin( labelRegion, rai  );
@@ -822,5 +830,34 @@ public class Utils
 		{
 			cursor.next().setReal( value );
 		}
+	}
+
+	public static < T extends RealType< T > & NativeType< T >  >
+	ImgLabeling< Integer, IntType > asImgLabeling( RandomAccessibleInterval< T > rai )
+	{
+		RandomAccessibleInterval< IntType > labelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( rai ) );
+		labelImg = Transforms.getWithAdjustedOrigin( rai, labelImg );
+		final ImgLabeling< Integer, IntType > labeling = new ImgLabeling<>( labelImg );
+
+		final java.util.Iterator< Integer > labelCreator = new java.util.Iterator< Integer >()
+		{
+			int id = 0;
+
+			@Override
+			public boolean hasNext()
+			{
+				return true;
+			}
+
+			@Override
+			public synchronized Integer next()
+			{
+				return id++;
+			}
+		};
+
+		ConnectedComponents.labelAllConnectedComponents( ( RandomAccessible ) Views.extendBorder( rai ), labeling, labelCreator, ConnectedComponents.StructuringElement.EIGHT_CONNECTED );
+
+		return labeling;
 	}
 }

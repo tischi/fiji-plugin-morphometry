@@ -1,9 +1,10 @@
 package de.embl.cba.morphometry;
 
+import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.gauss3.Gauss3;
-import net.imglib2.algorithm.labeling.ConnectedComponents;
+import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
@@ -12,6 +13,7 @@ import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
 import net.imglib2.loops.LoopBuilder;
 import net.imglib2.realtransform.RealViews;
@@ -22,6 +24,7 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
 import net.imglib2.view.Views;
@@ -231,7 +234,7 @@ public class Algorithms
 	{
 		RandomAccessibleInterval< BitType > sizeFilteredObjects = removeSmallObjectsAndReturnMask( labeling, size, calibration );
 
-		ImgLabeling< Integer, IntType > labelImg = createImgLabeling( sizeFilteredObjects );
+		ImgLabeling< Integer, IntType > labelImg = Utils.asImgLabeling( sizeFilteredObjects );
 		return labelImg;
 	}
 
@@ -258,7 +261,7 @@ public class Algorithms
 	public static RandomAccessibleInterval< BitType >
 	removeSmallObjectsAndReturnMask( RandomAccessibleInterval< BitType > img, double size, double calibration )
 	{
-		return removeSmallObjectsAndReturnMask( createImgLabeling( img ), size, calibration );
+		return removeSmallObjectsAndReturnMask( Utils.asImgLabeling( img ), size, calibration );
 	}
 
 	private static void drawObject( RandomAccessibleInterval< BitType > img, LabelRegion labelRegion )
@@ -318,35 +321,6 @@ public class Algorithms
 		final double angleInDegrees = angleInRadians * 180.0 / Math.PI;
 
 		return angleInRadians;
-	}
-
-	public static < T extends RealType< T > & NativeType< T >  >
-	ImgLabeling< Integer, IntType > createImgLabeling( RandomAccessibleInterval< T > rai )
-	{
-		RandomAccessibleInterval< IntType > labelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( rai ) );
-		labelImg = Transforms.getWithAdjustedOrigin( rai, labelImg );
-		final ImgLabeling< Integer, IntType > labeling = new ImgLabeling<>( labelImg );
-
-		final java.util.Iterator< Integer > labelCreator = new java.util.Iterator< Integer >()
-		{
-			int id = 0;
-
-			@Override
-			public boolean hasNext()
-			{
-				return true;
-			}
-
-			@Override
-			public synchronized Integer next()
-			{
-				return id++;
-			}
-		};
-
-		ConnectedComponents.labelAllConnectedComponents( ( RandomAccessible ) Views.extendBorder( rai ), labeling, labelCreator, ConnectedComponents.StructuringElement.EIGHT_CONNECTED );
-
-		return labeling;
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
@@ -424,7 +398,6 @@ public class Algorithms
 	public static < T extends RealType< T > & NativeType< T > >
 	ArrayList< PositionAndValue > getLocalMaxima( RandomAccessibleInterval< T > rai, Shape shape, double threshold )
 	{
-
 		final ArrayList< PositionAndValue > maxima = new ArrayList<>();
 
 		RandomAccessible< Neighborhood< T > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendPeriodic( rai ) );
@@ -470,11 +443,13 @@ public class Algorithms
 	}
 
 
-	public static < T extends RealType< T > & NativeType< T > > void splitTouchingObjects(
-			ImgLabeling<Integer, IntType> imgLabeling,
-			HashMap<Integer, Integer> numObjectsPerRegion,
-			RandomAccessibleInterval<T> image,
-			long minimumObjectPixelWidth )
+	public static < T extends RealType< T > & NativeType< T > >
+	void splitTouchingObjects(
+			ImgLabeling< Integer, IntType > imgLabeling,
+			HashMap< Integer, Integer > numObjectsPerRegion,
+			RandomAccessibleInterval< T > image,
+			long minimumObjectPixelWidth,
+			OpService opService )
 	{
 		final LabelRegions labelRegions = new LabelRegions( imgLabeling );
 
@@ -482,12 +457,43 @@ public class Algorithms
 		{
 			if ( numObjectsPerRegion.get( label ) > 1 )
 			{
-				final RandomAccessibleInterval< T > maskedAndCropped = Utils.getMaskedAndCropped( image, labelRegions.getLabelRegion( label ) );
+				final RandomAccessibleInterval< T > maskedAndCropped = Views.zeroMin( Utils.getMaskedAndCropped( image, labelRegions.getLabelRegion( label ) ) );
+				final RandomAccessibleInterval< BitType > mask = Views.zeroMin( Utils.asMask( labelRegions.getLabelRegion( label ) ) );
+
 				final ArrayList< PositionAndValue > localMaxima = Algorithms.getLocalMaxima( maskedAndCropped, new HyperSphereShape( minimumObjectPixelWidth ), 0.0 );
-				
+
+				final RandomAccessibleInterval< T > seeds = Utils.copyAsEmptyArrayImg( maskedAndCropped );
+				final RandomAccess< T > randomAccess = seeds.randomAccess();
+				for ( int i = 0; i < numObjectsPerRegion.get( label ); ++i )
+				{
+					randomAccess.setPosition( Utils.asLongs( localMaxima.get( i ).position ) );
+					randomAccess.get().setOne();
+				}
+
+				final ImgLabeling< Integer, IntType > watershedImgLabeling = getEmptyImgLabeling( mask );
+				final ImgLabeling< Integer, IntType > seedsImgLabeling = Utils.asImgLabeling( seeds );
+
+				opService.image().watershed(
+						watershedImgLabeling,
+						Utils.invertedView( maskedAndCropped ),
+						seedsImgLabeling,
+						true,
+						true );
+
+				Utils.applyMask( watershedImgLabeling.getSource(), mask );
+
+				ImageJFunctions.show( seedsImgLabeling.getSource() );
+				ImageJFunctions.show( watershedImgLabeling.getSource() );
 
 			}
 		}
 
+	}
+
+	public static ImgLabeling< Integer, IntType > getEmptyImgLabeling( RandomAccessibleInterval< BitType > mask )
+	{
+		RandomAccessibleInterval< IntType > watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
+		watershedLabelImg = Transforms.getWithAdjustedOrigin( mask, watershedLabelImg );
+		return new ImgLabeling<>( watershedLabelImg );
 	}
 }
