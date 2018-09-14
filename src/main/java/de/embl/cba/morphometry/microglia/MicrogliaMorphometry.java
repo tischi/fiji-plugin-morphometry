@@ -131,7 +131,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		HashMap< Integer, Integer > numObjectsPerRegion = getNumObjectsFromSkeleton( imgLabeling, skeleton, settings );
 
 
-		Algorithms.splitTouchingObjects( imgLabeling, numObjectsPerRegion, image );
+		Algorithms.splitTouchingObjects( imgLabeling, numObjectsPerRegion, image, ( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ) );
 
 
 		/**

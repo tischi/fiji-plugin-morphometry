@@ -137,7 +137,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		if ( settings.showIntermediateResults ) show( alignedDapi, "aligned image", null, workingCalibration, false );
 
 		RandomAccessibleInterval< T > interestPoints = Utils.copyAsArrayImg( dapi );
-		Algorithms.setValues( interestPoints, 0.0 );
+		Utils.setValues( interestPoints, 0.0 );
 
 		final double[] dnaCenter = new double[ 3 ];
 		alignmentTransform.inverse().apply( new double[]{0,0,0}, dnaCenter );
