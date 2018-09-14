@@ -319,7 +319,7 @@ public class ShavenBabyRegistration
 				globalDistanceThreshold,
 				localMaximaDistanceThreshold );
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = Algorithms.createImgLabeling( seeds );
+		final ImgLabeling< Integer, IntType > seedsLabelImg = Utils.asImgLabeling( seeds );
 
 		if ( settings.showIntermediateResults ) show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, registrationCalibration, false );
 		return seedsLabelImg;

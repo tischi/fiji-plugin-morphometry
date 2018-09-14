@@ -113,7 +113,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		 * Get objects
 		 */
 
-		final ImgLabeling< Integer, IntType > imgLabeling = Algorithms.createImgLabeling( mask );
+		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask );
 
 		/**
 		 * Compute skeleton
@@ -131,7 +131,12 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		HashMap< Integer, Integer > numObjectsPerRegion = getNumObjectsFromSkeleton( imgLabeling, skeleton, settings );
 
 
-		Algorithms.splitTouchingObjects( imgLabeling, numObjectsPerRegion, image, ( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ) );
+		Algorithms.splitTouchingObjects(
+				imgLabeling,
+				numObjectsPerRegion,
+				image,
+				( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
+				opService );
 
 
 		/**
@@ -174,49 +179,48 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		RandomAccessibleInterval< BitType > closed = mask; //createClosedImage( mask );
 
 
+
+		Utils.log( "Distance transform..." );
+
+		final RandomAccessibleInterval< DoubleType > doubleBinary = Converters.convert( closed, ( i, o ) -> o.set( i.get() ? Double.MAX_VALUE : 0 ), new DoubleType() );
+
+		final RandomAccessibleInterval< DoubleType > distance = ArrayImgs.doubles( Intervals.dimensionsAsLongArray( doubleBinary ) );
+
+		DistanceTransform.transform( doubleBinary, distance, DistanceTransform.DISTANCE_TYPE.EUCLIDIAN, 1.0D );
+
+		if ( settings.showIntermediateResults )
+			show( distance, "distance transform", null, workingCalibration, false );
+
+		/**
+		 * Watershed seeds
+		 */
+
+		final ImgLabeling< Integer, IntType > seedsImgLabeling = createWatershedSeeds( workingCalibration, distance, closed );
+
+		/**
+		 * Watershed
+		 */
+
+		Utils.log( "Watershed..." );
+
+		// prepare result label image
+		final Img< IntType > watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
+		final ImgLabeling< Integer, IntType > watershedImgLabeling = new ImgLabeling<>( watershedLabelImg );
+
+		opService.image().watershed(
+				watershedImgLabeling,
+				Utils.invertedView( image ),
+				seedsImgLabeling,
+				false,
+				false );
+
+
+
 		if ( settings.splitTouchingObjects )
 		{
 
 
-			/**
-			 * Distance transform
-			 *
-			 * Note: EUCLIDIAN distances are returned as squared distances
-			 */
 
-			Utils.log( "Distance transform..." );
-
-			final RandomAccessibleInterval< DoubleType > doubleBinary = Converters.convert( closed, ( i, o ) -> o.set( i.get() ? Double.MAX_VALUE : 0 ), new DoubleType() );
-
-			final RandomAccessibleInterval< DoubleType > distance = ArrayImgs.doubles( Intervals.dimensionsAsLongArray( doubleBinary ) );
-
-			DistanceTransform.transform( doubleBinary, distance, DistanceTransform.DISTANCE_TYPE.EUCLIDIAN, 1.0D );
-
-			if ( settings.showIntermediateResults )
-				show( distance, "distance transform", null, workingCalibration, false );
-
-			/**
-			 * Watershed seeds
-			 */
-
-			final ImgLabeling< Integer, IntType > seedsImgLabeling = createWatershedSeeds( workingCalibration, distance, closed );
-
-			/**
-			 * Watershed
-			 */
-
-			Utils.log( "Watershed..." );
-
-			// prepare result label image
-			final Img< IntType > watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
-			final ImgLabeling< Integer, IntType > watershedImgLabeling = new ImgLabeling<>( watershedLabelImg );
-
-			opService.image().watershed(
-					watershedImgLabeling,
-					Utils.invertedView( image ),
-					seedsImgLabeling,
-					false,
-					false );
 
 			Utils.applyMask( watershedLabelImg, closed );
 
@@ -267,7 +271,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 				globalDistanceThreshold,
 				localMaximaDistanceThreshold );
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = Algorithms.createImgLabeling( seeds );
+		final ImgLabeling< Integer, IntType > seedsLabelImg = Utils.asImgLabeling( seeds );
 
 		if ( settings.showIntermediateResults ) show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, registrationCalibration, false );
 
