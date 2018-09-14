@@ -655,63 +655,6 @@ public class Utils
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< BitType > createSeeds( RandomAccessibleInterval< T > distance, Shape shape, double globalThreshold, double localThreshold )
-	{
-
-		RandomAccessibleInterval< BitType > maxima = ArrayImgs.bits( Intervals.dimensionsAsLongArray( distance ) );
-		maxima = Transforms.getWithAdjustedOrigin( distance, maxima );
-
-		RandomAccessible< Neighborhood< T > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendPeriodic( distance ) );
-		RandomAccessibleInterval< Neighborhood< T > > neighborhoodsInterval = Views.interval( neighborhoods, distance );
-
-		final Cursor< Neighborhood< T > > neighborhoodCursor = Views.iterable( neighborhoodsInterval ).cursor();
-		final RandomAccess< T > distanceRandomAccess = distance.randomAccess();
-		final RandomAccess< BitType > maximaRandomAccess = maxima.randomAccess();
-
-		while ( neighborhoodCursor.hasNext() )
-		{
-			final Neighborhood< T > neighborhood = neighborhoodCursor.next();
-			maximaRandomAccess.setPosition( neighborhood );
-			distanceRandomAccess.setPosition( neighborhood );
-
-			T centerValue = distanceRandomAccess.get();
-
-			if ( centerValue.getRealDouble() > globalThreshold )
-			{
-				maximaRandomAccess.get().set( true );
-			}
-			else if ( isLateralBoundaryPixel( neighborhood, distance ) && distanceRandomAccess.get().getRealDouble() >  0 )
-			{
-				maximaRandomAccess.get().set( true );
-			}
-			else if ( isCenterLargestOrEqual( centerValue, neighborhood ) )
-			{
-				if ( centerValue.getRealDouble() > localThreshold )
-				{
-					// local maximum and larger than local Threshold
-					maximaRandomAccess.get().set( true );
-				}
-			}
-
-		}
-
-		return maxima;
-	}
-
-	private static < T extends RealType< T > & NativeType< T > >
-	boolean isCenterLargestOrEqual( T center, Neighborhood< T > neighborhood )
-	{
-		for( T neighbor : neighborhood )
-		{
-			if( neighbor.compareTo( center ) > 0 )
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-
-	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > invertedView( RandomAccessibleInterval< T > input )
 	{
 		final double maximum = Algorithms.getMaximumValue( input );

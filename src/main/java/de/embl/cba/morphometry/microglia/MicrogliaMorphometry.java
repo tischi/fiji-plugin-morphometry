@@ -6,6 +6,7 @@ import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
+import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -21,6 +22,7 @@ import net.imglib2.view.Views;
 
 import java.util.*;
 
+import static de.embl.cba.morphometry.Algorithms.getLocalMaxima;
 import static de.embl.cba.morphometry.Transforms.getScalingFactors;
 import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
 
@@ -68,6 +70,8 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		if ( settings.showIntermediateResults ) show( image, "image isotropic resolution", null, workingCalibration, false );
 
+		final ArrayList< PositionAndValue > localMaxima = getLocalMaxima( image, new HyperSphereShape( 7 ), 0 );
+
 
 		/**
 		 *  Smooth
@@ -83,9 +87,9 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		final IntensityHistogram intensityHistogram = new IntensityHistogram( image, settings.maxPossibleValueInDataSet, 2 );
 
-		PositionAndValue mode = intensityHistogram.getMode();
+		CoordinateAndValue mode = intensityHistogram.getMode();
 
-		final PositionAndValue rightHandHalfMaximum = intensityHistogram.getRightHandHalfMaximum();
+		final CoordinateAndValue rightHandHalfMaximum = intensityHistogram.getRightHandHalfMaximum();
 
 		double threshold = ( rightHandHalfMaximum.position - mode.position ) * settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
 		double offset = mode.position;
@@ -119,6 +123,8 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		 */
 
 		RandomAccessibleInterval< BitType > skeleton = opService.morphology().thinGuoHall(  mask );
+
+
 
 		if ( settings.showIntermediateResults ) show( skeleton, "skeleton", null, workingCalibration, false );
 
@@ -236,7 +242,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.workingVoxelSize, 2 );
 		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.workingVoxelSize, 2 );
 
-		final RandomAccessibleInterval< BitType >  seeds = Utils.createSeeds(
+		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createSeeds(
 				distance,
 				new HyperSphereShape( 1 ),
 				globalDistanceThreshold,

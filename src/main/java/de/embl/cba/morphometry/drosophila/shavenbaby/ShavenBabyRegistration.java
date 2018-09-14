@@ -89,9 +89,9 @@ public class ShavenBabyRegistration
 
 		final IntensityHistogram intensityHistogram = new IntensityHistogram( downscaled, 65535.0, 5.0 );
 
-		PositionAndValue mode = intensityHistogram.getMode();
+		CoordinateAndValue mode = intensityHistogram.getMode();
 
-		final PositionAndValue rightHandHalfMaximum = intensityHistogram.getRightHandHalfMaximum();
+		final CoordinateAndValue rightHandHalfMaximum = intensityHistogram.getRightHandHalfMaximum();
 
 		double thresholdAfterIntensityCorrection = ( rightHandHalfMaximum.position - mode.position ) * settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
 
@@ -313,7 +313,7 @@ public class ShavenBabyRegistration
 		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.registrationResolution, 2 );
 		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.registrationResolution, 2 );
 
-		final RandomAccessibleInterval< BitType >  seeds = Utils.createSeeds(
+		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createSeeds(
 				distance,
 				new HyperSphereShape( 1 ),
 				globalDistanceThreshold,
