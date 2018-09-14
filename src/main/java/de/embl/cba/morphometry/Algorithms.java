@@ -1,6 +1,5 @@
 package de.embl.cba.morphometry;
 
-import de.embl.cba.morphometry.objects.Measurements;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.gauss3.Gauss3;
@@ -483,4 +482,18 @@ public class Algorithms
 	}
 
 
+	public static < T extends RealType< T > & NativeType< T > > void splitTouchingObjects( ImgLabeling<Integer, IntType> imgLabeling, HashMap<Integer, Integer> numObjectsPerRegion, RandomAccessibleInterval<T> image )
+	{
+		final LabelRegions labelRegions = new LabelRegions( imgLabeling );
+
+		for ( int label : numObjectsPerRegion.keySet() )
+		{
+			if ( numObjectsPerRegion.get( label ) > 1 )
+			{
+				Utils.labelRegionToMask( labelRegions.getLabelRegion( label ) );
+
+			}
+		}
+
+	}
 }

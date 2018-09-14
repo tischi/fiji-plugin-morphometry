@@ -54,4 +54,5 @@ public class MicrogliaMorphometrySettings<T extends RealType<T> & NativeType< T 
 	public boolean returnEarly;
 	public double minimalObjectSize;
 	public boolean splitTouchingObjects = false;
+	public double skeletonMaxLength;
 }

@@ -19,10 +19,12 @@ import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.LongArray;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.loops.LoopBuilder;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
+import net.imglib2.roi.labeling.LabelRegionCursor;
 import net.imglib2.roi.labeling.LabelingType;
 import net.imglib2.type.BooleanType;
 import net.imglib2.type.NativeType;
@@ -769,5 +771,24 @@ public class Utils
 		}
 		final FinalInterval interval = new FinalInterval( min, max );
 		return Views.interval( Views.extendZero( rai ), interval );
+	}
+
+	public static void labelRegionToMask( LabelRegion labelRegion )
+	{
+		RandomAccessibleInterval< BitType > rai = ArrayImgs.bits( Intervals.dimensionsAsLongArray( labelRegion ) );
+		rai = Transforms.getWithAdjustedOrigin( labelRegion, rai  );
+		final RandomAccess< BitType > randomAccess = rai.randomAccess();
+
+		final LabelRegionCursor cursor = labelRegion.cursor();
+
+		while ( cursor.hasNext() )
+		{
+			cursor.fwd();
+			randomAccess.setPosition( cursor );
+			randomAccess.get().set( true );
+		}
+
+		ImageJFunctions.show( rai );
+
 	}
 }
