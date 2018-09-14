@@ -46,6 +46,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		settings.outputDirectory = new File( path ).getParentFile();
 		settings.inputDataSetName = "test";
 		settings.returnEarly = true;
+		settings.skeletonMaxLength = 600 * settings.workingVoxelSize;
 		settings.minimalObjectSize = 30;
 
 		settings.showIntermediateResults = false;
@@ -53,7 +54,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		ArrayList< RandomAccessibleInterval< T > > timepoints = new ArrayList<>();
 		ArrayList< HashMap > measurements = new ArrayList<>();
 
-		long tMax = img.max( 2 );
+		long tMax = 0; //img.max( 2 );
 
 		for ( long t = img.min( 2 ); t <= tMax; ++t )
 		{
@@ -85,9 +86,9 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 
 				String text = "";
 				text += label;
-				text += ", " + objectMeasurements.get( Measurements.SIZE_PIXEL_UNITS );
-				text += ", " + correctedSumIntensity;
-				text += ", " + objectMeasurements.get( Measurements.SUM_INTENSITY + "_skeleton" );
+				text += ", size: " + objectMeasurements.get( Measurements.SIZE_PIXEL_UNITS );
+				text += ", intens: " + correctedSumIntensity;
+				text += ", skel: " + Math.round( settings.workingVoxelSize * (long) objectMeasurements.get( Measurements.SUM_INTENSITY + "_skeleton" ) );
 
 				double[] pixelPosition = getPixelPosition( settings, objectMeasurements );
 

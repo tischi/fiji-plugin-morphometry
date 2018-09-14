@@ -6,7 +6,6 @@ import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
-import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -22,7 +21,6 @@ import net.imglib2.view.Views;
 
 import java.util.*;
 
-import static de.embl.cba.morphometry.Algorithms.getLocalMaxima;
 import static de.embl.cba.morphometry.Transforms.getScalingFactors;
 import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
 
@@ -69,9 +67,8 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		final RandomAccessibleInterval< T > image = Algorithms.createIsotropicArrayImg( settings.image, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
 		if ( settings.showIntermediateResults ) show( image, "image isotropic resolution", null, workingCalibration, false );
-
-		final ArrayList< PositionAndValue > localMaxima = getLocalMaxima( image, new HyperSphereShape( 7 ), 0 );
-
+		
+		
 
 		/**
 		 *  Smooth
@@ -122,11 +119,19 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		 * Compute skeleton
 		 */
 
+		// TODO: smooth boundaries to have less of a skeleton
+
 		RandomAccessibleInterval< BitType > skeleton = opService.morphology().thinGuoHall(  mask );
-
-
-
+		
 		if ( settings.showIntermediateResults ) show( skeleton, "skeleton", null, workingCalibration, false );
+
+
+		// final ArrayList< PositionAndValue > localMaxima = getLocalMaxima( image, new HyperSphereShape( 7 ), 0 );
+
+		HashMap< Integer, Integer > numObjectsPerRegion = getNumObjectsFromSkeleton( imgLabeling, skeleton, settings );
+
+
+		Algorithms.splitTouchingObjects( imgLabeling, numObjectsPerRegion, image );
 
 
 		/**
@@ -230,6 +235,20 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		resultImages.add( Utils.getEnlargedRai( image ) );
 		resultImages.add( Utils.getEnlargedRai( ( RandomAccessibleInterval ) imgLabeling.getSource() ) );
 		resultImages.add( Utils.getEnlargedRai( ( RandomAccessibleInterval ) skeleton ) );
+	}
+
+	public static HashMap< Integer, Integer > getNumObjectsFromSkeleton( ImgLabeling< Integer, IntType > imgLabeling, RandomAccessibleInterval< BitType > skeleton, MicrogliaMorphometrySettings settings )
+	{
+		HashMap< Integer, Map< String, Object > > skeletonMeasurements = new HashMap<>();
+		Measurements.measureObjectSumIntensities( skeletonMeasurements, imgLabeling, skeleton, "skeleton" );
+		HashMap< Integer, Integer > numObjects = new HashMap<>();
+		for ( int label : skeletonMeasurements.keySet() )
+		{
+			final double skeletonLength = settings.workingVoxelSize * (long) skeletonMeasurements.get( label ).get( Measurements.SUM_INTENSITY + "_skeleton" );
+			int n = (int) ( Math.ceil( skeletonLength / settings.skeletonMaxLength ) );
+			numObjects.put( label, n );
+		}
+		return numObjects;
 	}
 
 

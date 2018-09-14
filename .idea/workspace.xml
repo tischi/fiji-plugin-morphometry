@@ -15,14 +15,14 @@
       <file leaf-file-name="MicrogliaMorphometry.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/microglia/MicrogliaMorphometry.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="380">
-              <caret line="73" column="0" lean-forward="false" selection-start-line="73" selection-start-column="0" selection-end-line="73" selection-end-column="0" />
+            <state relative-caret-position="491">
+              <caret line="133" column="19" lean-forward="false" selection-start-line="133" selection-start-column="19" selection-end-line="133" selection-end-column="19" />
               <folding>
                 <element signature="imports" expanded="true" />
-                <element signature="e#1537#1538#0" expanded="true" />
-                <element signature="e#1578#1579#0" expanded="true" />
-                <element signature="e#1656#1657#0" expanded="true" />
-                <element signature="e#1688#1689#0" expanded="true" />
+                <element signature="e#1423#1424#0" expanded="true" />
+                <element signature="e#1464#1465#0" expanded="true" />
+                <element signature="e#1542#1543#0" expanded="true" />
+                <element signature="e#1574#1575#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -31,8 +31,18 @@
       <file leaf-file-name="Utils.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Utils.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="139">
-              <caret line="656" column="4" lean-forward="false" selection-start-line="656" selection-start-column="4" selection-end-line="656" selection-end-column="4" />
+            <state relative-caret-position="65">
+              <caret line="775" column="32" lean-forward="false" selection-start-line="775" selection-start-column="32" selection-end-line="775" selection-end-column="32" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="LabelRegionCursor.class" pinned="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/net/imglib2/imglib2-roi/0.5.2/imglib2-roi-0.5.2.jar!/net/imglib2/roi/labeling/LabelRegionCursor.class">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="48">
+              <caret line="14" column="13" lean-forward="false" selection-start-line="14" selection-start-column="13" selection-end-line="14" selection-end-column="13" />
               <folding />
             </state>
           </provider>
@@ -41,38 +51,18 @@
       <file leaf-file-name="MicrogliaMorphometryTest.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/test/java/MicrogliaMorphometryTest.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="255">
-              <caret line="56" column="0" lean-forward="false" selection-start-line="56" selection-start-column="0" selection-end-line="56" selection-end-column="0" />
+            <state relative-caret-position="186">
+              <caret line="69" column="0" lean-forward="false" selection-start-line="69" selection-start-column="0" selection-end-line="69" selection-end-column="0" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Overlay.java" pinned="false" current-in-tab="false">
-        <entry file="jar://$MAVEN_REPOSITORY$/net/imagej/ij/1.52d/ij-1.52d-sources.jar!/ij/gui/Overlay.java">
+      <file leaf-file-name="MicrogliaMorphometrySettings.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/microglia/MicrogliaMorphometrySettings.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="243">
-              <caret line="34" column="16" lean-forward="false" selection-start-line="34" selection-start-column="16" selection-end-line="34" selection-end-column="16" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="TextRoi.java" pinned="false" current-in-tab="false">
-        <entry file="jar://$MAVEN_REPOSITORY$/net/imagej/ij/1.52d/ij-1.52d-sources.jar!/ij/gui/TextRoi.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="281">
-              <caret line="77" column="9" lean-forward="false" selection-start-line="77" selection-start-column="9" selection-end-line="77" selection-end-column="9" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="pom.xml" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/pom.xml">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1403">
-              <caret line="11" column="28" lean-forward="false" selection-start-line="11" selection-start-column="28" selection-end-line="11" selection-end-column="28" />
+            <state relative-caret-position="504">
+              <caret line="56" column="18" lean-forward="false" selection-start-line="56" selection-start-column="18" selection-end-line="56" selection-end-column="18" />
               <folding />
             </state>
           </provider>
@@ -81,11 +71,21 @@
       <file leaf-file-name="Algorithms.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Algorithms.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="532">
-              <caret line="466" column="85" lean-forward="false" selection-start-line="466" selection-start-column="85" selection-end-line="466" selection-end-column="85" />
+            <state relative-caret-position="417">
+              <caret line="492" column="39" lean-forward="false" selection-start-line="492" selection-start-column="39" selection-end-line="492" selection-end-column="39" />
               <folding>
-                <marker date="1536930193000" expanded="true" signature="11588:11591" ph="{...}" />
+                <marker date="1536933891000" expanded="true" signature="11535:11538" ph="{...}" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Measurements.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/objects/Measurements.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="240">
+              <caret line="82" column="0" lean-forward="false" selection-start-line="82" selection-start-column="0" selection-end-line="82" selection-end-column="0" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -155,7 +155,10 @@
       <find>opSe</find>
       <find>localMa</find>
       <find>sort</find>
+      <find>region</find>
+      <find>.bits</find>
       <find>createSe</find>
+      <find>labelRegion</find>
     </findStrings>
     <replaceStrings>
       <replace>fiji-plugin-morphometry</replace>
@@ -176,7 +179,6 @@
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Transforms.java" />
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/geometry/Ellipsoids.java" />
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/spindle/SpindleMorphometry.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/microglia/MicrogliaMorphometrySettings.java" />
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/drosophila/shavenbaby/ShavenBabyRegistration.java" />
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/drosophila/shavenbaby/ShavenBabyRegistrationSettings.java" />
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/drosophila/shavenbaby/ShavenBabyRegistrationCommand.java" />
@@ -184,13 +186,14 @@
         <option value="$PROJECT_DIR$/src/test/java/SpindleMorphometryAutoMicTableTest.java" />
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/objects/Feature.java" />
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/objects/ObjectFeatures.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/objects/Measurements.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Utils.java" />
-        <option value="$PROJECT_DIR$/src/test/java/MicrogliaMorphometryTest.java" />
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Position1dAndValue.java" />
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/CoordinateAndValue.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/microglia/MicrogliaMorphometry.java" />
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/PositionAndValue.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/microglia/MicrogliaMorphometrySettings.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/objects/Measurements.java" />
+        <option value="$PROJECT_DIR$/src/test/java/MicrogliaMorphometryTest.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/microglia/MicrogliaMorphometry.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Utils.java" />
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Algorithms.java" />
       </list>
     </option>
@@ -285,6 +288,15 @@
               <item name="java" type="462c0819:PsiDirectoryNode" />
               <item name="morphometry" type="462c0819:PsiDirectoryNode" />
               <item name="objects" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="fiji-plugin-morphometry" type="b2602c69:ProjectViewProjectNode" />
+              <item name="fiji-plugin-morphometry" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="main" type="462c0819:PsiDirectoryNode" />
+              <item name="java" type="462c0819:PsiDirectoryNode" />
+              <item name="morphometry" type="462c0819:PsiDirectoryNode" />
+              <item name="spindle" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="fiji-plugin-morphometry" type="b2602c69:ProjectViewProjectNode" />
@@ -437,15 +449,15 @@
       <window_info id="Palette&#9;" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.007454739" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24726911" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.29692155" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.21967964" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22204472" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.19382322" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32951945" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.5402185" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.5203575" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -484,7 +496,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Algorithms.java</url>
-          <line>301</line>
+          <line>300</line>
           <properties />
           <option name="timeStamp" value="9" />
         </line-breakpoint>
@@ -501,36 +513,29 @@
           <option name="timeStamp" value="14" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/test/java/MicrogliaMorphometryTest.java</url>
-          <line>122</line>
-          <properties />
-          <option name="timeStamp" value="32" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/microglia/MicrogliaMorphometry.java</url>
-          <line>85</line>
-          <properties />
-          <option name="timeStamp" value="35" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Algorithms.java</url>
-          <line>465</line>
+          <line>464</line>
           <properties />
           <option name="timeStamp" value="43" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/test/java/MicrogliaMorphometryTest.java</url>
+          <line>69</line>
+          <properties />
+          <option name="timeStamp" value="48" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Utils.java</url>
+          <line>787</line>
+          <properties />
+          <option name="timeStamp" value="49" />
+        </line-breakpoint>
       </breakpoints>
-      <option name="time" value="44" />
+      <option name="time" value="50" />
     </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/src/test/java/HyperSlicingTest.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="152">
-          <caret line="8" column="0" lean-forward="false" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/geometry/Ellipsoids.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="104">
@@ -806,24 +811,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/microglia/MicrogliaMorphometrySettings.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="371">
-          <caret line="44" column="20" lean-forward="false" selection-start-line="44" selection-start-column="20" selection-end-line="44" selection-end-column="20" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/objects/Measurements.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="406">
-          <caret line="72" column="0" lean-forward="false" selection-start-line="72" selection-start-column="0" selection-end-line="72" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="jar://$MAVEN_REPOSITORY$/net/imagej/ij/1.52d/ij-1.52d-sources.jar!/ij/gui/Roi.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="236">
@@ -851,26 +838,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/java/MicrogliaMorphometryTest.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="56" column="0" lean-forward="false" selection-start-line="56" selection-start-column="0" selection-end-line="56" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/pom.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-1403">
           <caret line="11" column="28" lean-forward="false" selection-start-line="11" selection-start-column="28" selection-end-line="11" selection-end-column="28" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Utils.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="139">
-          <caret line="656" column="4" lean-forward="false" selection-start-line="656" selection-start-column="4" selection-end-line="656" selection-end-column="4" />
           <folding />
         </state>
       </provider>
@@ -891,20 +862,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/microglia/MicrogliaMorphometry.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="380">
-          <caret line="73" column="0" lean-forward="false" selection-start-line="73" selection-start-column="0" selection-end-line="73" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="true" />
-            <element signature="e#1537#1538#0" expanded="true" />
-            <element signature="e#1578#1579#0" expanded="true" />
-            <element signature="e#1656#1657#0" expanded="true" />
-            <element signature="e#1688#1689#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/PositionAndValue.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="76">
@@ -918,12 +875,66 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/microglia/MicrogliaMorphometrySettings.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="504">
+          <caret line="56" column="18" lean-forward="false" selection-start-line="56" selection-start-column="18" selection-end-line="56" selection-end-column="18" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/objects/Measurements.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="240">
+          <caret line="82" column="0" lean-forward="false" selection-start-line="82" selection-start-column="0" selection-end-line="82" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/java/MicrogliaMorphometryTest.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="186">
+          <caret line="69" column="0" lean-forward="false" selection-start-line="69" selection-start-column="0" selection-end-line="69" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/microglia/MicrogliaMorphometry.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="491">
+          <caret line="133" column="19" lean-forward="false" selection-start-line="133" selection-start-column="19" selection-end-line="133" selection-end-column="19" />
+          <folding>
+            <element signature="imports" expanded="true" />
+            <element signature="e#1423#1424#0" expanded="true" />
+            <element signature="e#1464#1465#0" expanded="true" />
+            <element signature="e#1542#1543#0" expanded="true" />
+            <element signature="e#1574#1575#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/net/imglib2/imglib2-roi/0.5.2/imglib2-roi-0.5.2.jar!/net/imglib2/roi/labeling/LabelRegionCursor.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="48">
+          <caret line="14" column="13" lean-forward="false" selection-start-line="14" selection-start-column="13" selection-end-line="14" selection-end-column="13" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Utils.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="65">
+          <caret line="775" column="32" lean-forward="false" selection-start-line="775" selection-start-column="32" selection-end-line="775" selection-end-column="32" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/morphometry/Algorithms.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="532">
-          <caret line="466" column="85" lean-forward="false" selection-start-line="466" selection-start-column="85" selection-end-line="466" selection-end-column="85" />
+        <state relative-caret-position="417">
+          <caret line="492" column="39" lean-forward="false" selection-start-line="492" selection-start-column="39" selection-end-line="492" selection-end-column="39" />
           <folding>
-            <marker date="1536930193000" expanded="true" signature="11588:11591" ph="{...}" />
+            <marker date="1536933891000" expanded="true" signature="11535:11538" ph="{...}" />
           </folding>
         </state>
       </provider>
