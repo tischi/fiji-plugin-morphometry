@@ -2,6 +2,7 @@ package de.embl.cba.morphometry;
 
 import de.embl.cba.morphometry.objects.Measurements;
 import net.imglib2.*;
+import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
@@ -25,10 +26,7 @@ import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
 import net.imglib2.view.Views;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static de.embl.cba.morphometry.Constants.XYZ;
 import static de.embl.cba.morphometry.Transforms.createTransformedInterval;
@@ -391,5 +389,98 @@ public class Algorithms
 
 		return mask;
 	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< BitType > createSeeds( RandomAccessibleInterval< T > distance, Shape shape, double globalThreshold, double localThreshold )
+	{
+
+		RandomAccessibleInterval< BitType > maxima = ArrayImgs.bits( Intervals.dimensionsAsLongArray( distance ) );
+		maxima = Transforms.getWithAdjustedOrigin( distance, maxima );
+
+		RandomAccessible< Neighborhood< T > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendPeriodic( distance ) );
+		RandomAccessibleInterval< Neighborhood< T > > neighborhoodsInterval = Views.interval( neighborhoods, distance );
+
+		final Cursor< Neighborhood< T > > neighborhoodCursor = Views.iterable( neighborhoodsInterval ).cursor();
+		final RandomAccess< T > distanceRandomAccess = distance.randomAccess();
+		final RandomAccess< BitType > maximaRandomAccess = maxima.randomAccess();
+
+		while ( neighborhoodCursor.hasNext() )
+		{
+			final Neighborhood< T > neighborhood = neighborhoodCursor.next();
+			maximaRandomAccess.setPosition( neighborhood );
+			distanceRandomAccess.setPosition( neighborhood );
+
+			T centerValue = distanceRandomAccess.get();
+
+			if ( centerValue.getRealDouble() > globalThreshold )
+			{
+				maximaRandomAccess.get().set( true );
+			}
+			else if ( Utils.isLateralBoundaryPixel( neighborhood, distance ) && distanceRandomAccess.get().getRealDouble() >  0 )
+			{
+				maximaRandomAccess.get().set( true );
+			}
+			else if ( isCenterLargestOrEqual( centerValue, neighborhood ) )
+			{
+				if ( centerValue.getRealDouble() > localThreshold )
+				{
+					// local maximum and larger than local Threshold
+					maximaRandomAccess.get().set( true );
+				}
+			}
+
+		}
+
+		return maxima;
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	ArrayList< PositionAndValue > getLocalMaxima( RandomAccessibleInterval< T > rai, Shape shape, double threshold )
+	{
+
+		final ArrayList< PositionAndValue > maxima = new ArrayList<>();
+
+		RandomAccessible< Neighborhood< T > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendPeriodic( rai ) );
+		final Cursor< Neighborhood< T > > neighborhoodCursor = Views.iterable( Views.interval( neighborhoods, rai ) ).cursor();
+		final RandomAccess< T > randomAccess = rai.randomAccess();
+
+		while ( neighborhoodCursor.hasNext() )
+		{
+			final Neighborhood< T > neighborhood = neighborhoodCursor.next();
+			randomAccess.setPosition( neighborhood );
+
+			T centerValue = randomAccess.get();
+
+			if ( isCenterLargestOrEqual( centerValue, neighborhood ) )
+			{
+				if ( centerValue.getRealDouble() > threshold )
+				{
+					final PositionAndValue positionAndValue = new PositionAndValue();
+					positionAndValue.position = new double[ rai.numDimensions() ];
+					neighborhood.localize( positionAndValue.position );
+					positionAndValue.value = centerValue.getRealDouble();
+					maxima.add( positionAndValue );
+				}
+			}
+		}
+
+		maxima.sort( Comparator.comparing( PositionAndValue::getValue ).reversed() );
+
+		return maxima;
+	}
+
+	private static < T extends RealType< T > & NativeType< T > >
+	boolean isCenterLargestOrEqual( T center, Neighborhood< T > neighborhood )
+	{
+		for( T neighbor : neighborhood )
+		{
+			if( neighbor.compareTo( center ) > 0 )
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 
 }

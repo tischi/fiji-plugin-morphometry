@@ -37,29 +37,29 @@ public class IntensityHistogram <T extends RealType<T> & NativeType< T > >
 
 
 
-	public PositionAndValue getMode( )
+	public CoordinateAndValue getMode( )
 	{
-		final PositionAndValue positionAndValue = new PositionAndValue();
+		final CoordinateAndValue coordinateAndValue = new CoordinateAndValue();
 
 		for ( int i = 0; i < numBins; ++i )
 		{
-			if ( frequencies[ i ] > positionAndValue.value )
+			if ( frequencies[ i ] > coordinateAndValue.value )
 			{
-				positionAndValue.value = frequencies[ i ];
-				positionAndValue.position = binCenters[ i ];
+				coordinateAndValue.value = frequencies[ i ];
+				coordinateAndValue.position = binCenters[ i ];
 			}
 		}
 
-		return positionAndValue;
+		return coordinateAndValue;
 
 	}
 
 
-	public PositionAndValue getRightHandHalfMaximum( )
+	public CoordinateAndValue getRightHandHalfMaximum( )
 	{
-		final PositionAndValue maximum = getMode();
+		final CoordinateAndValue maximum = getMode();
 
-		final PositionAndValue positionAndValue = new PositionAndValue();
+		final CoordinateAndValue coordinateAndValue = new CoordinateAndValue();
 
 		for ( int i = 0; i < numBins; ++i )
 		{
@@ -67,14 +67,14 @@ public class IntensityHistogram <T extends RealType<T> & NativeType< T > >
 			{
 				if ( frequencies[ i ] <= maximum.value / 2.0 )
 				{
-					positionAndValue.position = binCenters[ i ];
-					positionAndValue.value = frequencies[ i ];
-					return positionAndValue;
+					coordinateAndValue.position = binCenters[ i ];
+					coordinateAndValue.value = frequencies[ i ];
+					return coordinateAndValue;
 				}
 			}
 		}
 
-		return positionAndValue;
+		return coordinateAndValue;
 
 	}
 
