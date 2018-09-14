@@ -8,8 +8,6 @@ import net.imagej.Dataset;
 import net.imagej.axis.LinearAxis;
 import net.imglib2.*;
 import net.imglib2.algorithm.gauss3.Gauss3;
-import net.imglib2.algorithm.labeling.ConnectedComponents;
-import net.imglib2.algorithm.neighborhood.HyperSphereNeighborhood;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
@@ -26,11 +24,8 @@ import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegionCursor;
 import net.imglib2.roi.labeling.LabelingType;
-import net.imglib2.type.BooleanType;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.IntegerType;
-import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.util.Intervals;
@@ -773,7 +768,7 @@ public class Utils
 		return Views.interval( Views.extendZero( rai ), interval );
 	}
 
-	public static void labelRegionToMask( LabelRegion labelRegion )
+	public static RandomAccessibleInterval< BitType > labelRegionToMask( LabelRegion labelRegion )
 	{
 		RandomAccessibleInterval< BitType > rai = ArrayImgs.bits( Intervals.dimensionsAsLongArray( labelRegion ) );
 		rai = Transforms.getWithAdjustedOrigin( labelRegion, rai  );
@@ -788,7 +783,44 @@ public class Utils
 			randomAccess.get().set( true );
 		}
 
-		ImageJFunctions.show( rai );
+		return rai;
 
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > getMaskedAndCropped( RandomAccessibleInterval<T> image, LabelRegion labelRegion )
+	{
+
+		ImgFactory< T > imgFactory = new ArrayImgFactory( image.randomAccess().get()  );
+		RandomAccessibleInterval< T > output = Views.translate( imgFactory.create( labelRegion ), Intervals.minAsLongArray( labelRegion )  ) ;
+
+		final RandomAccess< T > imageRandomAccess = image.randomAccess();
+		final RandomAccess< T > outputRandomAccess = output.randomAccess();
+		final LabelRegionCursor cursor = labelRegion.cursor();
+
+		while ( cursor.hasNext() )
+		{
+			cursor.fwd();
+			imageRandomAccess.setPosition( cursor );
+			outputRandomAccess.setPosition( cursor );
+			outputRandomAccess.get().set( imageRandomAccess.get() );
+		}
+
+		ImageJFunctions.show( output );
+
+		return output;
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	void setValues( RandomAccessibleInterval< T > rai, double value )
+	{
+		Cursor< T > cursor = Views.iterable( rai ).localizingCursor();
+
+		double maxValue = Double.MIN_VALUE;
+
+		while ( cursor.hasNext() )
+		{
+			cursor.next().setReal( value );
+		}
 	}
 }

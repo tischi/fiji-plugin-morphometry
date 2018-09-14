@@ -4,6 +4,7 @@ import net.imglib2.*;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
+import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
@@ -116,19 +117,6 @@ public class Algorithms
 		Point point = new Point( maxLoc );
 
 		return point;
-	}
-
-	public static < T extends RealType< T > & NativeType< T > >
-	void setValues( RandomAccessibleInterval< T > rai, double value )
-	{
-		Cursor< T > cursor = Views.iterable( rai ).localizingCursor();
-
-		double maxValue = Double.MIN_VALUE;
-
-		while ( cursor.hasNext() )
-		{
-			cursor.next().setReal( value );
-		}
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
@@ -482,7 +470,11 @@ public class Algorithms
 	}
 
 
-	public static < T extends RealType< T > & NativeType< T > > void splitTouchingObjects( ImgLabeling<Integer, IntType> imgLabeling, HashMap<Integer, Integer> numObjectsPerRegion, RandomAccessibleInterval<T> image )
+	public static < T extends RealType< T > & NativeType< T > > void splitTouchingObjects(
+			ImgLabeling<Integer, IntType> imgLabeling,
+			HashMap<Integer, Integer> numObjectsPerRegion,
+			RandomAccessibleInterval<T> image,
+			long minimumObjectPixelWidth )
 	{
 		final LabelRegions labelRegions = new LabelRegions( imgLabeling );
 
@@ -490,7 +482,9 @@ public class Algorithms
 		{
 			if ( numObjectsPerRegion.get( label ) > 1 )
 			{
-				Utils.labelRegionToMask( labelRegions.getLabelRegion( label ) );
+				final RandomAccessibleInterval< T > maskedAndCropped = Utils.getMaskedAndCropped( image, labelRegions.getLabelRegion( label ) );
+				final ArrayList< PositionAndValue > localMaxima = Algorithms.getLocalMaxima( maskedAndCropped, new HyperSphereShape( minimumObjectPixelWidth ), 0.0 );
+				
 
 			}
 		}
