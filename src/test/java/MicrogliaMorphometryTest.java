@@ -49,6 +49,8 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		settings.skeletonMaxLength = 600 * settings.workingVoxelSize;
 		settings.minimalObjectSize = 500;
 		settings.minimalObjectCenterDistance = 6;
+		settings.maximalWatershedLength = 10;
+
 		settings.closingRadius = 3;
 
 		settings.showIntermediateResults = false;

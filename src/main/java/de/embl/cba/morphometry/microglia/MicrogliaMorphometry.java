@@ -107,7 +107,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		// TODO: the closing joins close-by objects => better to do this per object after final segmentation.
 		// mask = Algorithms.close( mask, ( int ) ( settings.closingRadius / settings.workingVoxelSize ) );
-		
+
 
 		/**
 		 * Remove small objects from mask
@@ -127,6 +127,8 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		 * Estimate number of objects from skeleton
 		 */
 
+		// TODO: implement skeleton per object such that one can do closing operations without joining neighboring objects
+
 		RandomAccessibleInterval< BitType > skeleton = opService.morphology().thinGuoHall(  mask );
 
 		if ( settings.showIntermediateResults ) show( skeleton, "skeleton", null, workingCalibration, false );
@@ -141,6 +143,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 				image,
 				( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
 				( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize , image.numDimensions() ) ),
+				( int ) ( settings.maximalWatershedLength / settings.workingVoxelSize ),
 				opService );
 
 		if ( settings.showIntermediateResults ) show( mask, "split objects mask", null, workingCalibration, false );

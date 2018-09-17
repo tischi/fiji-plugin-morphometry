@@ -451,8 +451,9 @@ public class Algorithms
 			ImgLabeling< Integer, IntType > imgLabeling,
 			HashMap< Integer, Integer > numObjectsPerRegion,
 			RandomAccessibleInterval< T > image,
-			long minimumObjectPixelWidth,
-			long minimumObjectPixelSize,
+			long minimalObjectPixelWidth,
+			long minimalObjectSize,
+			long maximalWatershedLength,
 			OpService opService )
 	{
 
@@ -466,7 +467,7 @@ public class Algorithms
 				final RandomAccessibleInterval< T > maskedAndCropped = Views.zeroMin( Utils.getMaskedAndCropped( image, labelRegions.getLabelRegion( label ) ) );
 				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.asMask( labelRegions.getLabelRegion( label ) ) );
 
-				final ArrayList< PositionAndValue > localMaxima = Algorithms.getLocalMaxima( maskedAndCropped, new HyperSphereShape( minimumObjectPixelWidth ), 0.0 );
+				final ArrayList< PositionAndValue > localMaxima = Algorithms.getLocalMaxima( maskedAndCropped, new HyperSphereShape( minimalObjectPixelWidth ), 0.0 );
 
 				final RandomAccessibleInterval< T > seeds = Utils.copyAsEmptyArrayImg( maskedAndCropped );
 				final RandomAccess< T > randomAccess = seeds.randomAccess();
@@ -490,7 +491,7 @@ public class Algorithms
 
 				LabelRegions< Integer > splitObjects = new LabelRegions( watershedImgLabeling );
 
-				boolean isValidSplit = checkSplittingValidity( minimumObjectPixelSize, splitObjects );
+				boolean isValidSplit = checkSplittingValidity( splitObjects, minimalObjectSize, maximalWatershedLength );
 
 				if ( isValidSplit )
 				{
@@ -507,7 +508,7 @@ public class Algorithms
 
 	}
 
-	public static boolean checkSplittingValidity( long minimumObjectPixelSize, LabelRegions< Integer > splitObjects )
+	public static boolean checkSplittingValidity(  LabelRegions< Integer > splitObjects, long minimumObjectSize, long maximalWatershedLength )
 	{
 		boolean isValidSplit = true;
 
@@ -516,12 +517,15 @@ public class Algorithms
 			int splitObjectLabel = ( int ) region.getLabel();
 			if ( splitObjectLabel == -1 )
 			{
-				// This is the watershed label
-				continue;
+				if ( region.size() > maximalWatershedLength )
+				{
+					isValidSplit = false;
+					break;
+				}
 			}
 			else
 			{
-				if ( region.size() < minimumObjectPixelSize )
+				if ( region.size() < minimumObjectSize )
 				{
 					isValidSplit = false;
 					break;
