@@ -102,6 +102,14 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		if ( settings.showIntermediateResults ) show( mask, "mask", null, workingCalibration, false );
 
 		/**
+		 * Close
+		 */
+
+		// TODO: the closing joins close-by objects => better to do this per object after final segmentation.
+		// mask = Algorithms.close( mask, ( int ) ( settings.closingRadius / settings.workingVoxelSize ) );
+		
+
+		/**
 		 * Remove small objects from mask
 		 */
 
@@ -113,30 +121,41 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		 * Get objects
 		 */
 
-		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask );
+		ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask );
 
 		/**
-		 * Compute skeleton
+		 * Estimate number of objects from skeleton
 		 */
 
-		// TODO: smooth boundaries to have less of a skeleton
-
 		RandomAccessibleInterval< BitType > skeleton = opService.morphology().thinGuoHall(  mask );
-		
+
 		if ( settings.showIntermediateResults ) show( skeleton, "skeleton", null, workingCalibration, false );
-
-
-		// final ArrayList< PositionAndValue > localMaxima = getLocalMaxima( image, new HyperSphereShape( 7 ), 0 );
 
 		HashMap< Integer, Integer > numObjectsPerRegion = getNumObjectsFromSkeleton( imgLabeling, skeleton, settings );
 
 
 		Algorithms.splitTouchingObjects(
+				mask,
 				imgLabeling,
 				numObjectsPerRegion,
 				image,
 				( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
+				( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize , image.numDimensions() ) ),
 				opService );
+
+		if ( settings.showIntermediateResults ) show( mask, "split objects mask", null, workingCalibration, false );
+
+		/**
+		 * Get objects
+		 */
+
+		imgLabeling = Utils.asImgLabeling( mask );
+
+		/**
+ 		* Compute skeleton
+ 		*/
+
+		skeleton = opService.morphology().thinGuoHall(  mask );
 
 
 		/**
