@@ -24,7 +24,7 @@ public class MicrogliaMorphometrySettings<T extends RealType<T> & NativeType< T 
 
 	public String thresholdModality = MANUAL_THRESHOLD;
 	public double thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
-	public double closingRadius = 1.0;
+	public double closingRadius = 3.0;
 
 
 	public double[] inputCalibration;

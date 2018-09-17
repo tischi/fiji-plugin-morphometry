@@ -4,6 +4,7 @@ import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.gauss3.Gauss3;
+import net.imglib2.algorithm.morphology.Closing;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
@@ -27,6 +28,7 @@ import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
+import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import java.util.*;
@@ -244,12 +246,12 @@ public class Algorithms
 		RandomAccessibleInterval< BitType > sizeFilteredObjectsMask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( labeling ) );
 		sizeFilteredObjectsMask = Transforms.getWithAdjustedOrigin( labeling.getSource(), sizeFilteredObjectsMask  );
 
-		long pixelSize = ( long ) ( size / Math.pow( calibration, labeling.numDimensions() ) );
+		long minimalObjectPixelSize = ( long ) ( size / Math.pow( calibration, labeling.numDimensions() ) );
 
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( labeling );
 		for ( LabelRegion labelRegion : labelRegions )
 		{
-			if ( labelRegion.size() > pixelSize )
+			if ( labelRegion.size() > minimalObjectPixelSize )
 			{
 				drawObject( sizeFilteredObjectsMask, labelRegion );
 			}
@@ -445,20 +447,24 @@ public class Algorithms
 
 	public static < T extends RealType< T > & NativeType< T > >
 	void splitTouchingObjects(
+			RandomAccessibleInterval< BitType > mask,
 			ImgLabeling< Integer, IntType > imgLabeling,
 			HashMap< Integer, Integer > numObjectsPerRegion,
 			RandomAccessibleInterval< T > image,
 			long minimumObjectPixelWidth,
+			long minimumObjectPixelSize,
 			OpService opService )
 	{
+
 		final LabelRegions labelRegions = new LabelRegions( imgLabeling );
 
 		for ( int label : numObjectsPerRegion.keySet() )
 		{
 			if ( numObjectsPerRegion.get( label ) > 1 )
 			{
+
 				final RandomAccessibleInterval< T > maskedAndCropped = Views.zeroMin( Utils.getMaskedAndCropped( image, labelRegions.getLabelRegion( label ) ) );
-				final RandomAccessibleInterval< BitType > mask = Views.zeroMin( Utils.asMask( labelRegions.getLabelRegion( label ) ) );
+				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.asMask( labelRegions.getLabelRegion( label ) ) );
 
 				final ArrayList< PositionAndValue > localMaxima = Algorithms.getLocalMaxima( maskedAndCropped, new HyperSphereShape( minimumObjectPixelWidth ), 0.0 );
 
@@ -470,7 +476,7 @@ public class Algorithms
 					randomAccess.get().setOne();
 				}
 
-				final ImgLabeling< Integer, IntType > watershedImgLabeling = getEmptyImgLabeling( mask );
+				final ImgLabeling< Integer, IntType > watershedImgLabeling = getEmptyImgLabeling( labelRegionMask );
 				final ImgLabeling< Integer, IntType > seedsImgLabeling = Utils.asImgLabeling( seeds );
 
 				opService.image().watershed(
@@ -478,17 +484,82 @@ public class Algorithms
 						Utils.invertedView( maskedAndCropped ),
 						seedsImgLabeling,
 						true,
-						true );
+						true,
+						labelRegionMask );
 
-				Utils.applyMask( watershedImgLabeling.getSource(), mask );
 
-				ImageJFunctions.show( seedsImgLabeling.getSource() );
+				LabelRegions< Integer > splitObjects = new LabelRegions( watershedImgLabeling );
+
+				boolean isValidSplit = checkSplittingValidity( minimumObjectPixelSize, splitObjects );
+
+				if ( isValidSplit )
+				{
+					drawWatershedIntoMask( mask, labelRegions, label, splitObjects );
+				}
+
+				// Utils.applyMask( watershedImgLabeling.getSource(), mask );
+
+//				ImageJFunctions.show( seedsImgLabeling.getSource() );
 				ImageJFunctions.show( watershedImgLabeling.getSource() );
 
 			}
 		}
 
 	}
+
+	public static boolean checkSplittingValidity( long minimumObjectPixelSize, LabelRegions< Integer > splitObjects )
+	{
+		boolean isValidSplit = true;
+
+		for( LabelRegion region : splitObjects )
+		{
+			int splitObjectLabel = ( int ) region.getLabel();
+			if ( splitObjectLabel == -1 )
+			{
+				// This is the watershed label
+				continue;
+			}
+			else
+			{
+				if ( region.size() < minimumObjectPixelSize )
+				{
+					isValidSplit = false;
+					break;
+				}
+			}
+		}
+
+		return isValidSplit;
+	}
+
+	public static void drawWatershedIntoMask( RandomAccessibleInterval< BitType > mask, LabelRegions labelRegions, int label, LabelRegions< Integer > splitObjects )
+	{
+		final long[] regionOffset = Intervals.minAsLongArray( labelRegions.getLabelRegion( label ) );
+		LabelRegion watershed = splitObjects.getLabelRegion( -1 );
+		final LabelRegionCursor cursor = watershed.cursor();
+		final RandomAccess< BitType > maskRandomAccess = mask.randomAccess();
+		long[] position = new long[ watershed.numDimensions() ];
+		while( cursor.hasNext() )
+		{
+			cursor.fwd();
+			cursor.localize( position );
+			for ( int d = 0; d < position.length; ++d )
+			{
+				position[ d ] += regionOffset[ d ];
+			}
+			maskRandomAccess.setPosition( position );
+			maskRandomAccess.get().set( false );
+		}
+	}
+
+	public static RandomAccessibleInterval< BitType > close( RandomAccessibleInterval< BitType > mask, int closingRadius )
+	{
+		RandomAccessibleInterval< BitType > closed = Utils.copyAsArrayImg( mask );
+		Shape closingShape = new HyperSphereShape( closingRadius );
+		Closing.close( Views.extendBorder( mask ), Views.iterable( closed ), closingShape, 1 );
+		return closed;
+	}
+
 
 	public static ImgLabeling< Integer, IntType > getEmptyImgLabeling( RandomAccessibleInterval< BitType > mask )
 	{

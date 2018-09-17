@@ -47,8 +47,9 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		settings.inputDataSetName = "test";
 		settings.returnEarly = true;
 		settings.skeletonMaxLength = 600 * settings.workingVoxelSize;
-		settings.minimalObjectSize = 30;
+		settings.minimalObjectSize = 500;
 		settings.minimalObjectCenterDistance = 6;
+		settings.closingRadius = 3;
 
 		settings.showIntermediateResults = false;
 
