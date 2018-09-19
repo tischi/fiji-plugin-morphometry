@@ -135,8 +135,7 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	CoordinatesAndValues computeAverageIntensitiesAlongAxis(
-			RandomAccessibleInterval< T > rai, RandomAccessibleInterval< BitType > mask, int axis, double calibration )
+	CoordinatesAndValues computeAverageIntensitiesAlongAxis( RandomAccessibleInterval< T > rai, RandomAccessibleInterval< BitType > mask, int axis, double calibration )
 	{
 		final CoordinatesAndValues coordinatesAndValues = new CoordinatesAndValues();
 
@@ -339,15 +338,22 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > createAverageProjection(
+	RandomAccessibleInterval< T > createAverageProjectionAlongAxis(
 			RandomAccessibleInterval< T > rai, int d, double min, double max, double scaling )
 	{
 		Projection< T > projection = new Projection< T >(  rai, d,  new FinalInterval( new long[]{ (long) ( min / scaling) },  new long[]{ (long) ( max / scaling ) } ) );
 		return projection.average();
 	}
 
-	public static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< BitType > createBinaryImage(
-			RandomAccessibleInterval< T > input, double doubleThreshold )
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > createSumProjectionAlongAxis(
+			RandomAccessibleInterval< T > rai, int d, double min, double max, double scaling )
+	{
+		Projection< T > projection = new Projection< T >(  rai, d,  new FinalInterval( new long[]{ (long) ( min / scaling) },  new long[]{ (long) ( max / scaling ) } ) );
+		return projection.sum();
+	}
+
+	public static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< BitType > createBinaryImage( RandomAccessibleInterval< T > input, double doubleThreshold )
 	{
 		final ArrayImg< BitType, LongArray > binaryImage = ArrayImgs.bits( Intervals.dimensionsAsLongArray( input ) );
 

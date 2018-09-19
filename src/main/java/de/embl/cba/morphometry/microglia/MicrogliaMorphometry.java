@@ -198,7 +198,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		 */
 
 
-		RandomAccessibleInterval< BitType > closed = mask; //createClosedImage( mask );
+		RandomAccessibleInterval< BitType > closed = mask; //close( mask );
 
 
 
@@ -261,6 +261,11 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		resultImages.add( Utils.getEnlargedRai( image ) );
 		resultImages.add( Utils.getEnlargedRai( ( RandomAccessibleInterval ) imgLabeling.getSource() ) );
 		resultImages.add( Utils.getEnlargedRai( ( RandomAccessibleInterval ) skeleton ) );
+	}
+
+	public int getImgLabelingResultStackChannelId()
+	{
+		return 1;
 	}
 
 	public static HashMap< Integer, Integer > getNumObjectsFromSkeleton( ImgLabeling< Integer, IntType > imgLabeling, RandomAccessibleInterval< BitType > skeleton, MicrogliaMorphometrySettings settings )

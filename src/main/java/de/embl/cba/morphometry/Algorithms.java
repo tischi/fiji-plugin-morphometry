@@ -357,45 +357,116 @@ public class Algorithms
 	RandomAccessibleInterval< BitType > createSeeds( RandomAccessibleInterval< T > distance, Shape shape, double globalThreshold, double localThreshold )
 	{
 
-		RandomAccessibleInterval< BitType > maxima = ArrayImgs.bits( Intervals.dimensionsAsLongArray( distance ) );
-		maxima = Transforms.getWithAdjustedOrigin( distance, maxima );
+		RandomAccessibleInterval< BitType > seeds = ArrayImgs.bits( Intervals.dimensionsAsLongArray( distance ) );
+		seeds = Transforms.getWithAdjustedOrigin( distance, seeds );
 
 		RandomAccessible< Neighborhood< T > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendPeriodic( distance ) );
 		RandomAccessibleInterval< Neighborhood< T > > neighborhoodsInterval = Views.interval( neighborhoods, distance );
 
 		final Cursor< Neighborhood< T > > neighborhoodCursor = Views.iterable( neighborhoodsInterval ).cursor();
 		final RandomAccess< T > distanceRandomAccess = distance.randomAccess();
-		final RandomAccess< BitType > maximaRandomAccess = maxima.randomAccess();
+		final RandomAccess< BitType > seedsRandomAccess = seeds.randomAccess();
+
+		double[] centerPosition = new double[ distance.numDimensions() ];
+		double[] currentPosition = new double[ distance.numDimensions() ];
+
+		for ( int d = 0; d < centerPosition.length; ++d )
+		{
+			centerPosition[ d ] = (long) (distance.dimension( d ) / 2);
+		}
 
 		while ( neighborhoodCursor.hasNext() )
 		{
 			final Neighborhood< T > neighborhood = neighborhoodCursor.next();
-			maximaRandomAccess.setPosition( neighborhood );
+			neighborhood.localize( currentPosition );
+			seedsRandomAccess.setPosition( neighborhood );
 			distanceRandomAccess.setPosition( neighborhood );
 
 			T centerValue = distanceRandomAccess.get();
 
 			if ( centerValue.getRealDouble() > globalThreshold )
 			{
-				maximaRandomAccess.get().set( true );
+				seedsRandomAccess.get().set( true );
+			}
+			else if ( LinAlgHelpers.distance( currentPosition, centerPosition  ) < 3 )
+			{
+				// seedsRandomAccess.get().set( true );
 			}
 			else if ( Utils.isLateralBoundaryPixel( neighborhood, distance ) && distanceRandomAccess.get().getRealDouble() >  0 )
 			{
-				maximaRandomAccess.get().set( true );
+				seedsRandomAccess.get().set( true );
 			}
 			else if ( isCenterLargestOrEqual( centerValue, neighborhood ) )
 			{
 				if ( centerValue.getRealDouble() > localThreshold )
 				{
 					// local maximum and larger than local Threshold
-					maximaRandomAccess.get().set( true );
+					seedsRandomAccess.get().set( true );
 				}
 			}
 
 		}
 
-		return maxima;
+		return seeds;
 	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< BitType > createCenterAndBoundarySeeds( RandomAccessibleInterval< T > distance, Shape shape, double globalThreshold, double localThreshold )
+	{
+
+		RandomAccessibleInterval< BitType > seeds = ArrayImgs.bits( Intervals.dimensionsAsLongArray( distance ) );
+		seeds = Transforms.getWithAdjustedOrigin( distance, seeds );
+
+		RandomAccessible< Neighborhood< T > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendPeriodic( distance ) );
+		RandomAccessibleInterval< Neighborhood< T > > neighborhoodsInterval = Views.interval( neighborhoods, distance );
+
+		final Cursor< Neighborhood< T > > neighborhoodCursor = Views.iterable( neighborhoodsInterval ).cursor();
+		final RandomAccess< T > distanceRandomAccess = distance.randomAccess();
+		final RandomAccess< BitType > seedsRandomAccess = seeds.randomAccess();
+
+		double[] centerPosition = new double[ distance.numDimensions() ];
+		double[] currentPosition = new double[ distance.numDimensions() ];
+
+		for ( int d = 0; d < centerPosition.length; ++d )
+		{
+			centerPosition[ d ] = (long) (distance.dimension( d ) / 2);
+		}
+
+		while ( neighborhoodCursor.hasNext() )
+		{
+			final Neighborhood< T > neighborhood = neighborhoodCursor.next();
+			neighborhood.localize( currentPosition );
+			seedsRandomAccess.setPosition( neighborhood );
+			distanceRandomAccess.setPosition( neighborhood );
+
+			T centerValue = distanceRandomAccess.get();
+
+			if ( centerValue.getRealDouble() > globalThreshold )
+			{
+				// maximaRandomAccess.get().set( true );
+			}
+			else if ( LinAlgHelpers.distance( currentPosition, centerPosition  ) < 3 )
+			{
+				seedsRandomAccess.get().set( true );
+			}
+			else if ( Utils.isLateralBoundaryPixel( neighborhood, distance ) && distanceRandomAccess.get().getRealDouble() >  0 )
+			{
+				seedsRandomAccess.get().set( true );
+			}
+//			else if ( isCenterLargestOrEqual( centerValue, neighborhood ) )
+//			{
+//				if ( centerValue.getRealDouble() > localThreshold )
+//				{
+//					// local maximum and larger than local Threshold
+//					// maximaRandomAccess.get().set( true );
+//				}
+//			}
+
+		}
+
+		return seeds;
+	}
+
 
 	public static < T extends RealType< T > & NativeType< T > >
 	ArrayList< PositionAndValue > getLocalMaxima( RandomAccessibleInterval< T > rai, Shape shape, double threshold )
