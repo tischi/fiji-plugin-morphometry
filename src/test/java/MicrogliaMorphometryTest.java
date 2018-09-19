@@ -2,6 +2,7 @@ import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.microglia.MicrogliaMorphometry;
 import de.embl.cba.morphometry.microglia.MicrogliaMorphometrySettings;
 import de.embl.cba.morphometry.objects.Measurements;
+import de.embl.cba.morphometry.tracking.Tracker;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Overlay;
@@ -12,6 +13,8 @@ import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import java.awt.*;
@@ -105,8 +108,12 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		}
 
 		show.setOverlay( overlay );
-		final Overlay overlay1 = show.getOverlay();
-		int a = 1;
+
+		final RandomAccessibleInterval< IntType > labelings = ( RandomAccessibleInterval ) Views.hyperSlice( movie, 2, 1 );
+
+		final Tracker tracker = new Tracker( labelings );
+
+		tracker.run();
 
 	}
 

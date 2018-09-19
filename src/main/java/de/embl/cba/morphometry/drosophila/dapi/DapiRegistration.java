@@ -77,7 +77,7 @@ public class DapiRegistration
 
 		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( binned, registration ), "oriented", null, calibration, false );
 
-		final RandomAccessibleInterval< T > longAxisProjection = Utils.createAverageProjection(
+		final RandomAccessibleInterval< T > longAxisProjection = Utils.createAverageProjectionAlongAxis(
 				Transforms.createTransformedView( binned, registration ), X,
 				settings.projectionRangeMinDistanceToCenterInMicrometer,
 				settings.projectionRangeMaxDistanceToCenterInMicrometer,
@@ -96,7 +96,7 @@ public class DapiRegistration
 
 		if ( settings.showIntermediateResults ) show( blurred, "perpendicular projection - blurred ", realPoints, new double[]{ calibration[ Y ], calibration[ Z ] }, false );
 
-		registration.preConcatenate( createRollTransform( Transforms.createTransformedView( binned, registration ), maximum ) );
+		registration.preConcatenate( createXAxisRollTransform( maximum ) );
 
 		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( binned, registration ), "registered binned image", null, calibration, false );
 
@@ -118,12 +118,13 @@ public class DapiRegistration
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	AffineTransform3D createRollTransform( RandomAccessibleInterval< T > rai, Point maximum )
+	AffineTransform3D createXAxisRollTransform( Point maximum )
 	{
 		double angleToZAxisInDegrees = angleToZAxis( maximum );
 		AffineTransform3D rollTransform = new AffineTransform3D();
-		rollTransform.rotate( X, toRadians( angleToZAxisInDegrees ) );
 
+		Utils.log( "Roll angle: " + angleToZAxisInDegrees );
+		rollTransform.rotate( X, toRadians( angleToZAxisInDegrees ) );
 		return rollTransform;
 	}
 
@@ -131,18 +132,18 @@ public class DapiRegistration
 
 	public static double angleToZAxis( Point maximum )
 	{
-		final double angleToYAxis;
+		final double angleToZAxis;
 
 		if ( maximum.getIntPosition( Y ) == 0 )
 		{
-			angleToYAxis = 90;
+			angleToZAxis = Math.signum( maximum.getDoublePosition( X ) ) * 90;
 		}
 		else
 		{
-			angleToYAxis = toDegrees( atan( maximum.getDoublePosition( X ) / maximum.getDoublePosition( Y ) ) );
+			angleToZAxis = toDegrees( atan( maximum.getDoublePosition( X ) / maximum.getDoublePosition( Y ) ) );
 		}
 
-		return angleToYAxis;
+		return angleToZAxis;
 	}
 
 

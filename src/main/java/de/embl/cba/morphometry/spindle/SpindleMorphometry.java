@@ -98,7 +98,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * Morphological closing
 		 */
 
-//		RandomAccessibleInterval< BitType > closed = createClosedImage( mask );
+//		RandomAccessibleInterval< BitType > closed = close( mask );
 		RandomAccessibleInterval< BitType > closed =  mask ;
 
 //		if ( settings.showIntermediateResults ) show( closed, "closed", null, workingCalibration, false );

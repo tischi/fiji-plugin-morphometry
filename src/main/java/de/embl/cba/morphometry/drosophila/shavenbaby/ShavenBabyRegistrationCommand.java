@@ -65,14 +65,19 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	@Parameter( choices = { FROM_DIRECTORY, CURRENT_IMAGE })
 	public String inputModality = FROM_DIRECTORY;
 
+
+
 	@Parameter
 	public String fileNameEndsWith = ".czi,.lsm";
 
 	@Parameter
-	public int shavenBabyChannelIndexOneBased = settings.shavenBabyChannelIndexOneBased;
-
-	@Parameter
 	public boolean showIntermediateResults = settings.showIntermediateResults;
+
+	@Parameter( choices = {
+			ShavenBabyRegistrationSettings.CENTROID_SHAPE,
+			ShavenBabyRegistrationSettings.PROJECTION_SHAPE,
+			ShavenBabyRegistrationSettings.AMNIOSEROSA})
+	public String rollAngleComputationMethod = settings.rollAngleComputationMethod;
 
 	@Parameter
 	public double registrationResolution = settings.registrationResolution;
@@ -89,8 +94,8 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	@Parameter
 	public double refractiveIndexIntensityCorrectionDecayLength = settings.refractiveIndexIntensityCorrectionDecayLength;
 
-	@Parameter
-	public double watershedSeedsGlobalDistanceThreshold = settings.watershedSeedsGlobalDistanceThreshold;
+//	@Parameter
+//	public double watershedSeedsGlobalDistanceThreshold = settings.watershedSeedsGlobalDistanceThreshold;
 
 
 	public void run()
@@ -98,6 +103,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		setSettingsFromUI();
 
 		final ShavenBabyRegistration registration = new ShavenBabyRegistration( settings, opService );
+
 
 		if ( inputModality.equals( CURRENT_IMAGE ) && imagePlus != null )
 		{
@@ -207,21 +213,28 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	{
 		int Z = 2;
 
-		long zMin = (long) ( 60 / settings.outputResolution );
-
 		ArrayList< ImagePlus > projections = new ArrayList<>(  );
 
 		for ( int channelId = 0; channelId < images.dimension( 3 ); ++channelId )
 		{
-
 			RandomAccessibleInterval channel = Views.hyperSlice( images, 3, channelId );
 
-			Projection projection = new Projection( channel, Z, zMin, channel.max( Z ) );
-
-			final RandomAccessibleInterval maximum = projection.maximum();
-			final ImagePlus wrap = ImageJFunctions.wrap( maximum, "projection-channel" + ( channelId + 1 ) );
-
+			// top
+			long rangeMin = (long) ( settings.finalProjectionMinDistanceToCenter / settings.outputResolution );
+			long rangeMax = images.max( Z );
+			Projection projection = new Projection( channel, Z, rangeMin, rangeMax );
+			RandomAccessibleInterval maximum = projection.maximum();
+			ImagePlus wrap = ImageJFunctions.wrap( maximum, "top-projection-ch" + ( channelId + 1 ) );
 			projections.add( wrap );
+
+			// bottom
+			rangeMin = images.min( Z );
+			rangeMax = - (long) ( settings.finalProjectionMinDistanceToCenter / settings.outputResolution );
+			projection = new Projection( channel, Z, rangeMin, rangeMax );
+			maximum = projection.maximum();
+			wrap = ImageJFunctions.wrap( maximum, "bottom-projection-ch" + ( channelId + 1 ) );
+			projections.add( wrap );
+
 		}
 
 		return projections;
@@ -238,22 +251,24 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	public RandomAccessibleInterval< T > registerImages( ImagePlus imagePlus, ShavenBabyRegistration registration )
 	{
 		RandomAccessibleInterval< T > images = getImages( imagePlus );
-		RandomAccessibleInterval< T > shavenBaby = getShavenBabyImage( images );
+		RandomAccessibleInterval< T > shavenbaby = getShavenBabyImage( images );
+		RandomAccessibleInterval< T > amnioserosa = getAmnioserosaImage( images );
 
 		final double[] calibration = Utils.getCalibration( imagePlus );
 
 		Utils.log( "Computing registration...." );
-		final AffineTransform3D registrationTransform = registration.computeRegistration( shavenBaby, calibration );
+		final AffineTransform3D registrationTransform = registration.computeRegistration( shavenbaby, amnioserosa, calibration );
 
-//
-//		Utils.log( "Applying intensity correction to all channels...." );
-//		final RandomAccessibleInterval< T > intensityCorrectedImages = RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, calibration[ 2 ], settings.refractiveIndexIntensityCorrectionDecayLength  );
-//
-//		Utils.log( "Applying registration to all channels (at a resolution of " + settings.outputResolution + " micrometer) ..." );
-//		final RandomAccessibleInterval< T > registeredImages = Transforms.transformAllChannels( intensityCorrectedImages, registrationTransform );
+		Utils.log( "Applying intensity correction to all channels...." );
+		final RandomAccessibleInterval< T > intensityCorrectedImages = RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, calibration[ 2 ], settings.refractiveIndexIntensityCorrectionDecayLength  );
 
-		return null; //registeredImages;
+		Utils.log( "Applying registration to all channels (at a resolution of " + settings.outputResolution + " micrometer) ..." );
+		final RandomAccessibleInterval< T > registeredImages = Transforms.transformAllChannels( intensityCorrectedImages, registrationTransform );
+
+		return registeredImages;
 	}
+
+
 
 	public RandomAccessibleInterval< T > getImages( ImagePlus imagePlus )
 	{
@@ -273,11 +288,18 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		return images;
 	}
 
-	public RandomAccessibleInterval< T > getShavenBabyImage( RandomAccessibleInterval< T > images )
+	private RandomAccessibleInterval< T > getShavenBabyImage( RandomAccessibleInterval< T > images )
 	{
-		RandomAccessibleInterval< T > svb = Views.hyperSlice( images, 3, shavenBabyChannelIndexOneBased - 1 );
+		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.shavenbabyChannelIndexOneBased - 1 );
 
-		return svb;
+		return rai;
+	}
+
+	private RandomAccessibleInterval<T> getAmnioserosaImage( RandomAccessibleInterval<T> images )
+	{
+		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.amnioserosaChannelIndexOneBased - 1 );
+
+		return rai;
 	}
 
 	public void setSettingsFromUI()
@@ -286,12 +308,11 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		settings.registrationResolution = registrationResolution;
 		settings.closingRadius = 0;
 		settings.outputResolution = outputResolution;
-		settings.backgroundIntensity = 0;
 		settings.refractiveIndexScalingCorrectionFactor = refractiveIndexScalingCorrectionFactor;
 		settings.refractiveIndexIntensityCorrectionDecayLength = refractiveIndexIntensityCorrectionDecayLength;
 		settings.thresholdModality = "";
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = thresholdInUnitsOfBackgroundPeakHalfWidth;
-		settings.watershedSeedsGlobalDistanceThreshold = watershedSeedsGlobalDistanceThreshold;
+		settings.rollAngleComputationMethod = rollAngleComputationMethod;
 	}
 
 

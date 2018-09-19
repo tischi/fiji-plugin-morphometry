@@ -7,6 +7,7 @@ import de.embl.cba.morphometry.geometry.EllipsoidParameters;
 import de.embl.cba.morphometry.geometry.Ellipsoids;
 import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
+import net.imglib2.Point;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealPoint;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
@@ -26,6 +27,7 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.type.numeric.integer.UnsignedIntType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.algorithm.morphology.Closing;
@@ -35,10 +37,9 @@ import net.imglib2.view.Views;
 
 import java.util.*;
 
-import static de.embl.cba.morphometry.Constants.X;
-import static de.embl.cba.morphometry.Constants.XYZ;
-import static de.embl.cba.morphometry.Constants.Z;
+import static de.embl.cba.morphometry.Constants.*;
 import static de.embl.cba.morphometry.Transforms.getScalingFactors;
+import static de.embl.cba.morphometry.drosophila.dapi.DapiRegistration.createXAxisRollTransform;
 import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
 import static java.lang.Math.toRadians;
 
@@ -56,7 +57,9 @@ public class ShavenBabyRegistration
 	}
 
 	public < T extends RealType< T > & NativeType< T > >
-	AffineTransform3D computeRegistration( RandomAccessibleInterval< T > input, double[] inputCalibration  )
+	AffineTransform3D computeRegistration( RandomAccessibleInterval< T > svb, // Shavenbaby
+										   RandomAccessibleInterval< T > ama, // Amnioserosa
+										   double[] inputCalibration  )
 	{
 
 		AffineTransform3D registration = new AffineTransform3D();
@@ -75,9 +78,10 @@ public class ShavenBabyRegistration
 		
 		Utils.log( "Down-sampling to registration resolution..." );
 
-		final RandomAccessibleInterval< T > downscaled = Algorithms.createIsotropicArrayImg( input, getScalingFactors( inputCalibration, settings.registrationResolution ) );
+		final RandomAccessibleInterval< T > downscaledSvb = Algorithms.createIsotropicArrayImg( svb, getScalingFactors( inputCalibration, settings.registrationResolution ) );
+		final RandomAccessibleInterval< T > downscaledAma = Algorithms.createIsotropicArrayImg( ama, getScalingFactors( inputCalibration, settings.registrationResolution ) );
 
-		if ( settings.showIntermediateResults ) show( downscaled, "at registration resolution", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( downscaledSvb, "at registration resolution", null, registrationCalibration, false );
 
 
 		/**
@@ -87,7 +91,7 @@ public class ShavenBabyRegistration
 
 		Utils.log( "Computing offset and threshold..." );
 
-		final IntensityHistogram intensityHistogram = new IntensityHistogram( downscaled, 65535.0, 5.0 );
+		final IntensityHistogram intensityHistogram = new IntensityHistogram( downscaledSvb, 65535.0, 5.0 );
 
 		CoordinateAndValue mode = intensityHistogram.getMode();
 
@@ -97,6 +101,8 @@ public class ShavenBabyRegistration
 
 		Utils.log( "Offset: " + mode.position );
 		Utils.log( "Threshold: " + ( thresholdAfterIntensityCorrection + mode.position ) );
+		Utils.log( "Intensity corrected threshold: " + thresholdAfterIntensityCorrection );
+
 
 		/**
 		 *  Refractive index corrections
@@ -104,26 +110,25 @@ public class ShavenBabyRegistration
 		
 		Utils.log( "Refractive index intensity correction..." );
 
-		final RandomAccessibleInterval< T > intensityCorrected = Utils.copyAsArrayImg( downscaled );
+		final RandomAccessibleInterval< T > intensityCorrectedSvb = Utils.copyAsArrayImg( downscaledSvb );
+		final RandomAccessibleInterval< T > intensityCorrectedAma = Utils.copyAsArrayImg( downscaledAma );
 
-		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrected, registrationCalibration[ Z ], mode.position, settings.refractiveIndexIntensityCorrectionDecayLength );
+		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedSvb, registrationCalibration[ Z ], mode.position, settings.refractiveIndexIntensityCorrectionDecayLength );
+		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedAma, registrationCalibration[ Z ], mode.position, settings.refractiveIndexIntensityCorrectionDecayLength );
 
-		if ( settings.showIntermediateResults ) show( intensityCorrected, "intensity corrected", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( intensityCorrectedSvb, "intensity corrected svb", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( intensityCorrectedAma, "intensity corrected ama", null, registrationCalibration, false );
 
 
 		/**
 		 * Create mask
 		 */
 
-		RandomAccessibleInterval< BitType > mask = createMask( intensityCorrected, thresholdAfterIntensityCorrection );
+		RandomAccessibleInterval< BitType > mask = createMask( intensityCorrectedSvb, thresholdAfterIntensityCorrection );
 
-		if ( settings.showIntermediateResults ) show( mask, "mask", null, registrationCalibration, false );
+		mask = opService.morphology().fillHoles( mask );
 
-		/**
-		 * Morphological closing
-		 */
-
-		mask = createClosedImage( mask );
+//		if ( settings.showIntermediateResults ) show( mask, "mask", null, registrationCalibration, false );
 
 		/**
 		 * Remove small objects
@@ -131,7 +136,7 @@ public class ShavenBabyRegistration
 
 		mask = Algorithms.removeSmallObjectsAndReturnMask( mask, settings.minimalObjectSize, settings.registrationResolution );
 
-		if ( settings.showIntermediateResults ) show( mask, "closed and object size filtered", null, registrationCalibration, false );
+//		if ( settings.showIntermediateResults ) show( mask, "closed and object size filtered", null, registrationCalibration, false );
 
 		/**
 		 * Distance transform
@@ -147,7 +152,7 @@ public class ShavenBabyRegistration
 
 		DistanceTransform.transform( doubleBinary, distance, DistanceTransform.DISTANCE_TYPE.EUCLIDIAN, 1.0D );
 
-		if ( settings.showIntermediateResults ) show( distance, "distance transform", null, registrationCalibration, false );
+//		if ( settings.showIntermediateResults ) show( distance, "distance transform", null, registrationCalibration, false );
 
 		/**
 		 * Watershed seeds
@@ -175,7 +180,9 @@ public class ShavenBabyRegistration
 
 		Utils.applyMask( watershedLabelImg, mask );
 
-		if ( settings.showIntermediateResults ) show( watershedLabelImg, "watershed", null, registrationCalibration, false );
+
+
+//		if ( settings.showIntermediateResults ) show( watershedLabelImg, "watershed", null, registrationCalibration, false );
 
 
 		/**
@@ -186,9 +193,14 @@ public class ShavenBabyRegistration
 
 		final LabelRegion< Integer > centralObjectRegion = getCentralObjectLabelRegion( watershedLabeling );
 
-		RandomAccessibleInterval< BitType > centralObjectMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaled ) );
+		RandomAccessibleInterval< BitType > centralObjectMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaledSvb ) );
 
-		if ( settings.showIntermediateResults ) show( centralObjectMask, "central object", null, registrationCalibration, false );
+		centralObjectMask = close( centralObjectMask, 30 );
+
+		centralObjectMask = opService.morphology().fillHoles( centralObjectMask );
+
+
+//		if ( settings.showIntermediateResults ) show( centralObjectMask, "central object", null, registrationCalibration, false );
 
 		/**
 		 * Compute ellipsoid (probably mainly yaw) alignment
@@ -202,7 +214,7 @@ public class ShavenBabyRegistration
 
 		final RandomAccessibleInterval yawAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ) );
 
-		final RandomAccessibleInterval yawAlignedIntensities = Utils.copyAsArrayImg( Transforms.createTransformedView( downscaled, registration ) );
+		final RandomAccessibleInterval yawAlignedIntensities = Utils.copyAsArrayImg( Transforms.createTransformedView( downscaledSvb, registration ) );
 
 
 		/**
@@ -211,43 +223,86 @@ public class ShavenBabyRegistration
 
 		Utils.log( "Computing long axis orientation..." );
 
-		final AffineTransform3D orientationTransform = computeOrientationTransform( yawAlignedMask, yawAlignedIntensities, settings.registrationResolution );
+		final AffineTransform3D orientationTransform = computeFlippingTransform( yawAlignedMask, yawAlignedIntensities, settings.registrationResolution );
 
 		registration = registration.preConcatenate( orientationTransform );
+
+		final RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ) );
+
+		if ( settings.showIntermediateResults ) show( yawAndOrientationAlignedMask, "long axis aligned svb", null, registrationCalibration, false );
 
 
 		/**
 		 *  Roll transform
 		 */
 
-		Utils.log( "Computing roll transform..." );
+		Utils.log( "Computing roll transform, using method " + settings.rollAngleComputationMethod );
 
-		final RandomAccessibleInterval yawAndOrientationAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ) );
+		if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.AMNIOSEROSA ) )
+		{
+			/**
+			 *  Amnioserosa based roll transform
+			 */
 
-		final CentroidsParameters centroidsParameters = Utils.computeCentroidsParametersAlongXAxis( yawAndOrientationAlignedMask, settings.registrationResolution, settings.rollAngleMaxDistanceToCenter );
+			final RandomAccessibleInterval yawAndOrientationAlignedAma = Utils.copyAsArrayImg( Transforms.createTransformedView( intensityCorrectedAma, registration, new NearestNeighborInterpolatorFactory() ) );
+			final RandomAccessibleInterval yawAndOrientationAlignedSvb = Utils.copyAsArrayImg( Transforms.createTransformedView( intensityCorrectedSvb, registration, new NearestNeighborInterpolatorFactory() ) );
 
-		if ( settings.showIntermediateResults )
-			Plots.plot( centroidsParameters.axisCoordinates, centroidsParameters.angles, "x", "angle" );
-		if ( settings.showIntermediateResults )
-			Plots.plot( centroidsParameters.axisCoordinates, centroidsParameters.distances, "x", "distance" );
-		if ( settings.showIntermediateResults )
-			Plots.plot( centroidsParameters.axisCoordinates, centroidsParameters.numVoxels, "x", "numVoxels" );
-		if ( settings.showIntermediateResults )
-			show( yawAndOrientationAlignedMask, "yaw and orientation aligned mask", centroidsParameters.centroids, registrationCalibration, false );
+			final AffineTransform3D intensityBasedRollTransform = computeIntensityBasedRollTransform(
+					yawAndOrientationAlignedAma,
+					settings.amaProjectionXMin,
+					settings.amaProjectionXMax,
+					settings.amaProjectionBlurSigma );
 
-		final AffineTransform3D rollTransform = computeRollTransform( centroidsParameters, settings );
+			registration = registration.preConcatenate( intensityBasedRollTransform );
 
-		registration = registration.preConcatenate( rollTransform );
+			if ( settings.showIntermediateResults ) show( yawAndOrientationAlignedSvb, "long axis aligned svb", null, registrationCalibration, false );
+			if ( settings.showIntermediateResults ) show( yawAndOrientationAlignedAma, "long axis aligned amnioserosa", null, registrationCalibration, false );
 
-		ArrayList< RealPoint > transformedCentroids = createTransformedCentroidPointList( centroidsParameters, rollTransform );
+		}
+		else if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.CENTROID_SHAPE ) )
+		{
+			final CentroidsParameters centroidsParameters = Utils.computeCentroidsParametersAlongXAxis( yawAndOrientationAlignedMask, settings.registrationResolution, settings.rollAngleMaxDistanceToCenter );
 
-		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ), "yaw and roll aligned mask", transformedCentroids, registrationCalibration, false );
+			if ( settings.showIntermediateResults )
+				Plots.plot( centroidsParameters.axisCoordinates, centroidsParameters.angles, "x", "angle" );
+			if ( settings.showIntermediateResults )
+				Plots.plot( centroidsParameters.axisCoordinates, centroidsParameters.distances, "x", "distance" );
+			if ( settings.showIntermediateResults )
+				Plots.plot( centroidsParameters.axisCoordinates, centroidsParameters.numVoxels, "x", "numVoxels" );
+			if ( settings.showIntermediateResults )
+				show( yawAndOrientationAlignedMask, "yaw and orientation aligned mask", centroidsParameters.centroids, registrationCalibration, false );
+
+			final AffineTransform3D rollTransform = computeCentroidBasedRollTransform( centroidsParameters, settings );
+
+			registration = registration.preConcatenate( rollTransform );
+
+			ArrayList< RealPoint > transformedCentroids = createTransformedCentroidPointList( centroidsParameters, rollTransform );
+
+			final RandomAccessibleInterval< T > alignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ) );
+
+			if ( settings.showIntermediateResults ) show( alignedMask, "yaw and roll aligned mask", transformedCentroids, registrationCalibration, false );
+
+		}
+		else if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.PROJECTION_SHAPE ) )
+		{
+
+			final RandomAccessibleInterval< UnsignedIntType > intMask = Converters.convert( yawAndOrientationAlignedMask, ( i, o ) -> o.set( i.getRealDouble() > 0 ? 1000 : 0 ), new UnsignedIntType() );
+
+			final AffineTransform3D intensityBasedRollTransform = computeIntensityBasedRollTransform(
+					intMask,
+					intMask.min( X ) * settings.registrationResolution,
+					intMask.max( X ) * settings.registrationResolution,
+					12.0 );
+
+			registration = registration.preConcatenate( intensityBasedRollTransform );
+		}
+
 
 		/**
 		 * Show aligned input image at registration resolution
 		 */
 
-		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrected, registration ), "aligned input data ( " + settings.outputResolution + " um )", origin(), registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedSvb, registration ), "aligned input data ( " + settings.outputResolution + " um )", origin(), registrationCalibration, false );
 
 		/**
 		 * Compute final registration
@@ -259,14 +314,16 @@ public class ShavenBabyRegistration
 
 	}
 
-	public RandomAccessibleInterval< BitType > createClosedImage( RandomAccessibleInterval< BitType > mask )
+	public RandomAccessibleInterval< BitType > close(
+			RandomAccessibleInterval< BitType > mask,
+			double closingRadius )
 	{
 		RandomAccessibleInterval< BitType > closed = Utils.copyAsArrayImg( mask );
 
-		if ( settings.closingRadius > 0 )
+		if ( closingRadius > 0 )
 		{
 			Utils.log( "Morphological closing...");
-			Shape closingShape = new HyperSphereShape( ( int ) ( settings.closingRadius / settings.registrationResolution ) );
+			Shape closingShape = new HyperSphereShape( ( int ) ( closingRadius / settings.registrationResolution ) );
 			Closing.close( Views.extendBorder( mask ), Views.iterable( closed ), closingShape, 1 );
 		}
 
@@ -279,8 +336,6 @@ public class ShavenBabyRegistration
 		Utils.log( "Creating mask...");
 
 		RandomAccessibleInterval< BitType > mask = Converters.convert( downscaled, ( i, o ) -> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
-
-		mask = opService.morphology().fillHoles( mask );
 
 		return mask;
 	}
@@ -313,7 +368,8 @@ public class ShavenBabyRegistration
 		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.registrationResolution, 2 );
 		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.registrationResolution, 2 );
 
-		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createSeeds(
+		// TODO: remove local maxima detection
+		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createCenterAndBoundarySeeds(
 				distance,
 				new HyperSphereShape( 1 ),
 				globalDistanceThreshold,
@@ -325,7 +381,7 @@ public class ShavenBabyRegistration
 		return seedsLabelImg;
 	}
 
-	public AffineTransform3D computeOrientationTransform( RandomAccessibleInterval yawAlignedMask, RandomAccessibleInterval yawAlignedIntensities, double calibration )
+	public AffineTransform3D computeFlippingTransform( RandomAccessibleInterval yawAlignedMask, RandomAccessibleInterval yawAlignedIntensities, double calibration )
 	{
 		final CoordinatesAndValues coordinatesAndValues = Utils.computeAverageIntensitiesAlongAxis( yawAlignedIntensities, yawAlignedMask, X, calibration );
 
@@ -338,6 +394,39 @@ public class ShavenBabyRegistration
 		if ( maxLoc < 0 ) affineTransform3D.rotate( Z, toRadians( 180.0D ) );
 
 		return affineTransform3D;
+	}
+
+	public < T extends RealType< T > & NativeType< T > >
+	AffineTransform3D computeIntensityBasedRollTransform(
+			RandomAccessibleInterval rai,
+			double xMin,
+			double xMax,
+			double blurSigma )
+	{
+		final RandomAccessibleInterval< T > longAxisProjection = Utils.createAverageProjectionAlongAxis(
+				rai,
+				X,
+				xMin,
+				xMax,
+				settings.registrationResolution );
+
+		// if ( settings.showIntermediateResults ) show( longAxisProjection, "amnioserosa projection", null, Utils.get3dDoubleArray( calibration ) , false );
+
+		final RandomAccessibleInterval< T > blurred = Utils.createBlurredRai(
+				longAxisProjection,
+				blurSigma,
+				settings.registrationResolution );
+
+		final Point maximum = Algorithms.findMaximumLocation( blurred, Utils.get2dDoubleArray( settings.registrationResolution ));
+		final List< RealPoint > realPoints = Utils.asRealPointList( maximum );
+		realPoints.add( new RealPoint( new double[]{ 0, 0 } ) );
+
+		if ( settings.showIntermediateResults ) show( blurred, "perpendicular projection - blurred ", realPoints, Utils.get2dDoubleArray( settings.registrationResolution ), false );
+
+		final AffineTransform3D xAxisRollTransform = createXAxisRollTransform( maximum );
+		xAxisRollTransform.rotate( X, Math.PI );
+
+		return xAxisRollTransform;
 	}
 
 	public ArrayList< RealPoint > createTransformedCentroidPointList( CentroidsParameters centroidsParameters, AffineTransform3D rollTransform )
@@ -353,7 +442,7 @@ public class ShavenBabyRegistration
 		return transformedRealPoints;
 	}
 
-	public static AffineTransform3D computeRollTransform( CentroidsParameters centroidsParameters, ShavenBabyRegistrationSettings settings )
+	public static AffineTransform3D computeCentroidBasedRollTransform( CentroidsParameters centroidsParameters, ShavenBabyRegistrationSettings settings )
 	{
 		final double rollAngle = computeRollAngle( centroidsParameters, settings.rollAngleMinDistanceToAxis, settings.rollAngleMinDistanceToCenter, settings.rollAngleMaxDistanceToCenter );
 
@@ -361,7 +450,7 @@ public class ShavenBabyRegistration
 
 		AffineTransform3D rollTransform = new AffineTransform3D();
 
-		rollTransform.rotate( X, - toRadians( rollAngle ) );
+		rollTransform.rotate( X, toRadians( rollAngle ) );
 
 		return rollTransform;
 	}
@@ -386,7 +475,7 @@ public class ShavenBabyRegistration
 
 		double medianAngle = Utils.median( offCenterAngles );
 
-		return medianAngle;
+		return -1 * medianAngle;
 	}
 
 	public static ArrayList< RealPoint > origin()
