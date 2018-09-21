@@ -5,6 +5,8 @@ import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.EllipsoidParameters;
 import de.embl.cba.morphometry.geometry.Ellipsoids;
+import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
+import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
@@ -14,7 +16,6 @@ import net.imglib2.histogram.Histogram1d;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
-import net.imglib2.outofbounds.OutOfBoundsConstantValueFactory;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
@@ -48,11 +49,17 @@ public class ShavenBabyRegistration
 	final ShavenBabyRegistrationSettings settings;
 	final OpService opService;
 	private RandomAccessibleInterval< BitType > centralObjectMask;
+	private double coverslipPosition;
 
 	public ShavenBabyRegistration( ShavenBabyRegistrationSettings settings, OpService opService )
 	{
 		this.settings = settings;
 		this.opService = opService;
+	}
+
+	public double getCoverslipPosition()
+	{
+		return coverslipPosition;
 	}
 
 	public RandomAccessibleInterval< BitType > getCentralObjectMask()
@@ -90,17 +97,27 @@ public class ShavenBabyRegistration
 
 
 		/**
-		 *  Compute offset
+		 *  Compute intensity offset
 		 */
-
 
 		Utils.log( "Computing offset and threshold..." );
 
 		final IntensityHistogram rawDataIntensityHistogram = new IntensityHistogram( downscaledSvb, 65535.0, 5.0 );
 
-		CoordinateAndValue mode = rawDataIntensityHistogram.getMode();
+		CoordinateAndValue intensityHistogramMode = rawDataIntensityHistogram.getMode();
 
-		Utils.log( "Offset: " + mode.position );
+		Utils.log( "Offset: " + intensityHistogramMode.position );
+
+
+		/**
+		 *  Compute approximate axial embryo center position
+		 */
+
+
+		final CoordinatesAndValues averageSvbIntensitiesAlongZ = Utils.computeAverageIntensitiesAlongAxis( downscaledSvb, 2, settings.registrationResolution );
+
+		final double embryoCenterPosition = Utils.computeMaxLoc( averageSvbIntensitiesAlongZ );
+		coverslipPosition = embryoCenterPosition - ShavenBabyRegistrationSettings.drosophilaWidth / 2.0;
 
 
 		/**
@@ -109,11 +126,17 @@ public class ShavenBabyRegistration
 		
 		Utils.log( "Refractive index intensity correction..." );
 
+		final RefractiveIndexMismatchCorrectionSettings correctionSettings = new RefractiveIndexMismatchCorrectionSettings();
+		correctionSettings.intensityOffset = intensityHistogramMode.position;
+		correctionSettings.intensityDecayLengthMicrometer = settings.refractiveIndexIntensityCorrectionDecayLength;
+		correctionSettings.coverslipPositionMicrometer = coverslipPosition;
+		correctionSettings.pixelCalibrationMicrometer = settings.registrationResolution;
+
 		final RandomAccessibleInterval< T > intensityCorrectedSvb = Utils.copyAsArrayImg( downscaledSvb );
 		final RandomAccessibleInterval< T > intensityCorrectedAma = Utils.copyAsArrayImg( downscaledAma );
 
-		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedSvb, registrationCalibration[ Z ], mode.position, settings.refractiveIndexIntensityCorrectionDecayLength );
-		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedAma, registrationCalibration[ Z ], mode.position, settings.refractiveIndexIntensityCorrectionDecayLength );
+		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedSvb, correctionSettings );
+		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedAma, correctionSettings );
 
 		if ( settings.showIntermediateResults ) show( intensityCorrectedSvb, "intensity corrected svb", null, registrationCalibration, false );
 		//if ( settings.showIntermediateResults ) show( intensityCorrectedAma, "intensity corrected ama", null, registrationCalibration, false );
@@ -406,7 +429,7 @@ public class ShavenBabyRegistration
 
 	public AffineTransform3D computeFlippingTransform( RandomAccessibleInterval yawAlignedMask, RandomAccessibleInterval yawAlignedIntensities, double calibration )
 	{
-		final CoordinatesAndValues coordinatesAndValues = Utils.computeAverageIntensitiesAlongAxis( yawAlignedIntensities, yawAlignedMask, X, calibration );
+		final CoordinatesAndValues coordinatesAndValues = Utils.computeAverageIntensitiesAlongAxisWithinMask( yawAlignedIntensities, yawAlignedMask, X, calibration );
 
 		if ( settings.showIntermediateResults ) Plots.plot( coordinatesAndValues.coordinates, coordinatesAndValues.values, "x", "average intensity" );
 
@@ -418,6 +441,8 @@ public class ShavenBabyRegistration
 
 		return affineTransform3D;
 	}
+
+
 
 	public < T extends RealType< T > & NativeType< T > >
 	AffineTransform3D computeIntensityBasedRollTransform(

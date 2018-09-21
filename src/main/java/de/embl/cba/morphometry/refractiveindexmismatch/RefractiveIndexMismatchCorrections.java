@@ -1,7 +1,8 @@
-package de.embl.cba.morphometry;
+package de.embl.cba.morphometry.refractiveindexmismatch;
 
+import de.embl.cba.morphometry.IntensityHistogram;
+import de.embl.cba.morphometry.Utils;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
@@ -17,8 +18,7 @@ public abstract class RefractiveIndexMismatchCorrections
 
 	public static double getIntensityCorrectionFactorAlongZ(
 			long z,
-			double zScalingToMicrometer,
-			double intensityDecayLengthInMicrometer )
+			RefractiveIndexMismatchCorrectionSettings settings )
 	{
 
 		/*
@@ -42,11 +42,9 @@ public abstract class RefractiveIndexMismatchCorrections
 
 		double generalIntensityScaling = 0.1; // TODO: what to use here?
 
-		double offsetInMicrometer = 80.0D; // TODO: might differ between samples?
+		double zInMicrometer = z * settings.pixelCalibrationMicrometer - settings.coverslipPositionMicrometer;
 
-		double zInMicrometer = z * zScalingToMicrometer - offsetInMicrometer;
-
-		double correctionFactor = generalIntensityScaling / exp( - zInMicrometer / intensityDecayLengthInMicrometer );
+		double correctionFactor = generalIntensityScaling / exp( - zInMicrometer / settings.intensityDecayLengthMicrometer );
 
 		return correctionFactor;
 	}
@@ -54,9 +52,7 @@ public abstract class RefractiveIndexMismatchCorrections
 	public static < T extends RealType< T > & NativeType< T > >
 	void correctIntensity(
 			RandomAccessibleInterval< T > rai,
-			double zCalibration,
-			double intensityOffset,
-			double intensityDecayLength )
+			RefractiveIndexMismatchCorrectionSettings settings )
 	{
 		for ( long z = rai.min( Z ); z <= rai.max( Z ); ++z )
 		{
@@ -64,19 +60,18 @@ public abstract class RefractiveIndexMismatchCorrections
 
 			double intensityCorrectionFactor = getIntensityCorrectionFactorAlongZ(
 					z,
-					zCalibration,
-					intensityDecayLength );
+					settings );
 
 			Views.iterable( slice ).forEach( t ->
 					{
 
-						if ( ( t.getRealDouble() - intensityOffset ) < 0 )
+						if ( ( t.getRealDouble() - settings.intensityOffset ) < 0 )
 						{
 							t.setReal( 0 );
 						}
 						else
 						{
-							t.setReal( t.getRealDouble() - intensityOffset );
+							t.setReal( t.getRealDouble() - settings.intensityOffset );
 							t.mul( intensityCorrectionFactor );
 						}
 					}
@@ -87,7 +82,8 @@ public abstract class RefractiveIndexMismatchCorrections
 	}
 
 	public static <T extends RealType<T> & NativeType< T > >
-	RandomAccessibleInterval< T > createIntensityCorrectedImages( RandomAccessibleInterval< T > images, double zCalibration, double intensityDecayLength )
+	RandomAccessibleInterval< T > createIntensityCorrectedImages( RandomAccessibleInterval< T > images, 
+																  RefractiveIndexMismatchCorrectionSettings settings )
 	{
 		ArrayList< RandomAccessibleInterval< T > > correctedImages = new ArrayList<>(  );
 
@@ -95,19 +91,23 @@ public abstract class RefractiveIndexMismatchCorrections
 
 		for ( long c = 0; c < numChannels; ++c )
 		{
-			final RandomAccessibleInterval< T > channel = Views.hyperSlice( images, 3, c );
-			final RandomAccessibleInterval< T > intensityCorrectedChannel = createIntensityCorrectedChannel( zCalibration, intensityDecayLength, channel );
+			final RandomAccessibleInterval< T > image = Views.hyperSlice( images, 3, c );
+			final RandomAccessibleInterval< T > intensityCorrectedChannel = createIntensityCorrectedChannel( image, settings );
 			correctedImages.add( intensityCorrectedChannel );
 		}
 
 		return Views.stack( correctedImages );
 	}
 
-	public static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< T > createIntensityCorrectedChannel( double zCalibration, double intensityDecayLength, RandomAccessibleInterval< T > channel )
+
+	public static < T extends RealType< T > & NativeType< T > > 
+	RandomAccessibleInterval< T > createIntensityCorrectedChannel(
+			RandomAccessibleInterval< T > image,
+			RefractiveIndexMismatchCorrectionSettings settings )
 	{
-		final double intensityOffset = getIntensityOffset( channel );
-		final RandomAccessibleInterval< T > intensityCorrectedChannel = Utils.copyAsArrayImg( channel );
-		correctIntensity( intensityCorrectedChannel, zCalibration, intensityOffset, intensityDecayLength );
+		settings.intensityOffset = getIntensityOffset( image );
+		final RandomAccessibleInterval< T > intensityCorrectedChannel = Utils.copyAsArrayImg( image );
+		correctIntensity( intensityCorrectedChannel, settings );
 		return intensityCorrectedChannel;
 	}
 

@@ -1,7 +1,7 @@
 package de.embl.cba.morphometry.drosophila.dapi;
 
 import de.embl.cba.morphometry.Algorithms;
-import de.embl.cba.morphometry.RefractiveIndexMismatchCorrections;
+import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
 import de.embl.cba.morphometry.Transforms;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.geometry.Ellipsoids;
@@ -57,7 +57,7 @@ public class DapiRegistration
 
 		if ( settings.showIntermediateResults ) show( binned, "binned copyAsArrayImg ( " + settings.resolutionDuringRegistrationInMicrometer + " um )", null, calibration, false );
 
-		RefractiveIndexMismatchCorrections.correctIntensity( binned, calibration[ Z ], 0.0D, settings.refractiveIndexIntensityCorrectionDecayLength );
+		RefractiveIndexMismatchCorrections.correctIntensity( binned, calibration[ Z ], 0.0D, settings.refractiveIndexIntensityCorrectionDecayLength, calibratedCoverslipPosition );
 
 		final RandomAccessibleInterval< BitType > binaryImage = Utils.createBinaryImage( binned, settings.threshold );
 

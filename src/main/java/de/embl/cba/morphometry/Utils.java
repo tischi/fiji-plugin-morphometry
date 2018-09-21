@@ -90,21 +90,6 @@ public class Utils
 		return coordinatesAndValues;
 	}
 
-	public static < T extends RealType< T > & NativeType< T > >
-	CoordinatesAndValues computeAverageIntensitiesAlongAxis(
-			RandomAccessibleInterval< T > rai, int axis, double calibration )
-	{
-		final CoordinatesAndValues coordinatesAndValues = new CoordinatesAndValues();
-
-		for ( long coordinate = rai.min( axis ); coordinate <= rai.max( axis ); ++coordinate )
-		{
-			final IntervalView< T > intensitySlice = Views.hyperSlice( rai, axis, coordinate );
-			coordinatesAndValues.coordinates.add( (double) coordinate * calibration );
-			coordinatesAndValues.values.add( computeAverage( intensitySlice ) );
-		}
-
-		return coordinatesAndValues;
-	}
 
 	public static double sum( List<Double> a ){
 		if (a.size() > 0) {
@@ -138,7 +123,7 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	CoordinatesAndValues computeAverageIntensitiesAlongAxis( RandomAccessibleInterval< T > rai, RandomAccessibleInterval< BitType > mask, int axis, double calibration )
+	CoordinatesAndValues computeAverageIntensitiesAlongAxisWithinMask( RandomAccessibleInterval< T > rai, RandomAccessibleInterval< BitType > mask, int axis, double calibration )
 	{
 		final CoordinatesAndValues coordinatesAndValues = new CoordinatesAndValues();
 
@@ -149,6 +134,22 @@ public class Utils
 
 			coordinatesAndValues.coordinates.add( (double) coordinate * calibration );
 			coordinatesAndValues.values.add( computeAverage( intensitySlice, maskSlice ) );
+		}
+
+		return coordinatesAndValues;
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	CoordinatesAndValues computeAverageIntensitiesAlongAxis(
+			RandomAccessibleInterval< T > rai, int axis, double calibration )
+	{
+		final CoordinatesAndValues coordinatesAndValues = new CoordinatesAndValues();
+
+		for ( long coordinate = rai.min( axis ); coordinate <= rai.max( axis ); ++coordinate )
+		{
+			final IntervalView< T > intensitySlice = Views.hyperSlice( rai, axis, coordinate );
+			coordinatesAndValues.coordinates.add( (double) coordinate * calibration );
+			coordinatesAndValues.values.add( computeAverage( intensitySlice ) );
 		}
 
 		return coordinatesAndValues;
@@ -408,6 +409,11 @@ public class Utils
 			return new AffineTransform3D();
 		}
 
+	}
+
+	public static double computeMaxLoc( CoordinatesAndValues coordinatesAndValues )
+	{
+		return computeMaxLoc( coordinatesAndValues.coordinates, coordinatesAndValues.values, null );
 	}
 
 	public static double computeMaxLoc( ArrayList< Double > coordinates, ArrayList< Double > values, double[] coordinateRangeMinMax )
