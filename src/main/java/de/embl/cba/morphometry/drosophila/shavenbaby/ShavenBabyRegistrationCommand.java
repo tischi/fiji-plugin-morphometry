@@ -2,7 +2,8 @@ package de.embl.cba.morphometry.drosophila.shavenbaby;
 
 import bdv.util.*;
 import de.embl.cba.morphometry.Projection;
-import de.embl.cba.morphometry.RefractiveIndexMismatchCorrections;
+import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
+import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
 import de.embl.cba.morphometry.Transforms;
 import de.embl.cba.morphometry.Utils;
 import ij.ImagePlus;
@@ -19,7 +20,6 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Intervals;
 import net.imglib2.view.IntervalView;
-import net.imglib2.view.MixedTransformView;
 import net.imglib2.view.Views;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -286,7 +286,11 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 
 		Utils.log( "Applying intensity correction to all channels...." );
-		final RandomAccessibleInterval< T > intensityCorrectedImages = RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, calibration[ 2 ], settings.refractiveIndexIntensityCorrectionDecayLength  );
+		final RefractiveIndexMismatchCorrectionSettings correctionSettings = new RefractiveIndexMismatchCorrectionSettings();
+		correctionSettings.pixelCalibrationMicrometer = calibration[ 2 ];
+		correctionSettings.intensityDecayLengthMicrometer = settings.refractiveIndexIntensityCorrectionDecayLength;
+		correctionSettings.coverslipPositionMicrometer = registration.getCoverslipPosition();
+		final RandomAccessibleInterval< T > intensityCorrectedImages = RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, correctionSettings  );
 
 		Utils.log( "Applying registration to all channels (at a resolution of " + settings.outputResolution + " micrometer) ..." );
 		final RandomAccessibleInterval< T > registeredImages = Transforms.transformAllChannels( intensityCorrectedImages, registrationTransform );
