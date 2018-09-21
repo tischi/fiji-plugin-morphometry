@@ -20,6 +20,7 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.LongArray;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.loops.LoopBuilder;
+import net.imglib2.outofbounds.OutOfBounds;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
@@ -156,6 +157,21 @@ public class Utils
 	}
 
 
+	public static <T extends RealType<T> & NativeType< T > >
+	RandomAccessibleInterval< T > maskAllChannels( RandomAccessibleInterval< T > images, RandomAccessibleInterval< BitType > mask )
+	{
+		ArrayList< RandomAccessibleInterval< T > > maskedChannels = new ArrayList<>(  );
+
+		long numChannels = images.dimension( 3 );
+		for ( int c = 0; c < numChannels; ++c )
+		{
+			final RandomAccessibleInterval< T > channel = Utils.copyAsArrayImg( Views.hyperSlice( images, 3, c ) );
+			Utils.applyMask( channel, mask );
+			maskedChannels.add( channel );
+		}
+
+		return Views.stack( maskedChannels );
+	}
 
 	public static CentroidsParameters computeCentroidsParametersAlongXAxis(
 			RandomAccessibleInterval< BitType > rai,
@@ -338,7 +354,18 @@ public class Utils
 	public static  < T extends RealType< T > & NativeType< T > >
 	void applyMask( RandomAccessibleInterval< T > rai, RandomAccessibleInterval< BitType > mask )
 	{
-		LoopBuilder.setImages( rai, mask ).forEachPixel( ( i, m ) ->  i.setReal( ( m.get() ? i.getRealDouble() : 0 ) ) );
+		final Cursor< T > cursor = Views.iterable( rai ).cursor();
+		final OutOfBounds< BitType > maskAccess = Views.extendZero( mask ).randomAccess();
+
+		while ( cursor.hasNext() )
+		{
+			cursor.fwd();
+			maskAccess.setPosition( cursor );
+			if ( ! maskAccess.get().get() )
+			{
+				cursor.get().setZero();
+			}
+		}
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
@@ -833,7 +860,6 @@ public class Utils
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > getMaskedAndCropped( RandomAccessibleInterval<T> image, LabelRegion labelRegion )
 	{
-
 		ImgFactory< T > imgFactory = new ArrayImgFactory( image.randomAccess().get()  );
 		RandomAccessibleInterval< T > output = Views.translate( imgFactory.create( labelRegion ), Intervals.minAsLongArray( labelRegion )  ) ;
 
@@ -848,8 +874,6 @@ public class Utils
 			outputRandomAccess.setPosition( cursor );
 			outputRandomAccess.get().set( imageRandomAccess.get() );
 		}
-
-		ImageJFunctions.show( output );
 
 		return output;
 	}

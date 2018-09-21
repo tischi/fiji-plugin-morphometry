@@ -109,7 +109,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 		if ( inputModality.equals( CURRENT_IMAGE ) && imagePlus != null )
 		{
-//			RandomAccessibleInterval< T > transformed = registerImages( imagePlus, registration );
+//			RandomAccessibleInterval< T > transformed = alignAndMaskImages( imagePlus, registration );
 //			showWithBdv( transformed, "registered" );
 //			ImageJFunctions.show( Views.permute( transformed, 2, 3 ) );
 		}
@@ -135,7 +135,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 						continue;
 					}
 
-					RandomAccessibleInterval< T > registeredImages = registerImages( inputImagePlus, registration );
+					RandomAccessibleInterval< T > registeredImages = alignAndMaskImages( inputImagePlus, registration );
 
 					if ( registeredImages == null )
 					{
@@ -157,25 +157,17 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 					Utils.log( "Saving projections..." );
 					saveImages( inputPath, projections );
 
-					// Save
+					// Save full registered stack
 					final RandomAccessibleInterval< T > transformedWithImagePlusDimensionOrder = Utils.copyAsArrayImg( Views.permute( registeredAndCropped, 2, 3 ) );
 					final ImagePlus transformedImagePlus = ImageJFunctions.wrap( transformedWithImagePlusDimensionOrder, "transformed" );
 					final String outputPath = inputPath + "-registered.tif";
 					Utils.log( "Saving registered image: " + outputPath );
 					new FileSaver( transformedImagePlus ).saveAsTiff( outputPath );
 
-					// Save central object mask
-					final RandomAccessibleInterval< BitType > mask = Views.permute( Views.addDimension( registration.getCentralObjectMask(), 0, 0 ), 2, 3);
-					new FileSaver( ImageJFunctions.wrap( mask, "mask" ) ).saveAsTiff( inputPath + "-mask.tif" );
-
-					// Save central object mask projection
-					RandomAccessibleInterval maskProjection = new Projection( registration.getCentralObjectMask(), Z ).maximum();
-					new FileSaver( ImageJFunctions.wrap( maskProjection, "mask-projection" ) ).saveAsTiff( inputPath + "-mask-projection.tif" );
-
-					// Save svb projection
+					// Save svb non-registered projection
 					RandomAccessibleInterval< T > shavenbaby = getShavenBabyImage( getImages( inputImagePlus ) );
 					RandomAccessibleInterval shavenbabyMaximum = new Projection( shavenbaby, Z ).maximum();
-					new FileSaver( ImageJFunctions.wrap( shavenbabyMaximum, "svb-projection" ) ).saveAsTiff( inputPath + "-svb-non-registered-projection.tif" );
+					new FileSaver( ImageJFunctions.wrap( shavenbabyMaximum, "svb-projection" ) ).saveAsTiff( inputPath + "-non-registered-svb-projection.tif" );
 
 				}
 			}
@@ -254,6 +246,16 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 			wrap = ImageJFunctions.wrap( maximum, "bottom-projection-ch" + ( channelId + 1 ) );
 			projections.add( wrap );
 
+			// full
+			rangeMin = images.min( Z );
+			rangeMax = images.max( Z );
+			projection = new Projection( channel, Z, rangeMin, rangeMax );
+			maximum = projection.maximum();
+			wrap = ImageJFunctions.wrap( maximum, "full-projection-ch" + ( channelId + 1 ) );
+			projections.add( wrap );
+
+
+
 		}
 
 		return projections;
@@ -267,7 +269,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		BdvFunctions.showPoints( points, "origin", BdvOptions.options().addTo( bdv ) );
 	}
 
-	public RandomAccessibleInterval< T > registerImages( ImagePlus imagePlus, ShavenBabyRegistration registration )
+	public RandomAccessibleInterval< T > alignAndMaskImages( ImagePlus imagePlus, ShavenBabyRegistration registration )
 	{
 		RandomAccessibleInterval< T > images = getImages( imagePlus );
 		RandomAccessibleInterval< T > shavenbaby = getShavenBabyImage( images );
@@ -277,23 +279,24 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 		Utils.log( "Computing registration...." );
 
-		final AffineTransform3D registrationTransform = registration.computeRegistration( shavenbaby, amnioserosa, calibration );
+		registration.run( shavenbaby, amnioserosa, calibration );
 
-		if ( registrationTransform == null )
-		{
-			return null;
-		}
+		final AffineTransform3D transform = registration.getTransform();
 
+		if ( transform == null ) return null;
 
 		Utils.log( "Applying intensity correction to all channels...." );
 		final RefractiveIndexMismatchCorrectionSettings correctionSettings = new RefractiveIndexMismatchCorrectionSettings();
-		correctionSettings.pixelCalibrationMicrometer = calibration[ 2 ];
+		correctionSettings.pixelCalibrationMicrometer = calibration[ 2 ]; // TODO: this get implicitely modified within run to correct for the mismatch, not good style
 		correctionSettings.intensityDecayLengthMicrometer = settings.refractiveIndexIntensityCorrectionDecayLength;
 		correctionSettings.coverslipPositionMicrometer = registration.getCoverslipPosition();
 		final RandomAccessibleInterval< T > intensityCorrectedImages = RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, correctionSettings  );
 
-		Utils.log( "Applying registration to all channels (at a resolution of " + settings.outputResolution + " micrometer) ..." );
-		final RandomAccessibleInterval< T > registeredImages = Transforms.transformAllChannels( intensityCorrectedImages, registrationTransform );
+		Utils.log( "Applying registration and masking to all channels (at a resolution of " + settings.outputResolution + " micrometer) ..." );
+		RandomAccessibleInterval< T > registeredImages = Transforms.transformAllChannels( intensityCorrectedImages, transform );
+		registeredImages = Utils.maskAllChannels( registeredImages, registration.getMask() );
+
+		ImageJFunctions.show( registration.getMask() );
 
 		return registeredImages;
 	}

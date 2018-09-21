@@ -40,7 +40,7 @@ public abstract class RefractiveIndexMismatchCorrections
 		=> correction = 1 / exp( - ( z - 10 ) / d );
 		 */
 
-		double generalIntensityScaling = 0.1; // TODO: what to use here?
+		double generalIntensityScaling = 0.3; // TODO: what to use here?
 
 		double zInMicrometer = z * settings.pixelCalibrationMicrometer - settings.coverslipPositionMicrometer;
 

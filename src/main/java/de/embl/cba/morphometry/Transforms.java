@@ -97,7 +97,7 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 	{
 		final FinalInterval transformedInterval;
 
-		if ( transform instanceof  AffineTransform3D )
+		if ( transform instanceof AffineTransform3D )
 		{
 			FinalRealInterval transformedRealInterval = ( ( AffineTransform3D ) transform ).estimateBounds( rai );
 			transformedInterval = toInterval( transformedRealInterval );
@@ -220,4 +220,6 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 
 		return Views.stack( transformedChannels );
 	}
+
+
 }
