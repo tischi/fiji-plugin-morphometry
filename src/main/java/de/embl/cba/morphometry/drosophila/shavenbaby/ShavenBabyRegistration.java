@@ -6,10 +6,7 @@ import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.EllipsoidParameters;
 import de.embl.cba.morphometry.geometry.Ellipsoids;
 import net.imagej.ops.OpService;
-import net.imglib2.Cursor;
-import net.imglib2.Point;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.RealPoint;
+import net.imglib2.*;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.converter.Converters;
@@ -17,6 +14,7 @@ import net.imglib2.histogram.Histogram1d;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
+import net.imglib2.outofbounds.OutOfBoundsConstantValueFactory;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
@@ -49,11 +47,17 @@ public class ShavenBabyRegistration
 
 	final ShavenBabyRegistrationSettings settings;
 	final OpService opService;
+	private RandomAccessibleInterval< BitType > centralObjectMask;
 
 	public ShavenBabyRegistration( ShavenBabyRegistrationSettings settings, OpService opService )
 	{
 		this.settings = settings;
 		this.opService = opService;
+	}
+
+	public RandomAccessibleInterval< BitType > getCentralObjectMask()
+	{
+		return centralObjectMask;
 	}
 
 	public < T extends RealType< T > & NativeType< T > >
@@ -75,6 +79,7 @@ public class ShavenBabyRegistration
 		 *  Down-sampling to registration resolution
 		 */
 
+		// TODO: during downsampling saturated pixels become zero...
 		
 		Utils.log( "Down-sampling to registration resolution..." );
 
@@ -85,23 +90,17 @@ public class ShavenBabyRegistration
 
 
 		/**
-		 *  Compute offset and threshold
+		 *  Compute offset
 		 */
 
 
 		Utils.log( "Computing offset and threshold..." );
 
-		final IntensityHistogram intensityHistogram = new IntensityHistogram( downscaledSvb, 65535.0, 5.0 );
+		final IntensityHistogram rawDataIntensityHistogram = new IntensityHistogram( downscaledSvb, 65535.0, 5.0 );
 
-		CoordinateAndValue mode = intensityHistogram.getMode();
-
-		final CoordinateAndValue rightHandHalfMaximum = intensityHistogram.getRightHandHalfMaximum();
-
-		double thresholdAfterIntensityCorrection = ( rightHandHalfMaximum.position - mode.position ) * settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
+		CoordinateAndValue mode = rawDataIntensityHistogram.getMode();
 
 		Utils.log( "Offset: " + mode.position );
-		Utils.log( "Threshold: " + ( thresholdAfterIntensityCorrection + mode.position ) );
-		Utils.log( "Intensity corrected threshold: " + thresholdAfterIntensityCorrection );
 
 
 		/**
@@ -117,7 +116,32 @@ public class ShavenBabyRegistration
 		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedAma, registrationCalibration[ Z ], mode.position, settings.refractiveIndexIntensityCorrectionDecayLength );
 
 		if ( settings.showIntermediateResults ) show( intensityCorrectedSvb, "intensity corrected svb", null, registrationCalibration, false );
-		if ( settings.showIntermediateResults ) show( intensityCorrectedAma, "intensity corrected ama", null, registrationCalibration, false );
+		//if ( settings.showIntermediateResults ) show( intensityCorrectedAma, "intensity corrected ama", null, registrationCalibration, false );
+
+
+
+		/**
+		 *  Compute threshold
+		 */
+
+		final IntensityHistogram correctedIntensityHistogram =
+				new IntensityHistogram(
+				intensityCorrectedSvb,
+				65535.0,
+				5.0 );
+
+
+		final double huang = opService.threshold().huang( opService.image().histogram( Views.iterable( intensityCorrectedSvb ) ) ).getRealDouble();
+		final double otsu = opService.threshold().otsu( opService.image().histogram( Views.iterable( intensityCorrectedSvb ) ) ).getRealDouble();
+		final double yen = opService.threshold().yen( opService.image().histogram( Views.iterable( intensityCorrectedSvb ) ) ).getRealDouble();
+
+		// Utils.log( "Intensity corrected threshold: " + thresholdAfterIntensityCorrection );
+
+
+		double thresholdAfterIntensityCorrection = huang; // TODO
+
+		Utils.log( "Intensity corrected threshold: " + thresholdAfterIntensityCorrection );
+
 
 
 		/**
@@ -136,7 +160,7 @@ public class ShavenBabyRegistration
 
 		mask = Algorithms.removeSmallObjectsAndReturnMask( mask, settings.minimalObjectSize, settings.registrationResolution );
 
-//		if ( settings.showIntermediateResults ) show( mask, "closed and object size filtered", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( mask, "closed and object size filtered", null, registrationCalibration, false );
 
 		/**
 		 * Distance transform
@@ -180,9 +204,7 @@ public class ShavenBabyRegistration
 
 		Utils.applyMask( watershedLabelImg, mask );
 
-
-
-//		if ( settings.showIntermediateResults ) show( watershedLabelImg, "watershed", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( watershedLabelImg, "watershed", null, registrationCalibration, false );
 
 
 		/**
@@ -193,14 +215,19 @@ public class ShavenBabyRegistration
 
 		final LabelRegion< Integer > centralObjectRegion = getCentralObjectLabelRegion( watershedLabeling );
 
-		RandomAccessibleInterval< BitType > centralObjectMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaledSvb ) );
+		if ( centralObjectRegion == null )
+		{
+			return null;
+		}
 
-		centralObjectMask = close( centralObjectMask, 30 );
+		centralObjectMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaledSvb ) );
+
+		centralObjectMask = close( centralObjectMask, ( int ) ( 20 / settings.registrationResolution ) );
 
 		centralObjectMask = opService.morphology().fillHoles( centralObjectMask );
 
+		if ( settings.showIntermediateResults ) show( centralObjectMask, "central object", null, registrationCalibration, false );
 
-//		if ( settings.showIntermediateResults ) show( centralObjectMask, "central object", null, registrationCalibration, false );
 
 		/**
 		 * Compute ellipsoid (probably mainly yaw) alignment
@@ -236,14 +263,31 @@ public class ShavenBabyRegistration
 		 *  Roll transform
 		 */
 
-		Utils.log( "Computing roll transform, using method " + settings.rollAngleComputationMethod );
+		registration = computeRollTransform( registration, registrationCalibration, intensityCorrectedSvb, intensityCorrectedAma, yawAndOrientationAlignedMask );
+
+
+		/**
+		 * Show aligned input image at registration resolution
+		 */
+
+		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedSvb, registration ), "aligned input data ( " + settings.outputResolution + " um )", origin(), registrationCalibration, false );
+
+		/**
+		 * Compute final registration
+		 */
+
+		registration = createFinalTransform( inputCalibration, registration, registrationCalibration );
+
+		return registration;
+
+	}
+
+	public < T extends RealType< T > & NativeType< T > > AffineTransform3D computeRollTransform( AffineTransform3D registration, double[] registrationCalibration, RandomAccessibleInterval< T > intensityCorrectedSvb, RandomAccessibleInterval< T > intensityCorrectedAma, RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask )
+	{
+		Utils.log( "Computing roll transform, using method: " + settings.rollAngleComputationMethod );
 
 		if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.AMNIOSEROSA ) )
 		{
-			/**
-			 *  Amnioserosa based roll transform
-			 */
-
 			final RandomAccessibleInterval yawAndOrientationAlignedAma = Utils.copyAsArrayImg( Transforms.createTransformedView( intensityCorrectedAma, registration, new NearestNeighborInterpolatorFactory() ) );
 			final RandomAccessibleInterval yawAndOrientationAlignedSvb = Utils.copyAsArrayImg( Transforms.createTransformedView( intensityCorrectedSvb, registration, new NearestNeighborInterpolatorFactory() ) );
 
@@ -254,9 +298,6 @@ public class ShavenBabyRegistration
 					settings.amaProjectionBlurSigma );
 
 			registration = registration.preConcatenate( intensityBasedRollTransform );
-
-			if ( settings.showIntermediateResults ) show( yawAndOrientationAlignedSvb, "long axis aligned svb", null, registrationCalibration, false );
-			if ( settings.showIntermediateResults ) show( yawAndOrientationAlignedAma, "long axis aligned amnioserosa", null, registrationCalibration, false );
 
 		}
 		else if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.CENTROID_SHAPE ) )
@@ -276,12 +317,6 @@ public class ShavenBabyRegistration
 
 			registration = registration.preConcatenate( rollTransform );
 
-			ArrayList< RealPoint > transformedCentroids = createTransformedCentroidPointList( centroidsParameters, rollTransform );
-
-			final RandomAccessibleInterval< T > alignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ) );
-
-			if ( settings.showIntermediateResults ) show( alignedMask, "yaw and roll aligned mask", transformedCentroids, registrationCalibration, false );
-
 		}
 		else if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.PROJECTION_SHAPE ) )
 		{
@@ -296,38 +331,26 @@ public class ShavenBabyRegistration
 
 			registration = registration.preConcatenate( intensityBasedRollTransform );
 		}
-
-
-		/**
-		 * Show aligned input image at registration resolution
-		 */
-
-		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedSvb, registration ), "aligned input data ( " + settings.outputResolution + " um )", origin(), registrationCalibration, false );
-
-		/**
-		 * Compute final registration
-		 */
-
-		registration = createFinalTransform( inputCalibration, registration, registrationCalibration );
-
 		return registration;
-
 	}
 
 	public RandomAccessibleInterval< BitType > close(
 			RandomAccessibleInterval< BitType > mask,
-			double closingRadius )
+			int closingRadius )
 	{
-		RandomAccessibleInterval< BitType > closed = Utils.copyAsArrayImg( mask );
+		// TODO: Bug(?!) in imglib2 Closing.close makes this necessary
+		RandomAccessibleInterval< BitType > closed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai2( mask, closingRadius );
+		final RandomAccessibleInterval< BitType > enlargedClosed = Utils.getEnlargedRai2( closed, closingRadius );
 
 		if ( closingRadius > 0 )
 		{
 			Utils.log( "Morphological closing...");
-			Shape closingShape = new HyperSphereShape( ( int ) ( closingRadius / settings.registrationResolution ) );
-			Closing.close( Views.extendBorder( mask ), Views.iterable( closed ), closingShape, 1 );
+			Shape closingShape = new HyperSphereShape( closingRadius );
+			Closing.close( Views.extendZero( enlargedMask ), Views.iterable( enlargedClosed ), closingShape, 1 );
 		}
 
-		return closed;
+		return Views.interval( enlargedClosed, mask );
 	}
 
 	public < T extends RealType< T > & NativeType< T > >
@@ -530,6 +553,11 @@ public class ShavenBabyRegistration
 	{
 		int centralLabel = getCentralLabel( labeling );
 
+		if ( centralLabel == -1 )
+		{
+			return null;
+		}
+
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( labeling );
 
 		return labelRegions.getLabelRegion( centralLabel );
@@ -540,7 +568,15 @@ public class ShavenBabyRegistration
 		final net.imglib2.RandomAccess< LabelingType< Integer > > labelingRandomAccess = labeling.randomAccess();
 		for ( int d : XYZ ) labelingRandomAccess.setPosition( labeling.dimension( d ) / 2, d );
 		int centralIndex = labelingRandomAccess.get().getIndex().getInteger();
-		return labeling.getMapping().labelsAtIndex( centralIndex ).iterator().next();
+
+		if ( centralIndex > 0 )
+		{
+			return labeling.getMapping().labelsAtIndex( centralIndex ).iterator().next();
+		}
+		else
+		{
+			return -1;
+		}
 	}
 
 	//

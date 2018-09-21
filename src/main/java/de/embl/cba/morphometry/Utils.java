@@ -125,6 +125,9 @@ public class Utils
 
 	public static double median( List<Double> a ){
 
+		if ( a.size() == 1 ) return a.get( 0 );
+		if ( a.size() == 0 ) return 0;
+
 		int middle = a.size()/2;
 
 		if (a.size() % 2 == 1) {
@@ -778,6 +781,26 @@ public class Utils
 		{
 			max[ d ] *= 1.2;
 		}
+		final FinalInterval interval = new FinalInterval( min, max );
+		return Views.interval( Views.extendZero( rai ), interval );
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > getEnlargedRai2( RandomAccessibleInterval< T > rai, int border )
+	{
+		long[] min = new long[ 3 ];
+		long[] max = new long[ 3 ];
+
+		rai.min( min );
+		rai.max( max );
+
+		for ( int d = 0; d < 3; ++d )
+		{
+			min[ d ] -= border;
+			max[ d ] += border;
+
+		}
+
 		final FinalInterval interval = new FinalInterval( min, max );
 		return Views.interval( Views.extendZero( rai ), interval );
 	}
