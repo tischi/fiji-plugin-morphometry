@@ -50,6 +50,8 @@ public class ShavenBabyRegistration
 	final OpService opService;
 	private RandomAccessibleInterval< BitType > centralObjectMask;
 	private double coverslipPosition;
+	private AffineTransform3D registrationFromInputToOutputResolution;
+	private RandomAccessibleInterval< BitType > alignedMaskAtOutputResolution;
 
 	public ShavenBabyRegistration( ShavenBabyRegistrationSettings settings, OpService opService )
 	{
@@ -62,15 +64,15 @@ public class ShavenBabyRegistration
 		return coverslipPosition;
 	}
 
-	public RandomAccessibleInterval< BitType > getCentralObjectMask()
+	public RandomAccessibleInterval< BitType > getNonRegisteredMask()
 	{
 		return centralObjectMask;
 	}
 
 	public < T extends RealType< T > & NativeType< T > >
-	AffineTransform3D computeRegistration( RandomAccessibleInterval< T > svb, // Shavenbaby
-										   RandomAccessibleInterval< T > ama, // Amnioserosa
-										   double[] inputCalibration  )
+	void run( RandomAccessibleInterval< T > svb, // Shavenbaby
+			  RandomAccessibleInterval< T > ama, // Amnioserosa
+			  double[] inputCalibration )
 	{
 
 		AffineTransform3D registration = new AffineTransform3D();
@@ -240,7 +242,7 @@ public class ShavenBabyRegistration
 
 		if ( centralObjectRegion == null )
 		{
-			return null;
+			return;
 		}
 
 		centralObjectMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaledSvb ) );
@@ -262,7 +264,7 @@ public class ShavenBabyRegistration
 
 		registration.preConcatenate( Ellipsoids.createAlignmentTransform( ellipsoidParameters ) );
 
-		final RandomAccessibleInterval yawAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ) );
+		final RandomAccessibleInterval< BitType > yawAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ) );
 
 		final RandomAccessibleInterval yawAlignedIntensities = Utils.copyAsArrayImg( Transforms.createTransformedView( downscaledSvb, registration ) );
 
@@ -289,6 +291,13 @@ public class ShavenBabyRegistration
 		registration = computeRollTransform( registration, registrationCalibration, intensityCorrectedSvb, intensityCorrectedAma, yawAndOrientationAlignedMask );
 
 
+		alignedMaskAtOutputResolution = Utils.copyAsArrayImg(
+				Transforms.createTransformedView(
+						centralObjectMask,
+						registration.copy().preConcatenate( Transforms.getScalingTransform( registrationCalibration, settings.outputResolution ) ),
+						new NearestNeighborInterpolatorFactory() ) );
+
+
 		/**
 		 * Show aligned input image at registration resolution
 		 */
@@ -299,10 +308,19 @@ public class ShavenBabyRegistration
 		 * Compute final registration
 		 */
 
-		registration = createFinalTransform( inputCalibration, registration, registrationCalibration );
+		registrationFromInputToOutputResolution = createOutputResolutionTransform( inputCalibration, registration, registrationCalibration );
 
-		return registration;
+	}
 
+
+	public AffineTransform3D getTransform()
+	{
+		return registrationFromInputToOutputResolution;
+	}
+
+	public RandomAccessibleInterval< BitType > getMask()
+	{
+		return alignedMaskAtOutputResolution;
 	}
 
 	public < T extends RealType< T > & NativeType< T > > AffineTransform3D computeRollTransform( AffineTransform3D registration, double[] registrationCalibration, RandomAccessibleInterval< T > intensityCorrectedSvb, RandomAccessibleInterval< T > intensityCorrectedAma, RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask )
@@ -533,7 +551,7 @@ public class ShavenBabyRegistration
 		return origin;
 	}
 
-	private AffineTransform3D createFinalTransform( double[] inputCalibration, AffineTransform3D registration, double[] registrationCalibration )
+	private AffineTransform3D createOutputResolutionTransform( double[] inputCalibration, AffineTransform3D registration, double[] registrationCalibration )
 	{
 		final AffineTransform3D transform =
 				Transforms.getScalingTransform( inputCalibration, settings.registrationResolution )

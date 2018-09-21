@@ -21,10 +21,10 @@ public class ShavenBabyRegistrationSettings
 	public boolean showIntermediateResults = false;
 
 	public double refractiveIndexScalingCorrectionFactor = 1.6;
-	public double refractiveIndexIntensityCorrectionDecayLength = 250; //170;
+	public double refractiveIndexIntensityCorrectionDecayLength = 170; //170;
 
 	public double registrationResolution = 6.0;
-	public double outputResolution = 2.0;
+	public double outputResolution = 0.7;
 
 	public double rollAngleMinDistanceToAxis = 0;
 	public double rollAngleMinDistanceToCenter = drosophilaLength / 2.0 * 0.5;
