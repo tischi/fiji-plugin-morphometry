@@ -15,9 +15,11 @@ import net.imglib2.RealPoint;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Intervals;
 import net.imglib2.view.IntervalView;
+import net.imglib2.view.MixedTransformView;
 import net.imglib2.view.Views;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -125,15 +127,21 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 					// Open
 					final String inputPath = directory + "/" + file;
 					Utils.log( "Reading: " + inputPath + "..." );
-					final ImagePlus imagePlus = openWithBioFormats( inputPath );
+					final ImagePlus inputImagePlus = openWithBioFormats( inputPath );
 
-					if ( imagePlus == null )
+					if ( inputImagePlus == null )
 					{
 						logService.error( "Error opening file: " + inputPath );
 						continue;
 					}
 
-					RandomAccessibleInterval< T > registeredImages = registerImages( imagePlus, registration );
+					RandomAccessibleInterval< T > registeredImages = registerImages( inputImagePlus, registration );
+
+					if ( registeredImages == null )
+					{
+						Utils.log( "ERROR: Could not find central embryo" );
+						continue;
+					}
 
 					final FinalInterval interval = createOutputImageInterval( registeredImages );
 
@@ -150,13 +158,24 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 					saveImages( inputPath, projections );
 
 					// Save
-					Utils.log( "Transforming registered images to imagePlus for saving..." );
 					final RandomAccessibleInterval< T > transformedWithImagePlusDimensionOrder = Utils.copyAsArrayImg( Views.permute( registeredAndCropped, 2, 3 ) );
 					final ImagePlus transformedImagePlus = ImageJFunctions.wrap( transformedWithImagePlusDimensionOrder, "transformed" );
 					final String outputPath = inputPath + "-registered.tif";
 					Utils.log( "Saving registered image: " + outputPath );
-					FileSaver fileSaver = new FileSaver( transformedImagePlus );
-					fileSaver.saveAsTiff( outputPath );
+					new FileSaver( transformedImagePlus ).saveAsTiff( outputPath );
+
+					// Save central object mask
+					final RandomAccessibleInterval< BitType > mask = Views.permute( Views.addDimension( registration.getCentralObjectMask(), 0, 0 ), 2, 3);
+					new FileSaver( ImageJFunctions.wrap( mask, "mask" ) ).saveAsTiff( inputPath + "-mask.tif" );
+
+					// Save central object mask projection
+					RandomAccessibleInterval maskProjection = new Projection( registration.getCentralObjectMask(), Z ).maximum();
+					new FileSaver( ImageJFunctions.wrap( maskProjection, "mask-projection" ) ).saveAsTiff( inputPath + "-mask-projection.tif" );
+
+					// Save svb projection
+					RandomAccessibleInterval< T > shavenbaby = getShavenBabyImage( getImages( inputImagePlus ) );
+					RandomAccessibleInterval shavenbabyMaximum = new Projection( shavenbaby, Z ).maximum();
+					new FileSaver( ImageJFunctions.wrap( shavenbabyMaximum, "svb-projection" ) ).saveAsTiff( inputPath + "-svb-non-registered-projection.tif" );
 
 				}
 			}
@@ -257,7 +276,14 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		final double[] calibration = Utils.getCalibration( imagePlus );
 
 		Utils.log( "Computing registration...." );
+
 		final AffineTransform3D registrationTransform = registration.computeRegistration( shavenbaby, amnioserosa, calibration );
+
+		if ( registrationTransform == null )
+		{
+			return null;
+		}
+
 
 		Utils.log( "Applying intensity correction to all channels...." );
 		final RandomAccessibleInterval< T > intensityCorrectedImages = RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, calibration[ 2 ], settings.refractiveIndexIntensityCorrectionDecayLength  );

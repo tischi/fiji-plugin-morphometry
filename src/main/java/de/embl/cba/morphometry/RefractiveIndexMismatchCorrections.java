@@ -69,6 +69,7 @@ public abstract class RefractiveIndexMismatchCorrections
 
 			Views.iterable( slice ).forEach( t ->
 					{
+
 						if ( ( t.getRealDouble() - intensityOffset ) < 0 )
 						{
 							t.setReal( 0 );
@@ -78,7 +79,6 @@ public abstract class RefractiveIndexMismatchCorrections
 							t.setReal( t.getRealDouble() - intensityOffset );
 							t.mul( intensityCorrectionFactor );
 						}
-
 					}
 			);
 

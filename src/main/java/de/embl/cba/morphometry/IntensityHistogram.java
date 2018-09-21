@@ -41,7 +41,7 @@ public class IntensityHistogram <T extends RealType<T> & NativeType< T > >
 	{
 		final CoordinateAndValue coordinateAndValue = new CoordinateAndValue();
 
-		for ( int i = 0; i < numBins; ++i )
+		for ( int i = 0; i < numBins - 1; ++i ) // numBins - 1 avoids the last bin containing saturated pixels
 		{
 			if ( frequencies[ i ] > coordinateAndValue.value )
 			{
