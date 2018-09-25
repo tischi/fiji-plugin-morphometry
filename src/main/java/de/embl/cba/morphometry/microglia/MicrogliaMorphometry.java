@@ -175,13 +175,13 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		objectMeasurements = new HashMap<>();
 
-		ObjectMeasurements.measureObjectSumIntensities( objectMeasurements, imgLabeling, image, "channel01" );
+		ObjectMeasurements.measureSumIntensities( objectMeasurements, imgLabeling, image, "channel01" );
 
-		ObjectMeasurements.measureObjectSumIntensities( objectMeasurements, imgLabeling, skeleton, "skeleton" );
+		ObjectMeasurements.measureSumIntensities( objectMeasurements, imgLabeling, skeleton, "skeleton" );
 
-		ObjectMeasurements.measureObjectPixelSizes( objectMeasurements, imgLabeling );
+		ObjectMeasurements.measureVolumesInVoxels( objectMeasurements, imgLabeling );
 
-		ObjectMeasurements.measureObjectPosition( objectMeasurements, imgLabeling, workingCalibration );
+		ObjectMeasurements.measurePositions( objectMeasurements, imgLabeling, workingCalibration );
 
 		ObjectMeasurements.addGlobalBackgroundMeasurement( objectMeasurements, imgLabeling, offset );
 
@@ -277,7 +277,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 	public static HashMap< Integer, Integer > getNumObjectsFromSkeleton( ImgLabeling< Integer, IntType > imgLabeling, RandomAccessibleInterval< BitType > skeleton, MicrogliaMorphometrySettings settings )
 	{
 		HashMap< Integer, Map< String, Object > > skeletonMeasurements = new HashMap<>();
-		ObjectMeasurements.measureObjectSumIntensities( skeletonMeasurements, imgLabeling, skeleton, "skeleton" );
+		ObjectMeasurements.measureSumIntensities( skeletonMeasurements, imgLabeling, skeleton, "skeleton" );
 		HashMap< Integer, Integer > numObjects = new HashMap<>();
 		for ( int label : skeletonMeasurements.keySet() )
 		{

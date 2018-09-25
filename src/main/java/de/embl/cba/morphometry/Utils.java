@@ -892,7 +892,7 @@ public class Utils
 
 		final java.util.Iterator< Integer > labelCreator = new java.util.Iterator< Integer >()
 		{
-			int id = 0;
+			int id = 1;
 
 			@Override
 			public boolean hasNext()

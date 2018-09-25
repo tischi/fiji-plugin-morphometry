@@ -13,6 +13,7 @@ import net.imglib2.util.Intervals;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 
 public class Tracker < T extends RealType< T > & NativeType< T > >
 {
@@ -37,7 +38,7 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 	{
 
 		int tMin = 0;
-		int tMax = imgLabelings.size();
+		int tMax = imgLabelings.size() - 1;
 
 		int t = tMin;
 
@@ -55,16 +56,26 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 
 			labelRegions = new LabelRegions( Utils.asImgLabeling( currentLabeling ) );
 
+			final Set< Integer > existingLabels = labelRegions.getExistingLabels();
+
 			for ( LabelRegion< Integer > region : labelRegions )
 			{
 				final HashMap< Integer, Long > overlaps = computeOverlaps( previousLabeling, region );
 
 				if ( overlaps.size() == 2 )
 				{
+
+					Utils.log( "Overlap with two objects" );
+
+					Utils.log( "Time point (one based): " + ( t + 1 ) );
+					Utils.log( "Object label: " + region.getLabel() );
+
 					final double currentIntensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
 							currentLabeling,
 							region.getLabel(),
 							intensities.get( t ) );
+
+					Utils.log( "Object intensity: " + currentIntensity );
 
 					final HashMap< Integer, Double > previousIntensities = new HashMap<>();
 
@@ -77,14 +88,18 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 
 						previousIntensities.put( label , intensity );
 
+						Utils.log( "Previous object intensity: " + intensity );
 					}
-					 int a = 1;
+
+					double previousIntensitySum = getPreviousIntensitySum( previousIntensities );
+
+					Utils.log( "Intensity ratio: " + currentIntensity / previousIntensitySum );
+
+
 
 				}
 
 				int objectId = computeObjectId( overlaps );
-
-				Utils.log( ""+ objectId );
 
 				Utils.drawObject( updatedLabeling, region, objectId );
 			}
@@ -93,6 +108,18 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 
 			previousLabeling = updatedLabeling;
 		}
+	}
+
+	private double getPreviousIntensitySum( HashMap< Integer, Double > previousIntensities )
+	{
+		double previousIntensitySum = 0;
+
+		for ( double intensity : previousIntensities.values() )
+		{
+			previousIntensitySum += intensity;
+
+		}
+		return previousIntensitySum;
 	}
 
 	public ArrayList< RandomAccessibleInterval< IntType > > getUpdatedLabelings()
@@ -156,8 +183,13 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 		{
 			cursor.fwd();
 			previousLabelsAccess.setPosition( cursor );
+
 			final int label = previousLabelsAccess.get().getInteger();
-			addOverlap( overlaps, label );
+
+			if ( label != 0 )
+			{
+				addOverlap( overlaps, label );
+			}
 		}
 		return overlaps;
 	}
