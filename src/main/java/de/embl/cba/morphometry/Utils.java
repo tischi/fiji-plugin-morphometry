@@ -911,4 +911,17 @@ public class Utils
 
 		return labeling;
 	}
+
+	public static void drawObject( RandomAccessibleInterval< IntType > img, LabelRegion labelRegion, int value )
+	{
+		final Cursor< Void > regionCursor = labelRegion.cursor();
+		final RandomAccess< IntType > access = img.randomAccess();
+		BitType bitTypeTrue = new BitType( true );
+		while ( regionCursor.hasNext() )
+		{
+			regionCursor.fwd();
+			access.setPosition( regionCursor );
+			access.get().set( value );
+		}
+	}
 }

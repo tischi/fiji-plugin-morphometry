@@ -43,7 +43,10 @@ public class ShavenBabyRegistrationSettings
 	public double thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 	public double closingRadius = 10;
 
-	public static double[] outputImageSize = new double[]{ drosophilaLength * 1.2,  drosophilaWidth * 1.2, drosophilaWidth * 1.2};
+	public static double[] outputImageSize =
+			new double[]{ drosophilaLength * 1.3,
+					drosophilaWidth * 1.3,
+					drosophilaWidth * 1.3};
 
 	public double minimalObjectSize = drosophilaWidth * drosophilaWidth * drosophilaWidth;
 
