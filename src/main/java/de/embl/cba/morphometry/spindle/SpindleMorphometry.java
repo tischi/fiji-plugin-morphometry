@@ -347,7 +347,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.workingVoxelSize, 2 );
 		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.workingVoxelSize, 2 );
 
-		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createSeeds(
+		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createWatershedSeeds(
 				distance,
 				new HyperSphereShape( 1 ),
 				globalDistanceThreshold,

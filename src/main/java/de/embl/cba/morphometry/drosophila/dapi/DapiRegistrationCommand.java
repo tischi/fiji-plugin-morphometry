@@ -155,7 +155,7 @@ public class DapiRegistrationCommand<T extends RealType<T> & NativeType< T > > e
 		final ArrayList< RealPoint > points = new ArrayList<>();
 		points.add( new RealPoint( new double[]{0,0,0} ));
 		BdvFunctions.showPoints( points, "origin", BdvOptions.options().addTo( bdv ) );
-		ImageJFunctions.show( Views.permute( stack, 2, 3 ) );
+		// ImageJFunctions.show( Views.permute( stack, 2, 3 ) );
 
 	}
 
