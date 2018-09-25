@@ -566,13 +566,12 @@ public class Algorithms
 
 				final ArrayList< PositionAndValue > localMaxima = Algorithms.getLocalMaxima( maskedAndCropped, new HyperSphereShape( minimalObjectPixelWidth ), 0.0 );
 
-				final RandomAccessibleInterval< T > seeds = Utils.copyAsEmptyArrayImg( maskedAndCropped );
-				final RandomAccess< T > randomAccess = seeds.randomAccess();
-				for ( int i = 0; i < numObjectsPerRegion.get( label ); ++i )
+				if ( localMaxima.size() < 2 )
 				{
-					randomAccess.setPosition( Utils.asLongs( localMaxima.get( i ).position ) );
-					randomAccess.get().setOne();
+					continue; // TODO: check these cases
 				}
+
+				final RandomAccessibleInterval< T > seeds = getSeeds( numObjectsPerRegion, label, maskedAndCropped, localMaxima );
 
 				final ImgLabeling< Integer, IntType > watershedImgLabeling = getEmptyImgLabeling( labelRegionMask );
 				final ImgLabeling< Integer, IntType > seedsImgLabeling = Utils.asImgLabeling( seeds );
@@ -588,7 +587,16 @@ public class Algorithms
 
 				LabelRegions< Integer > splitObjects = new LabelRegions( watershedImgLabeling );
 
-				boolean isValidSplit = checkSplittingValidity( splitObjects, minimalObjectSize, maximalWatershedLength );
+				if ( ! splitObjects.getExistingLabels().contains( -1 ) )
+				{
+					continue; // TODO: examine these cases
+				}
+
+				boolean isValidSplit =
+						checkSplittingValidity(
+								splitObjects,
+								minimalObjectSize,
+								maximalWatershedLength );
 
 				if ( isValidSplit )
 				{
@@ -598,11 +606,23 @@ public class Algorithms
 				// Utils.applyMask( watershedImgLabeling.getSource(), mask );
 
 //				ImageJFunctions.show( seedsImgLabeling.getSource() );
-				ImageJFunctions.show( watershedImgLabeling.getSource() );
+//				ImageJFunctions.show( watershedImgLabeling.getSource() );
 
 			}
 		}
 
+	}
+
+	private static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< T > getSeeds( HashMap< Integer, Integer > numObjectsPerRegion, int label, RandomAccessibleInterval< T > maskedAndCropped, ArrayList< PositionAndValue > localMaxima )
+	{
+		final RandomAccessibleInterval< T > seeds = Utils.copyAsEmptyArrayImg( maskedAndCropped );
+		final RandomAccess< T > randomAccess = seeds.randomAccess();
+		for ( int i = 0; i < numObjectsPerRegion.get( label ); ++i )
+		{
+			randomAccess.setPosition( Utils.asLongs( localMaxima.get( i ).position ) );
+			randomAccess.get().setOne();
+		}
+		return seeds;
 	}
 
 	public static boolean checkSplittingValidity(  LabelRegions< Integer > splitObjects, long minimumObjectSize, long maximalWatershedLength )
@@ -633,7 +653,10 @@ public class Algorithms
 		return isValidSplit;
 	}
 
-	public static void drawWatershedIntoMask( RandomAccessibleInterval< BitType > mask, LabelRegions labelRegions, int label, LabelRegions< Integer > splitObjects )
+	public static void drawWatershedIntoMask( RandomAccessibleInterval< BitType > mask,
+											  LabelRegions labelRegions,
+											  int label,
+											  LabelRegions< Integer > splitObjects )
 	{
 		final long[] regionOffset = Intervals.minAsLongArray( labelRegions.getLabelRegion( label ) );
 		LabelRegion watershed = splitObjects.getLabelRegion( -1 );

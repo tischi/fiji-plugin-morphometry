@@ -1,7 +1,7 @@
 package de.embl.cba.morphometry.microglia;
 
 import de.embl.cba.morphometry.*;
-import de.embl.cba.morphometry.objects.Measurements;
+import de.embl.cba.morphometry.measurements.ObjectMeasurements;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
@@ -36,11 +36,19 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
 
+	private ImgLabeling< Integer, IntType > imgLabeling;
+
 	public MicrogliaMorphometry( MicrogliaMorphometrySettings settings, OpService opService )
 	{
 		this.settings = settings;
 		this.opService = opService;
 	}
+
+	public ImgLabeling< Integer, IntType > getImgLabeling()
+	{
+		return imgLabeling;
+	}
+
 
 	public RandomAccessibleInterval< T > getResultImageStack()
 	{
@@ -121,7 +129,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		 * Get objects
 		 */
 
-		ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask );
+		imgLabeling = Utils.asImgLabeling( mask );
 
 		/**
 		 * Estimate number of objects from skeleton
@@ -167,15 +175,15 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		objectMeasurements = new HashMap<>();
 
-		Measurements.measureObjectSumIntensities( objectMeasurements, imgLabeling, image, "channel01" );
+		ObjectMeasurements.measureObjectSumIntensities( objectMeasurements, imgLabeling, image, "channel01" );
 
-		Measurements.measureObjectSumIntensities( objectMeasurements, imgLabeling, skeleton, "skeleton" );
+		ObjectMeasurements.measureObjectSumIntensities( objectMeasurements, imgLabeling, skeleton, "skeleton" );
 
-		Measurements.measureObjectPixelSizes( objectMeasurements, imgLabeling );
+		ObjectMeasurements.measureObjectPixelSizes( objectMeasurements, imgLabeling );
 
-		Measurements.measureObjectPosition( objectMeasurements, imgLabeling, workingCalibration );
+		ObjectMeasurements.measureObjectPosition( objectMeasurements, imgLabeling, workingCalibration );
 
-		Measurements.addGlobalBackgroundMeasurement( objectMeasurements, imgLabeling, offset );
+		ObjectMeasurements.addGlobalBackgroundMeasurement( objectMeasurements, imgLabeling, offset );
 
 
 
@@ -269,11 +277,11 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 	public static HashMap< Integer, Integer > getNumObjectsFromSkeleton( ImgLabeling< Integer, IntType > imgLabeling, RandomAccessibleInterval< BitType > skeleton, MicrogliaMorphometrySettings settings )
 	{
 		HashMap< Integer, Map< String, Object > > skeletonMeasurements = new HashMap<>();
-		Measurements.measureObjectSumIntensities( skeletonMeasurements, imgLabeling, skeleton, "skeleton" );
+		ObjectMeasurements.measureObjectSumIntensities( skeletonMeasurements, imgLabeling, skeleton, "skeleton" );
 		HashMap< Integer, Integer > numObjects = new HashMap<>();
 		for ( int label : skeletonMeasurements.keySet() )
 		{
-			final double skeletonLength = settings.workingVoxelSize * (long) skeletonMeasurements.get( label ).get( Measurements.SUM_INTENSITY + "_skeleton" );
+			final double skeletonLength = settings.workingVoxelSize * (long) skeletonMeasurements.get( label ).get( ObjectMeasurements.SUM_INTENSITY + "_skeleton" );
 			int n = (int) ( Math.ceil( skeletonLength / settings.skeletonMaxLength ) );
 			numObjects.put( label, n );
 		}

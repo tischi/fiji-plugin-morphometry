@@ -136,12 +136,12 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 					RandomAccessibleInterval< T > registeredImages = alignAndMaskImages( inputImagePlus, registration );
 
+					// Save watershed
+					RandomAccessibleInterval< T > watershed = (RandomAccessibleInterval) registration.getWatershedLabelImg();
+					new FileSaver( ImageJFunctions.wrap( watershed, "" ) ).saveAsTiff( inputPath + "-watershed.tif" );
+
 					if ( registeredImages == null )
 					{
-						// Save watershed
-						RandomAccessibleInterval< T > watershed = (RandomAccessibleInterval) registration.getWatershedLabelImg();
-						new FileSaver( ImageJFunctions.wrap( watershed, "" ) ).saveAsTiff( inputPath + "-watershed.tif" );
-
 						Utils.log( "ERROR: Could not find central embryo" );
 						continue;
 					}
@@ -280,15 +280,16 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		correctionSettings.coverslipPositionMicrometer = registration.getCoverslipPosition();
 		final RandomAccessibleInterval< T > intensityCorrectedImages = RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, correctionSettings  );
 
-		Utils.log( "Applying registration to all channels (at a resolution of " + settings.outputResolution + " micrometer) ..." );
+		Utils.log( "Preparing registration of all channels at a resolution of " + settings.outputResolution + " micrometer ..." );
 		ArrayList< RandomAccessibleInterval< T > > registeredImages =
 				Transforms.transformAllChannels(
 						intensityCorrectedImages,
 						transform,
 						settings.getOutputImageInterval() );
 
-		Utils.log( "Applying mask to all channels..." );
+		Utils.log( "Applying registration and masking to all channels (can take time)..." );
 
+		// TODO (NOTE) below is slow because the registeredImages are only Views and need to be computed on demand
 		registeredImages = Utils.maskAllChannels( registeredImages, registration.getMask() );
 
 		return Views.stack( registeredImages );

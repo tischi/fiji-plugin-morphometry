@@ -1,5 +1,6 @@
-package de.embl.cba.morphometry.objects;
+package de.embl.cba.morphometry.measurements;
 
+import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.roi.labeling.ImgLabeling;
@@ -9,11 +10,12 @@ import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.view.Views;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class Measurements
+public class ObjectMeasurements
 {
 
 	public static final String CALIBRATED_POSITION = "CalibratedPosition";
@@ -67,22 +69,63 @@ public class Measurements
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
 		{
-			final LabelRegionCursor cursor = labelRegion.cursor();
 
-			final int label = ( int ) ( labelRegion.getLabel() );
+			long sum = measureSumIntensity( imageRandomAccess, labelRegion );
 
-			long sum = 0;
-
-			while ( cursor.hasNext() )
-			{
-				cursor.fwd();
-				imageRandomAccess.setPosition( cursor );
-				sum += imageRandomAccess.get().getRealDouble();
-			}
-
-			addMeasurement( objectMeasurements, label, SUM_INTENSITY + "_" + channel, sum );
+			addMeasurement( objectMeasurements, (int) labelRegion.getLabel(), SUM_INTENSITY + "_" + channel, sum );
 
 		}
+
+	}
+
+	private static < T extends RealType< T > & NativeType< T > > long measureSumIntensity( RandomAccess< T > imageRandomAccess, LabelRegion labelRegion )
+	{
+		final LabelRegionCursor cursor = labelRegion.cursor();
+
+		long sum = 0;
+
+		while ( cursor.hasNext() )
+		{
+			cursor.fwd();
+			imageRandomAccess.setPosition( cursor );
+			sum += imageRandomAccess.get().getRealDouble();
+		}
+		return sum;
+	}
+
+
+	public static < T extends RealType< T > & NativeType< T > >
+	double measureBgCorrectedSumIntensity( RandomAccessibleInterval< IntType > labeling,
+										   int label,
+										   RandomAccessibleInterval< T > image )
+	{
+
+		final Cursor< IntType > labelCursor = Views.iterable( labeling ).localizingCursor();
+		final RandomAccess< T > intensityAccess = image.randomAccess();
+
+		double sum = 0;
+		double sumBg = 0;
+		long nObject = 0;
+		long nBackground = 0;
+
+
+		while ( labelCursor.hasNext() )
+		{
+			if( labelCursor.next().getInteger() == label )
+			{
+				intensityAccess.setPosition( labelCursor );
+				sum += intensityAccess.get().getRealDouble();
+				nObject++;
+			}
+			else if ( labelCursor.next().getInteger() == 0 )
+			{
+				intensityAccess.setPosition( labelCursor );
+				sumBg += intensityAccess.get().getRealDouble();
+				nBackground++;
+			}
+		}
+
+		return ( sum - nObject * ( sumBg / nBackground )  );
 
 	}
 
