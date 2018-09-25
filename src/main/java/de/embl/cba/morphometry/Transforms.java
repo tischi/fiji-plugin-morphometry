@@ -64,11 +64,36 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 
 	public static < T extends NumericType< T > & NativeType< T > >
 	RandomAccessibleInterval createTransformedView( RandomAccessibleInterval< T > rai,
+													InvertibleRealTransform combinedTransform,
+													FinalInterval interval,
+													InterpolatorFactory interpolatorFactory)
+	{
+		final RandomAccessible transformedRA = createTransformedRaView( rai, combinedTransform, interpolatorFactory );
+		final RandomAccessibleInterval< T > transformedIntervalView = Views.interval( transformedRA, interval );
+
+		return transformedIntervalView;
+
+	}
+
+	public static < T extends NumericType< T > & NativeType< T > >
+	RandomAccessibleInterval createTransformedView( RandomAccessibleInterval< T > rai,
 													InvertibleRealTransform transform )
 	{
 		final RandomAccessible transformedRA = createTransformedRaView( rai, transform, new NLinearInterpolatorFactory() );
 		final FinalInterval transformedInterval = createTransformedInterval( rai, transform );
 		final RandomAccessibleInterval< T > transformedIntervalView = Views.interval( transformedRA, transformedInterval );
+
+		return transformedIntervalView;
+
+	}
+
+	public static < T extends NumericType< T > & NativeType< T > >
+	RandomAccessibleInterval createTransformedView( RandomAccessibleInterval< T > rai,
+													InvertibleRealTransform transform,
+													FinalInterval interval )
+	{
+		final RandomAccessible transformedRA = createTransformedRaView( rai, transform, new NLinearInterpolatorFactory() );
+		final RandomAccessibleInterval< T > transformedIntervalView = Views.interval( transformedRA, interval );
 
 		return transformedIntervalView;
 
@@ -206,7 +231,10 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 	}
 
 	public static <T extends RealType<T> & NativeType< T > >
-	RandomAccessibleInterval< T > transformAllChannels( RandomAccessibleInterval< T > images, AffineTransform3D registrationTransform )
+	ArrayList< RandomAccessibleInterval< T > > transformAllChannels(
+			RandomAccessibleInterval< T > images,
+			AffineTransform3D registrationTransform,
+			FinalInterval outputImageInterval )
 	{
 		ArrayList< RandomAccessibleInterval< T > > transformedChannels = new ArrayList<>(  );
 
@@ -215,10 +243,10 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 		for ( int c = 0; c < numChannels; ++c )
 		{
 			final RandomAccessibleInterval< T > channel = Views.hyperSlice( images, 3, c );
-			transformedChannels.add( createTransformedView( channel, registrationTransform ) );
+			transformedChannels.add(  createTransformedView( channel, registrationTransform, outputImageInterval ) );
 		}
 
-		return Views.stack( transformedChannels );
+		return transformedChannels;
 	}
 
 

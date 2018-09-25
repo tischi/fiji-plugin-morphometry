@@ -16,7 +16,7 @@ public abstract class RefractiveIndexMismatchCorrections
 {
 
 
-	public static double getIntensityCorrectionFactorAlongZ(
+	public static double getIntensityCorrectionFactor(
 			long z,
 			RefractiveIndexMismatchCorrectionSettings settings )
 	{
@@ -58,9 +58,10 @@ public abstract class RefractiveIndexMismatchCorrections
 		{
 			RandomAccessibleInterval< T > slice = Views.hyperSlice( rai, Z, z );
 
-			double intensityCorrectionFactor = getIntensityCorrectionFactorAlongZ(
-					z,
-					settings );
+			double intensityCorrectionFactor =
+					getIntensityCorrectionFactor(
+						z,
+						settings );
 
 			Views.iterable( slice ).forEach( t ->
 					{

@@ -90,7 +90,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		double threshold = ( rightHandHalfMaximum.position - mode.position ) * settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
 		double offset = mode.position;
-		Utils.log( "Offset: " + offset );
+		Utils.log( "Intensity offset: " + offset );
 		Utils.log( "Threshold: " + ( threshold + offset ) );
 
 		/**
@@ -242,8 +242,6 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		{
 
 
-
-
 			Utils.applyMask( watershedLabelImg, closed );
 
 			if ( settings.showIntermediateResults )
@@ -292,7 +290,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.workingVoxelSize, 2 );
 		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.workingVoxelSize, 2 );
 
-		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createSeeds(
+		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createWatershedSeeds(
 				distance,
 				new HyperSphereShape( 1 ),
 				globalDistanceThreshold,

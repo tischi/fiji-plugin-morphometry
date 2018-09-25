@@ -16,9 +16,7 @@ import net.imglib2.RealPoint;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
-import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.util.Intervals;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.scijava.app.StatusService;
@@ -27,7 +25,6 @@ import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
-import org.scijava.widget.FileWidget;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -67,7 +64,8 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	@Parameter( choices = { FROM_DIRECTORY, CURRENT_IMAGE })
 	public String inputModality = FROM_DIRECTORY;
 
-
+	@Parameter( style = "directory" )
+	public File inputDirectory;
 
 	@Parameter
 	public String fileNameEndsWith = ".czi,.lsm";
@@ -117,7 +115,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 		if ( inputModality.equals( FROM_DIRECTORY ) )
 		{
-			final File directory = uiService.chooseFile( null, FileWidget.DIRECTORY_STYLE );
+			final File directory = inputDirectory;//uiService.chooseFile( null, FileWidget.DIRECTORY_STYLE );
 			String[] files = directory.list();
 
 			for( String file : files )
@@ -126,6 +124,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 				{
 					// Open
 					final String inputPath = directory + "/" + file;
+					Utils.log( " " );
 					Utils.log( "Reading: " + inputPath + "..." );
 					final ImagePlus inputImagePlus = openWithBioFormats( inputPath );
 
@@ -139,26 +138,24 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 					if ( registeredImages == null )
 					{
+						// Save watershed
+						RandomAccessibleInterval< T > watershed = (RandomAccessibleInterval) registration.getWatershedLabelImg();
+						new FileSaver( ImageJFunctions.wrap( watershed, "" ) ).saveAsTiff( inputPath + "-watershed.tif" );
+
 						Utils.log( "ERROR: Could not find central embryo" );
 						continue;
 					}
 
-					final FinalInterval interval = createOutputImageInterval( registeredImages );
-
-					final IntervalView< T > registeredAndCroppedView = Views.interval( registeredImages, interval );
-
-					final RandomAccessibleInterval< T > registeredAndCropped = Utils.copyAsArrayImg( registeredAndCroppedView );
-
-					if ( settings.showIntermediateResults ) showWithBdv( registeredAndCropped, "registered" );
+					if ( settings.showIntermediateResults ) showWithBdv( registeredImages, "registered" );
 
 					Utils.log( "Creating projections..." );
-					final ArrayList< ImagePlus > projections = createProjections( registeredAndCropped );
+					final ArrayList< ImagePlus > projections = createProjections( registeredImages );
 
 					Utils.log( "Saving projections..." );
 					saveImages( inputPath, projections );
 
 					// Save full registered stack
-					final RandomAccessibleInterval< T > transformedWithImagePlusDimensionOrder = Utils.copyAsArrayImg( Views.permute( registeredAndCropped, 2, 3 ) );
+					final RandomAccessibleInterval< T > transformedWithImagePlusDimensionOrder = Utils.copyAsArrayImg( Views.permute( registeredImages, 2, 3 ) );
 					final ImagePlus transformedImagePlus = ImageJFunctions.wrap( transformedWithImagePlusDimensionOrder, "transformed" );
 					final String outputPath = inputPath + "-registered.tif";
 					Utils.log( "Saving registered image: " + outputPath );
@@ -167,7 +164,12 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 					// Save svb non-registered projection
 					RandomAccessibleInterval< T > shavenbaby = getShavenBabyImage( getImages( inputImagePlus ) );
 					RandomAccessibleInterval shavenbabyMaximum = new Projection( shavenbaby, Z ).maximum();
-					new FileSaver( ImageJFunctions.wrap( shavenbabyMaximum, "svb-projection" ) ).saveAsTiff( inputPath + "-non-registered-svb-projection.tif" );
+					new FileSaver( ImageJFunctions.wrap( shavenbabyMaximum, "" ) ).saveAsTiff( inputPath + "-projection-ch1-raw.tif" );
+
+					// Save ch2 non-registered projection
+					RandomAccessibleInterval< T > ch2 = getAmnioserosaImage( getImages( inputImagePlus ) );
+					RandomAccessibleInterval ch2Maximum = new Projection( ch2, Z ).maximum();
+					new FileSaver( ImageJFunctions.wrap( ch2Maximum, "" ) ).saveAsTiff( inputPath + "-projection-ch2-raw.tif" );
 
 				}
 			}
@@ -193,22 +195,6 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		return false;
 	}
 
-	public FinalInterval createOutputImageInterval( RandomAccessibleInterval rai )
-	{
-		final long[] min = Intervals.minAsLongArray( rai );
-		final long[] max = Intervals.maxAsLongArray( rai );
-
-		min[ X ] = - (long) ( settings.outputImageSizeX / 2 / settings.outputResolution );
-		min[ Y ] = - (long) ( settings.outputImageSizeY / 2 / settings.outputResolution );
-		min[ Z ] = - (long) ( settings.outputImageSizeZ / 2 / settings.outputResolution );
-
-		for ( int d = 0; d < 3; ++d )
-		{
-			max[ d ] = -1 * min[ d ];
-		}
-
-		return new FinalInterval( min, max );
-	}
 
 	public void saveImages( String inputPath, ArrayList< ImagePlus > imps )
 	{
@@ -251,7 +237,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 			rangeMax = images.max( Z );
 			projection = new Projection( channel, Z, rangeMin, rangeMax );
 			maximum = projection.maximum();
-			wrap = ImageJFunctions.wrap( maximum, "full-projection-ch" + ( channelId + 1 ) );
+			wrap = ImageJFunctions.wrap( maximum, "projection-ch" + ( channelId + 1 ) );
 			projections.add( wrap );
 
 
@@ -269,7 +255,9 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		BdvFunctions.showPoints( points, "origin", BdvOptions.options().addTo( bdv ) );
 	}
 
-	public RandomAccessibleInterval< T > alignAndMaskImages( ImagePlus imagePlus, ShavenBabyRegistration registration )
+	public RandomAccessibleInterval< T > alignAndMaskImages(
+			ImagePlus imagePlus,
+			ShavenBabyRegistration registration )
 	{
 		RandomAccessibleInterval< T > images = getImages( imagePlus );
 		RandomAccessibleInterval< T > shavenbaby = getShavenBabyImage( images );
@@ -287,18 +275,23 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 		Utils.log( "Applying intensity correction to all channels...." );
 		final RefractiveIndexMismatchCorrectionSettings correctionSettings = new RefractiveIndexMismatchCorrectionSettings();
-		correctionSettings.pixelCalibrationMicrometer = calibration[ 2 ]; // TODO: this get implicitely modified within run to correct for the mismatch, not good style
+		correctionSettings.pixelCalibrationMicrometer = calibration[ 2 ]; // TODO: this gets implicitely modified within run to correct for the mismatch, not good style
 		correctionSettings.intensityDecayLengthMicrometer = settings.refractiveIndexIntensityCorrectionDecayLength;
 		correctionSettings.coverslipPositionMicrometer = registration.getCoverslipPosition();
 		final RandomAccessibleInterval< T > intensityCorrectedImages = RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, correctionSettings  );
 
-		Utils.log( "Applying registration and masking to all channels (at a resolution of " + settings.outputResolution + " micrometer) ..." );
-		RandomAccessibleInterval< T > registeredImages = Transforms.transformAllChannels( intensityCorrectedImages, transform );
+		Utils.log( "Applying registration to all channels (at a resolution of " + settings.outputResolution + " micrometer) ..." );
+		ArrayList< RandomAccessibleInterval< T > > registeredImages =
+				Transforms.transformAllChannels(
+						intensityCorrectedImages,
+						transform,
+						settings.getOutputImageInterval() );
+
+		Utils.log( "Applying mask to all channels..." );
+
 		registeredImages = Utils.maskAllChannels( registeredImages, registration.getMask() );
 
-		ImageJFunctions.show( registration.getMask() );
-
-		return registeredImages;
+		return Views.stack( registeredImages );
 	}
 
 

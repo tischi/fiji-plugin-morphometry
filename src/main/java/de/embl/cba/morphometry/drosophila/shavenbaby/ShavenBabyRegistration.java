@@ -9,12 +9,14 @@ import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCo
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
+import net.imglib2.algorithm.morphology.Opening;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.converter.Converters;
 import net.imglib2.histogram.Histogram1d;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
@@ -52,6 +54,7 @@ public class ShavenBabyRegistration
 	private double coverslipPosition;
 	private AffineTransform3D registrationFromInputToOutputResolution;
 	private RandomAccessibleInterval< BitType > alignedMaskAtOutputResolution;
+	private Img< IntType > watershedLabelImg;
 
 	public ShavenBabyRegistration( ShavenBabyRegistrationSettings settings, OpService opService )
 	{
@@ -63,6 +66,13 @@ public class ShavenBabyRegistration
 	{
 		return coverslipPosition;
 	}
+
+	public Img< IntType > getWatershedLabelImg()
+	{
+		return watershedLabelImg;
+	}
+
+
 
 	public RandomAccessibleInterval< BitType > getNonRegisteredMask()
 	{
@@ -108,7 +118,7 @@ public class ShavenBabyRegistration
 
 		CoordinateAndValue intensityHistogramMode = rawDataIntensityHistogram.getMode();
 
-		Utils.log( "Offset: " + intensityHistogramMode.position );
+		Utils.log( "Intensity offset: " + intensityHistogramMode.position );
 
 
 		/**
@@ -120,6 +130,10 @@ public class ShavenBabyRegistration
 
 		final double embryoCenterPosition = Utils.computeMaxLoc( averageSvbIntensitiesAlongZ );
 		coverslipPosition = embryoCenterPosition - ShavenBabyRegistrationSettings.drosophilaWidth / 2.0;
+
+		Utils.log( "Axial coverslip position: " + coverslipPosition );
+		Utils.log( "Axial embryo center position: " + embryoCenterPosition );
+
 
 
 		/**
@@ -149,23 +163,20 @@ public class ShavenBabyRegistration
 		 *  Compute threshold
 		 */
 
-		final IntensityHistogram correctedIntensityHistogram =
-				new IntensityHistogram(
-				intensityCorrectedSvb,
-				65535.0,
-				5.0 );
+//		final IntensityHistogram correctedIntensityHistogram =
+//				new IntensityHistogram(
+//				intensityCorrectedSvb,
+//				65535.0,
+//				5.0 );
 
-
-		final double huang = opService.threshold().huang( opService.image().histogram( Views.iterable( intensityCorrectedSvb ) ) ).getRealDouble();
-		final double otsu = opService.threshold().otsu( opService.image().histogram( Views.iterable( intensityCorrectedSvb ) ) ).getRealDouble();
-		final double yen = opService.threshold().yen( opService.image().histogram( Views.iterable( intensityCorrectedSvb ) ) ).getRealDouble();
-
-		// Utils.log( "Intensity corrected threshold: " + thresholdAfterIntensityCorrection );
-
+		final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( intensityCorrectedSvb ) );
+		final double huang = opService.threshold().huang( histogram ).getRealDouble();
+		final double otsu = opService.threshold().otsu( histogram ).getRealDouble();
+		final double yen = opService.threshold().yen( histogram ).getRealDouble();
 
 		double thresholdAfterIntensityCorrection = huang; // TODO
 
-		Utils.log( "Intensity corrected threshold: " + thresholdAfterIntensityCorrection );
+		Utils.log( "Threshold (after intensity correction): " + thresholdAfterIntensityCorrection );
 
 
 
@@ -175,17 +186,27 @@ public class ShavenBabyRegistration
 
 		RandomAccessibleInterval< BitType > mask = createMask( intensityCorrectedSvb, thresholdAfterIntensityCorrection );
 
-		mask = opService.morphology().fillHoles( mask );
-
-//		if ( settings.showIntermediateResults ) show( mask, "mask", null, registrationCalibration, false );
 
 		/**
-		 * Remove small objects
+		 * Process mask
 		 */
 
 		mask = Algorithms.removeSmallObjectsAndReturnMask( mask, settings.minimalObjectSize, settings.registrationResolution );
 
-		if ( settings.showIntermediateResults ) show( mask, "closed and object size filtered", null, registrationCalibration, false );
+		// mask = close( mask, ( int ) ( 20.0 / settings.registrationResolution ) );
+
+		// mask = open( mask, ( int ) ( 40.0 / settings.registrationResolution ) );
+
+
+		for ( int d = 0; d < 3; ++d )
+		{
+			mask = Algorithms.fillHoles3Din2D( mask, 0, opService );
+		}
+
+
+
+		if ( settings.showIntermediateResults ) show( mask, "small objects removed and holes closed", null, registrationCalibration, false );
+
 
 		/**
 		 * Distance transform
@@ -201,10 +222,17 @@ public class ShavenBabyRegistration
 
 		DistanceTransform.transform( doubleBinary, distance, DistanceTransform.DISTANCE_TYPE.EUCLIDIAN, 1.0D );
 
-//		if ( settings.showIntermediateResults ) show( distance, "distance transform", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) ImageJFunctions.show( distance, "distance");
+		//show( distance, "distance transform", null, registrationCalibration, false );
 
 		/**
 		 * Watershed seeds
+		 * - if local maxima are defined as strictly larger (>) one misses them in case two
+		 *   neighboring pixels in the centre of an object have the same distance value
+		 * - if local maxima are >= and the search radius is only 1 pixel (four-connected) one gets false maxima at the corners objects
+		 *   thus, the search radius should be always >= 2 pixels
+		 * - triangle shaped appendices are an issue because they do not have a
+		 *   maximum in the distance map
 		 */
 
 		final ImgLabeling< Integer, IntType > seedsLabelImg = createWatershedSeeds( registrationCalibration, distance, mask );
@@ -217,7 +245,7 @@ public class ShavenBabyRegistration
 		Utils.log( "Watershed..." );
 
 		// prepare result label image
-		final Img< IntType > watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
+		watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
 		final ImgLabeling< Integer, IntType > watershedLabeling = new ImgLabeling<>( watershedLabelImg );
 
 		opService.image().watershed(
@@ -229,8 +257,9 @@ public class ShavenBabyRegistration
 
 		Utils.applyMask( watershedLabelImg, mask );
 
-		if ( settings.showIntermediateResults ) show( watershedLabelImg, "watershed", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) ImageJFunctions.show( watershedLabelImg, "watershed" );
 
+			// show( watershedLabelImg, "watershed", null, registrationCalibration, false );
 
 		/**
 		 * Get central embryo
@@ -249,10 +278,12 @@ public class ShavenBabyRegistration
 
 		centralObjectMask = close( centralObjectMask, ( int ) ( 20 / settings.registrationResolution ) );
 
-		centralObjectMask = opService.morphology().fillHoles( centralObjectMask );
+		centralObjectMask = open( centralObjectMask, ( int ) ( 40.0 / settings.registrationResolution ) );
 
-		if ( settings.showIntermediateResults ) show( centralObjectMask, "central object", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) ImageJFunctions.show( centralObjectMask );
+			// show( centralObjectMask, "central object", null, registrationCalibration, false );
 
+		// if ( 1 > 0 ) return;
 
 		/**
 		 * Compute ellipsoid (probably mainly yaw) alignment
@@ -291,10 +322,18 @@ public class ShavenBabyRegistration
 		registration = computeRollTransform( registration, registrationCalibration, intensityCorrectedSvb, intensityCorrectedAma, yawAndOrientationAlignedMask );
 
 
+
+		/**
+		 * Aligned mask at output resolution
+		 */
+
+		Utils.log( "Creating aligned mask at output resolution..." );
+
 		alignedMaskAtOutputResolution = Utils.copyAsArrayImg(
 				Transforms.createTransformedView(
 						centralObjectMask,
 						registration.copy().preConcatenate( Transforms.getScalingTransform( registrationCalibration, settings.outputResolution ) ),
+						settings.getOutputImageInterval(),
 						new NearestNeighborInterpolatorFactory() ) );
 
 
@@ -380,19 +419,39 @@ public class ShavenBabyRegistration
 			int closingRadius )
 	{
 		// TODO: Bug(?!) in imglib2 Closing.close makes this necessary
-		RandomAccessibleInterval< BitType > closed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
 		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai2( mask, closingRadius );
-		final RandomAccessibleInterval< BitType > enlargedClosed = Utils.getEnlargedRai2( closed, closingRadius );
+		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai2( morphed, closingRadius );
 
 		if ( closingRadius > 0 )
 		{
 			Utils.log( "Morphological closing...");
 			Shape closingShape = new HyperSphereShape( closingRadius );
-			Closing.close( Views.extendZero( enlargedMask ), Views.iterable( enlargedClosed ), closingShape, 1 );
+			Closing.close( Views.extendZero( enlargedMask ), Views.iterable( enlargedMorphed ), closingShape, 1 );
 		}
 
-		return Views.interval( enlargedClosed, mask );
+		return Views.interval( enlargedMorphed, mask );
 	}
+
+	public RandomAccessibleInterval< BitType > open(
+			RandomAccessibleInterval< BitType > mask,
+			int radius )
+	{
+		// TODO: Bug(?!) in imglib2 Closing.close makes this necessary
+		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai2( mask, 2 * radius );
+		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai2( morphed, 2 * radius );
+
+		if ( radius > 0 )
+		{
+			Utils.log( "Morphological opening...");
+			Shape shape = new HyperSphereShape( radius );
+			Opening.open( Views.extendZero( enlargedMask ), Views.iterable( enlargedMorphed ), shape, 1 );
+		}
+
+		return Views.interval( enlargedMorphed, mask );
+	}
+
 
 	public < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
@@ -425,23 +484,28 @@ public class ShavenBabyRegistration
 		return threshold;
 	}
 
-	public ImgLabeling< Integer, IntType > createWatershedSeeds( double[] registrationCalibration, RandomAccessibleInterval< DoubleType > distance, RandomAccessibleInterval< BitType > mask )
+	public ImgLabeling< Integer, IntType > createWatershedSeeds(
+			double[] registrationCalibration,
+			RandomAccessibleInterval< DoubleType > distance,
+			RandomAccessibleInterval< BitType > mask )
 	{
 		Utils.log( "Seeds for watershed...");
 
 		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.registrationResolution, 2 );
 		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.registrationResolution, 2 );
 
-		// TODO: remove local maxima detection
-		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createCenterAndBoundarySeeds(
+		int localMaximaSearchRadius = (int) ( settings.watershedSeedsLocalMaximaSearchRadius / settings.registrationResolution );
+
+		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createWatershedSeeds(
 				distance,
-				new HyperSphereShape( 1 ),
+				new HyperSphereShape( localMaximaSearchRadius ),
 				globalDistanceThreshold,
 				localMaximaDistanceThreshold );
 
+
 		final ImgLabeling< Integer, IntType > seedsLabelImg = Utils.asImgLabeling( seeds );
 
-		if ( settings.showIntermediateResults ) show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) ImageJFunctions.show( Utils.asIntImg( seedsLabelImg ) ); //show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, registrationCalibration, false );
 		return seedsLabelImg;
 	}
 

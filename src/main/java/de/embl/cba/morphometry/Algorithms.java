@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry;
 
+import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
@@ -8,6 +9,7 @@ import net.imglib2.algorithm.morphology.Closing;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
+import net.imglib2.algorithm.neighborhood.RectangleShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
@@ -354,7 +356,31 @@ public class Algorithms
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< BitType > createSeeds( RandomAccessibleInterval< T > distance, Shape shape, double globalThreshold, double localThreshold )
+	RandomAccessibleInterval< BitType > fillHoles3Din2D( RandomAccessibleInterval< BitType > mask,
+						  int axis,
+						  OpService opService )
+	{
+		final ArrayList< RandomAccessibleInterval< BitType > > holesFilled = new ArrayList<>();
+
+		for ( long coordinate = mask.min( axis ); coordinate <= mask.max( axis ); ++coordinate )
+		{
+			RandomAccessibleInterval< BitType > maskSlice = Views.hyperSlice( mask, axis, coordinate );
+			holesFilled.add(  opService.morphology().fillHoles( maskSlice ) );
+		}
+
+		RandomAccessibleInterval< BitType > stack = Views.stack( holesFilled );
+		stack = Transforms.getWithAdjustedOrigin( mask, stack );
+
+		return stack;
+
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< BitType > createWatershedSeeds(
+			RandomAccessibleInterval< T > distance,
+			Shape shape,
+			double globalThreshold,
+			double localThreshold )
 	{
 
 		RandomAccessibleInterval< BitType > seeds = ArrayImgs.bits( Intervals.dimensionsAsLongArray( distance ) );

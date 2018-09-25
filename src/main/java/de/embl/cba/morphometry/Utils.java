@@ -158,19 +158,21 @@ public class Utils
 
 
 	public static <T extends RealType<T> & NativeType< T > >
-	RandomAccessibleInterval< T > maskAllChannels( RandomAccessibleInterval< T > images, RandomAccessibleInterval< BitType > mask )
+	ArrayList< RandomAccessibleInterval< T > > maskAllChannels(
+			ArrayList< RandomAccessibleInterval< T > > channels,
+			RandomAccessibleInterval< BitType > mask )
 	{
 		ArrayList< RandomAccessibleInterval< T > > maskedChannels = new ArrayList<>(  );
 
-		long numChannels = images.dimension( 3 );
+		long numChannels = channels.size();
 		for ( int c = 0; c < numChannels; ++c )
 		{
-			final RandomAccessibleInterval< T > channel = Utils.copyAsArrayImg( Views.hyperSlice( images, 3, c ) );
+			final RandomAccessibleInterval< T > channel = Utils.copyAsArrayImg( channels.get( c ) );
 			Utils.applyMask( channel, mask );
 			maskedChannels.add( channel );
 		}
 
-		return Views.stack( maskedChannels );
+		return maskedChannels;
 	}
 
 	public static CentroidsParameters computeCentroidsParametersAlongXAxis(
@@ -357,7 +359,7 @@ public class Utils
 		final Cursor< T > cursor = Views.iterable( rai ).cursor();
 		final OutOfBounds< BitType > maskAccess = Views.extendZero( mask ).randomAccess();
 
-		while ( cursor.hasNext() )
+  		while ( cursor.hasNext() )
 		{
 			cursor.fwd();
 			maskAccess.setPosition( cursor );
@@ -622,21 +624,11 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > copyAsArrayImg( RandomAccessibleInterval< T > rai )
+	RandomAccessibleInterval< T > copyAsArrayImg( RandomAccessibleInterval< T > orig )
 	{
-
-		RandomAccessibleInterval< T > copy = new ArrayImgFactory( rai.randomAccess().get() ).create( rai );
-		copy = Transforms.getWithAdjustedOrigin( rai, copy );
-
-		final Cursor< T > out = Views.iterable( copy ).localizingCursor();
-		final RandomAccess< T > in = rai.randomAccess();
-
-		while( out.hasNext() )
-		{
-			out.fwd();
-			in.setPosition( out );
-			out.get().set( in.get() );
-		}
+		RandomAccessibleInterval< T > copy = new ArrayImgFactory( orig.randomAccess().get() ).create( orig );
+		copy = Transforms.getWithAdjustedOrigin( orig, copy );
+		LoopBuilder.setImages( copy, orig ).forEachPixel( ( c, o ) -> c.set( o ) );
 
 		return copy;
 	}
