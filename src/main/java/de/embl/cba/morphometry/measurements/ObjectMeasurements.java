@@ -23,7 +23,7 @@ public class ObjectMeasurements
 	public static final String SUM_INTENSITY = "SumIntensity";
 	public static final String GOBAL_BACKGROUND_INTENSITY = "GobalBackgroundIntensity";
 
-	public static void measureObjectPosition( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling, double[] calibration )
+	public static void measurePositions( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling, double[] calibration )
 	{
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
@@ -40,7 +40,7 @@ public class ObjectMeasurements
 		}
 	}
 
-	public static void measureObjectPixelSizes( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling )
+	public static void measureVolumesInVoxels( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling )
 	{
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
@@ -61,7 +61,7 @@ public class ObjectMeasurements
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	void measureObjectSumIntensities( HashMap< Integer, Map< String, Object > > objectMeasurements, ImgLabeling< Integer, IntType > imgLabeling, RandomAccessibleInterval< T > image, String channel )
+	void measureSumIntensities( HashMap< Integer, Map< String, Object > > objectMeasurements, ImgLabeling< Integer, IntType > imgLabeling, RandomAccessibleInterval< T > image, String channel )
 	{
 
 		final RandomAccess< T > imageRandomAccess = image.randomAccess();
@@ -107,25 +107,30 @@ public class ObjectMeasurements
 		double sumBg = 0;
 		long nObject = 0;
 		long nBackground = 0;
-
+		int value;
 
 		while ( labelCursor.hasNext() )
 		{
-			if( labelCursor.next().getInteger() == label )
+
+			value = labelCursor.next().getInteger();
+
+			if( value == label )
 			{
 				intensityAccess.setPosition( labelCursor );
 				sum += intensityAccess.get().getRealDouble();
 				nObject++;
 			}
-			else if ( labelCursor.next().getInteger() == 0 )
+			else if ( value == 0 )
 			{
 				intensityAccess.setPosition( labelCursor );
 				sumBg += intensityAccess.get().getRealDouble();
 				nBackground++;
 			}
+
 		}
 
-		return ( sum - nObject * ( sumBg / nBackground )  );
+		final double meanBg = sumBg / nBackground;
+		return ( sum - nObject * meanBg );
 
 	}
 
