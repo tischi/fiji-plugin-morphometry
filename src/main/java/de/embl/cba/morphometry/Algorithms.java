@@ -543,28 +543,29 @@ public class Algorithms
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	void splitTouchingObjects(
-			RandomAccessibleInterval< BitType > mask,
+	RandomAccessibleInterval< BitType > splitTouchingObjects(
 			ImgLabeling< Integer, IntType > imgLabeling,
+			RandomAccessibleInterval< T > intensity,
 			HashMap< Integer, Integer > numObjectsPerRegion,
-			RandomAccessibleInterval< T > image,
-			long minimalObjectPixelWidth,
+			long minimalObjectWidth,
 			long minimalObjectSize,
-			long maximalWatershedLength,
+			long maximalWatershedBoundaryLength,
 			OpService opService )
 	{
 
 		final LabelRegions labelRegions = new LabelRegions( imgLabeling );
+
+		final RandomAccessibleInterval< BitType > mask = Utils.asMask( imgLabeling );
 
 		for ( int label : numObjectsPerRegion.keySet() )
 		{
 			if ( numObjectsPerRegion.get( label ) > 1 )
 			{
 
-				final RandomAccessibleInterval< T > maskedAndCropped = Views.zeroMin( Utils.getMaskedAndCropped( image, labelRegions.getLabelRegion( label ) ) );
+				final RandomAccessibleInterval< T > maskedAndCropped = Views.zeroMin( Utils.getMaskedAndCropped( intensity, labelRegions.getLabelRegion( label ) ) );
 				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.asMask( labelRegions.getLabelRegion( label ) ) );
 
-				final ArrayList< PositionAndValue > localMaxima = Algorithms.getLocalMaxima( maskedAndCropped, new HyperSphereShape( minimalObjectPixelWidth ), 0.0 );
+				final ArrayList< PositionAndValue > localMaxima = Algorithms.getLocalMaxima( maskedAndCropped, new HyperSphereShape( minimalObjectWidth ), 0.0 );
 
 				if ( localMaxima.size() < 2 )
 				{
@@ -596,7 +597,7 @@ public class Algorithms
 						checkSplittingValidity(
 								splitObjects,
 								minimalObjectSize,
-								maximalWatershedLength );
+								maximalWatershedBoundaryLength );
 
 				if ( isValidSplit )
 				{
@@ -610,6 +611,8 @@ public class Algorithms
 
 			}
 		}
+
+		return mask;
 
 	}
 

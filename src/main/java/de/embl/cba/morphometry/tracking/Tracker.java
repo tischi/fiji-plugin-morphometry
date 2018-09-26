@@ -56,8 +56,6 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 
 			labelRegions = new LabelRegions( Utils.asImgLabeling( currentLabeling ) );
 
-			final Set< Integer > existingLabels = labelRegions.getExistingLabels();
-
 			for ( LabelRegion< Integer > region : labelRegions )
 			{
 				final HashMap< Integer, Long > overlaps = computeOverlaps( previousLabeling, region );
@@ -75,7 +73,7 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 							region.getLabel(),
 							intensities.get( t ) );
 
-					Utils.log( "Object intensity: " + currentIntensity );
+					Utils.log( "Object intensity: " + (long) currentIntensity );
 
 					final HashMap< Integer, Double > previousIntensities = new HashMap<>();
 
@@ -88,12 +86,13 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 
 						previousIntensities.put( label , intensity );
 
-						Utils.log( "Previous object intensity: " + intensity );
+						Utils.log( "Previous object intensity: " + (long) intensity );
+						Utils.log( "Overlap pixel fraction: " + 1.0 * overlaps.get( label ).longValue() / region.size() );
 					}
 
 					double previousIntensitySum = getPreviousIntensitySum( previousIntensities );
 
-					Utils.log( "Intensity ratio: " + currentIntensity / previousIntensitySum );
+					Utils.log( "Intensity ratio: " +  currentIntensity / previousIntensitySum );
 
 
 

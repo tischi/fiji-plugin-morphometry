@@ -2,6 +2,7 @@ package de.embl.cba.morphometry.microglia;
 
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.measurements.ObjectMeasurements;
+import de.embl.cba.morphometry.splitting.SplittingUtils;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
@@ -72,9 +73,9 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		final double[] workingCalibration = Utils.get2dDoubleArray( settings.workingVoxelSize );
 
-		final RandomAccessibleInterval< T > image = Algorithms.createIsotropicArrayImg( settings.image, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > intensityImage = Algorithms.createIsotropicArrayImg( settings.image, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
-		if ( settings.showIntermediateResults ) show( image, "image isotropic resolution", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( intensityImage, "image isotropic resolution", null, workingCalibration, false );
 		
 		
 
@@ -90,7 +91,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Computing offset and threshold..." );
 
-		final IntensityHistogram intensityHistogram = new IntensityHistogram( image, settings.maxPossibleValueInDataSet, 2 );
+		final IntensityHistogram intensityHistogram = new IntensityHistogram( intensityImage, settings.maxPossibleValueInDataSet, 2 );
 
 		CoordinateAndValue mode = intensityHistogram.getMode();
 
@@ -105,7 +106,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 		 * Create mask
 		 */
 
-		RandomAccessibleInterval< BitType > mask = Algorithms.createMask( image, threshold );
+		RandomAccessibleInterval< BitType > mask = Algorithms.createMask( intensityImage, threshold );
 
 		if ( settings.showIntermediateResults ) show( mask, "mask", null, workingCalibration, false );
 
@@ -141,16 +142,15 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		if ( settings.showIntermediateResults ) show( skeleton, "skeleton", null, workingCalibration, false );
 
-		HashMap< Integer, Integer > numObjectsPerRegion = getNumObjectsFromSkeleton( imgLabeling, skeleton, settings );
+		HashMap< Integer, Integer > numObjectsPerRegion = SplittingUtils.getNumObjectsFromSkeleton( imgLabeling, skeleton, settings );
 
 
 		Algorithms.splitTouchingObjects(
-				mask,
 				imgLabeling,
+				intensityImage,
 				numObjectsPerRegion,
-				image,
 				( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
-				( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize , image.numDimensions() ) ),
+				( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize , intensityImage.numDimensions() ) ),
 				( int ) ( settings.maximalWatershedLength / settings.workingVoxelSize ),
 				opService );
 
@@ -175,7 +175,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		objectMeasurements = new HashMap<>();
 
-		ObjectMeasurements.measureSumIntensities( objectMeasurements, imgLabeling, image, "channel01" );
+		ObjectMeasurements.measureSumIntensities( objectMeasurements, imgLabeling, intensityImage, "channel01" );
 
 		ObjectMeasurements.measureSumIntensities( objectMeasurements, imgLabeling, skeleton, "skeleton" );
 
@@ -239,7 +239,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		opService.image().watershed(
 				watershedImgLabeling,
-				Utils.invertedView( image ),
+				Utils.invertedView( intensityImage ),
 				seedsImgLabeling,
 				false,
 				false );
@@ -264,7 +264,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 
 		resultImages = new ArrayList<>();
-		resultImages.add( Utils.getEnlargedRai( image ) );
+		resultImages.add( Utils.getEnlargedRai( intensityImage ) );
 		resultImages.add( Utils.getEnlargedRai( ( RandomAccessibleInterval ) imgLabeling.getSource() ) );
 		resultImages.add( Utils.getEnlargedRai( ( RandomAccessibleInterval ) skeleton ) );
 	}
@@ -272,20 +272,6 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 	public int getImgLabelingResultStackChannelId()
 	{
 		return 1;
-	}
-
-	public static HashMap< Integer, Integer > getNumObjectsFromSkeleton( ImgLabeling< Integer, IntType > imgLabeling, RandomAccessibleInterval< BitType > skeleton, MicrogliaMorphometrySettings settings )
-	{
-		HashMap< Integer, Map< String, Object > > skeletonMeasurements = new HashMap<>();
-		ObjectMeasurements.measureSumIntensities( skeletonMeasurements, imgLabeling, skeleton, "skeleton" );
-		HashMap< Integer, Integer > numObjects = new HashMap<>();
-		for ( int label : skeletonMeasurements.keySet() )
-		{
-			final double skeletonLength = settings.workingVoxelSize * (long) skeletonMeasurements.get( label ).get( ObjectMeasurements.SUM_INTENSITY + "_skeleton" );
-			int n = (int) ( Math.ceil( skeletonLength / settings.skeletonMaxLength ) );
-			numObjects.put( label, n );
-		}
-		return numObjects;
 	}
 
 
