@@ -37,7 +37,7 @@ public class MaximalOverlapTracker< T extends RealType< T > & NativeType< T > >
 
 		int t = tMin;
 
-		nextId = TrackingUtils.getNumObjects( masks.get( t ) );
+		nextId = Utils.getNumObjects( masks.get( t ) );
 
 		RandomAccessibleInterval< IntType > previousLabeling = Utils.asImgLabeling( masks.get( tMin ) ).getSource();
 		LabelRegions< Integer > labelRegions;

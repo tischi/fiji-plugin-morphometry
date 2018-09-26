@@ -46,4 +46,7 @@ public class MicrogliaMorphometrySettings<T extends RealType<T> & NativeType< T 
 	public double skeletonMaxLength;
 	public double minimalObjectCenterDistance;
 	public double maximalWatershedLength;
+	public double minimalOverlapFraction = 0.2;
+	public double minimalSumIntensityRatio = 0.5;
+	public double maximalSumIntensityRatio = 1.5;
 }

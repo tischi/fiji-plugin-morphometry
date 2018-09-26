@@ -22,10 +22,7 @@ import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.loops.LoopBuilder;
 import net.imglib2.outofbounds.OutOfBounds;
 import net.imglib2.realtransform.AffineTransform3D;
-import net.imglib2.roi.labeling.ImgLabeling;
-import net.imglib2.roi.labeling.LabelRegion;
-import net.imglib2.roi.labeling.LabelRegionCursor;
-import net.imglib2.roi.labeling.LabelingType;
+import net.imglib2.roi.labeling.*;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
@@ -830,7 +827,7 @@ public class Utils
 		return Views.interval( Views.extendZero( rai ), interval );
 	}
 
-	public static RandomAccessibleInterval< BitType > asMask( LabelRegion labelRegion )
+	public static RandomAccessibleInterval< BitType > labelRegionAsMask( LabelRegion labelRegion )
 	{
 		RandomAccessibleInterval< BitType > rai = ArrayImgs.bits( Intervals.dimensionsAsLongArray( labelRegion ) );
 		rai = Transforms.getWithAdjustedOrigin( labelRegion, rai  );
@@ -927,11 +924,21 @@ public class Utils
 
 	public static RandomAccessibleInterval<BitType> asMask( ImgLabeling<Integer, IntType> imgLabeling )
 	{
-		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( imgLabeling ) );
-		mask = Transforms.getWithAdjustedOrigin( imgLabeling.getSource(), mask  );
+		final RandomAccessibleInterval< IntType > labeling = imgLabeling.getSource();
+
+		RandomAccessibleInterval< BitType > mask = asMask( labeling );
+
+		return mask;
+
+	}
+
+	public static RandomAccessibleInterval< BitType > asMask( RandomAccessibleInterval< IntType > labeling )
+	{
+		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( labeling ) );
+		mask = Transforms.getWithAdjustedOrigin( labeling, mask  );
 		final RandomAccess< BitType > maskAccess = mask.randomAccess();
 
-		final Cursor< IntType > labelingCursor = Views.iterable( imgLabeling.getSource() ).cursor();
+		final Cursor< IntType > labelingCursor = Views.iterable( labeling ).cursor();
 
 		while ( labelingCursor.hasNext() )
 		{
@@ -943,8 +950,12 @@ public class Utils
 				maskAccess.get().set( true );
 			}
 		}
-
 		return mask;
+	}
 
+	public static int getNumObjects( RandomAccessibleInterval< BitType > mask )
+	{
+		final LabelRegions labelRegions = new LabelRegions( asImgLabeling( mask )  );
+		return labelRegions.getExistingLabels().size() - 1;
 	}
 }

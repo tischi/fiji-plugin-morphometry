@@ -543,9 +543,10 @@ public class Algorithms
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< BitType > splitTouchingObjects(
+	void splitTouchingObjects(
 			ImgLabeling< Integer, IntType > imgLabeling,
 			RandomAccessibleInterval< T > intensity,
+			RandomAccessibleInterval< BitType > mask, // This will be changed, i.e. the split(s) will be drawn into it
 			HashMap< Integer, Integer > numObjectsPerRegion,
 			long minimalObjectWidth,
 			long minimalObjectSize,
@@ -555,15 +556,13 @@ public class Algorithms
 
 		final LabelRegions labelRegions = new LabelRegions( imgLabeling );
 
-		final RandomAccessibleInterval< BitType > mask = Utils.asMask( imgLabeling );
-
 		for ( int label : numObjectsPerRegion.keySet() )
 		{
 			if ( numObjectsPerRegion.get( label ) > 1 )
 			{
 
 				final RandomAccessibleInterval< T > maskedAndCropped = Views.zeroMin( Utils.getMaskedAndCropped( intensity, labelRegions.getLabelRegion( label ) ) );
-				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.asMask( labelRegions.getLabelRegion( label ) ) );
+				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.labelRegionAsMask( labelRegions.getLabelRegion( label ) ) );
 
 				final ArrayList< PositionAndValue > localMaxima = Algorithms.getLocalMaxima( maskedAndCropped, new HyperSphereShape( minimalObjectWidth ), 0.0 );
 
@@ -611,8 +610,6 @@ public class Algorithms
 
 			}
 		}
-
-		return mask;
 
 	}
 

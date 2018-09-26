@@ -1,10 +1,14 @@
 package de.embl.cba.morphometry.splitting;
 
+import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.measurements.ObjectMeasurements;
 import de.embl.cba.morphometry.microglia.MicrogliaMorphometrySettings;
+import net.imagej.ops.OpService;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegionCursor;
 import net.imglib2.roi.labeling.LabelRegions;
@@ -12,6 +16,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.util.Intervals;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +50,8 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		int tMax = masks.size() - 1;
 		int t = tMin;
 
+		splitMasks = new ArrayList<>( );
+
 
 		/**
 		 * Process first time-point
@@ -52,77 +59,111 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 		final ShapeAndIntensitySplitter splitter = new ShapeAndIntensitySplitter( masks.get( t ), intensities.get( t ), settings );
 		splitter.run();
-		final RandomAccessibleInterval splitMask = splitter.getSplitMask();
+		splitMasks.add( splitter.getSplitMask() );
 
-		ImageJFunctions.show( splitMask, "Split Mask - TimePoint 1");
+		nextId = Utils.getNumObjects( splitMasks.get( tMin ) );
+
+		/**
+		 * Process subsequent time-points
+		 */
+
+		RandomAccessibleInterval< IntType > previousLabeling = Utils.asImgLabeling( masks.get( tMin ) ).getSource();
 
 
-//
-//		nextId = getNumObjects( t );
-//
-//		RandomAccessibleInterval< IntType > previousLabeling = masks.get( tMin ).getSource();
-//		LabelRegions< Integer > labelRegions;
-//
-//		splitMasks = initUpdatedLabelings( tMin );
-//
-//		for ( t = tMin + 1; t <= tMax; ++t )
-//		{
-//			RandomAccessibleInterval< IntType > currentLabeling = masks.get( t ).getSource();;
-//			RandomAccessibleInterval< IntType > updatedLabeling = ArrayImgs.ints( Intervals.dimensionsAsLongArray( currentLabeling ) );
-//
-//			labelRegions = new LabelRegions( Utils.asImgLabeling( currentLabeling ) );
-//
-//			for ( LabelRegion< Integer > region : labelRegions )
-//			{
-//				final HashMap< Integer, Long > overlaps = computeOverlaps( previousLabeling, region );
-//
-//				if ( overlaps.size() == 2 )
-//				{
-//
-//					Utils.log( "Overlap with two objects" );
-//
-//					Utils.log( "Time point (one based): " + ( t + 1 ) );
-//					Utils.log( "Object label: " + region.getLabel() );
-//
-//					final double currentIntensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
-//							currentLabeling,
-//							region.getLabel(),
-//							intensities.get( t ) );
-//
-//					Utils.log( "Object intensity: " + (long) currentIntensity );
-//
-//					final HashMap< Integer, Double > previousIntensities = new HashMap<>();
-//
-//					for ( int label : overlaps.keySet() )
-//					{
-//						final double intensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
-//								previousLabeling,
-//								label,
-//								intensities.get( t ) );
-//
-//						previousIntensities.put( label , intensity );
-//
-//						Utils.log( "Previous object intensity: " + (long) intensity );
-//						Utils.log( "Overlap pixel fraction: " + 1.0 * overlaps.get( label ).longValue() / region.size() );
-//					}
-//
-//					double previousIntensitySum = getPreviousIntensitySum( previousIntensities );
-//
-//					Utils.log( "Intensity ratio: " +  currentIntensity / previousIntensitySum );
-//
-//
-//
-//				}
-//
-//				int objectId = computeObjectId( overlaps );
-//
-//				Utils.drawObject( updatedLabeling, region, objectId );
-//			}
-//
-//			splitMasks.add( updatedLabeling);
-//
-//			previousLabeling = updatedLabeling;
-//		}
+		for ( t = tMin + 1; t <= tMax; ++t )
+		{
+			final ImgLabeling< Integer, IntType > currentImgLabeling = Utils.asImgLabeling( masks.get( t ) );
+			RandomAccessibleInterval< IntType > currentLabeling = currentImgLabeling.getSource();
+			RandomAccessibleInterval< IntType > updatedLabeling = ArrayImgs.ints( Intervals.dimensionsAsLongArray( currentLabeling ) );
+
+			HashMap< Integer, Integer > numObjectsPerRegion = new HashMap<>(  );
+
+			LabelRegions< Integer > labelRegions = new LabelRegions( Utils.asImgLabeling( currentLabeling ) );
+
+			for ( LabelRegion< Integer > region : labelRegions )
+			{
+				final HashMap< Integer, Long > overlaps = computeOverlaps( previousLabeling, region );
+
+				int numObjectsInRegion = 1;
+
+				if ( overlaps.size() == 2 )
+				{
+					boolean splitObjects = isSplitTwoObjects( t, previousLabeling, currentLabeling, region, overlaps );
+
+					if ( splitObjects )
+					{
+						numObjectsInRegion = 2;
+					}
+				}
+
+				numObjectsPerRegion.put( region.getLabel(), numObjectsInRegion );
+
+			}
+
+			final RandomAccessibleInterval< BitType > splitMask = Utils.copyAsArrayImg( masks.get( t ) );
+
+			Algorithms.splitTouchingObjects(
+					currentImgLabeling,
+					intensities.get( t ),
+					splitMask,
+					numObjectsPerRegion,
+					( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
+					( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize, splitMask.numDimensions() ) ),
+					( int ) ( settings.maximalWatershedLength / settings.workingVoxelSize ),
+					settings.opService );
+
+			splitMasks.add( splitMask );
+
+			previousLabeling = Utils.asImgLabeling( splitMask ).getSource();
+		}
+	}
+
+	public boolean isSplitTwoObjects( int t, RandomAccessibleInterval< IntType > previousLabeling, RandomAccessibleInterval< IntType > currentLabeling, LabelRegion< Integer > region, HashMap< Integer, Long > overlaps )
+	{
+		Utils.log( "Overlap with two objects" );
+		Utils.log( "Time point (one based): " + ( t + 1 ) );
+		Utils.log( "Object label: " + region.getLabel() );
+
+		boolean splitObjects =  true;
+
+		final double currentIntensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
+				currentLabeling,
+				region.getLabel(),
+				intensities.get( t ) );
+
+		Utils.log( "Object intensity: " + (long) currentIntensity );
+
+		final HashMap< Integer, Double > previousIntensities = new HashMap<>();
+
+		for ( int label : overlaps.keySet() )
+		{
+			final double intensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
+					previousLabeling,
+					label,
+					intensities.get( t ) );
+
+			previousIntensities.put( label , intensity );
+
+			final double overlapFraction = 1.0 * overlaps.get( label ).longValue() / region.size();
+			Utils.log( "Previous object intensity: " + (long) intensity );
+			Utils.log( "Overlap pixel fraction: " + overlapFraction );
+
+			if ( overlapFraction < settings.minimalOverlapFraction ) splitObjects = false;
+
+		}
+
+		double previousIntensitySum = getPreviousIntensitySum( previousIntensities );
+
+		final double sumIntensityRatio = currentIntensity / previousIntensitySum;
+
+		Utils.log( "Intensity ratio: " + sumIntensityRatio );
+
+		if ( sumIntensityRatio < settings.minimalSumIntensityRatio ) splitObjects = false;
+		if ( sumIntensityRatio > settings.maximalSumIntensityRatio ) splitObjects = false;
+
+		Utils.log( "Split objects: " + splitObjects );
+
+		return splitObjects;
 	}
 
 	private double getPreviousIntensitySum( HashMap< Integer, Double > previousIntensities )
@@ -222,9 +263,5 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		}
 	}
 
-	public int getNumObjects( int t )
-	{
-		final LabelRegions labelRegions = new LabelRegions( masks.get( t ) );
-		return labelRegions.getExistingLabels().size() - 1;
-	}
+
 }

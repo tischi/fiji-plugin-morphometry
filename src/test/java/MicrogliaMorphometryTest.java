@@ -72,15 +72,15 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 
 		ImageJFunctions.show( Views.stack( masks ), "Simple segmentation" );
 
+		final TrackingSplitter splitter = new TrackingSplitter( masks, intensities, settings );
+		splitter.run();
+		masks = splitter.getSplitMasks();
+
 		final MaximalOverlapTracker maximalOverlapTracker = new MaximalOverlapTracker( masks );
 		maximalOverlapTracker.run();
 		maximalOverlapTracker.getLabelings();
 
-		ImageJFunctions.show( Views.stack( maximalOverlapTracker.getLabelings() ), "Simple segmentation - Simple tracking" );
-
-
-		final TrackingSplitter splitter = new TrackingSplitter( masks, intensities, settings );
-		splitter.run();
+		ImageJFunctions.show( Views.stack( maximalOverlapTracker.getLabelings() ), "Simple segmentation - Tracking splitting - Simple tracking" );
 
 
 
