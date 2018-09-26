@@ -924,4 +924,27 @@ public class Utils
 			access.get().set( value );
 		}
 	}
+
+	public static RandomAccessibleInterval<BitType> asMask( ImgLabeling<Integer, IntType> imgLabeling )
+	{
+		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( imgLabeling ) );
+		mask = Transforms.getWithAdjustedOrigin( imgLabeling.getSource(), mask  );
+		final RandomAccess< BitType > maskAccess = mask.randomAccess();
+
+		final Cursor< IntType > labelingCursor = Views.iterable( imgLabeling.getSource() ).cursor();
+
+		while ( labelingCursor.hasNext() )
+		{
+			labelingCursor.fwd();
+
+			if ( labelingCursor.get().getInteger() > 0 )
+			{
+				maskAccess.setPosition( labelingCursor );
+				maskAccess.get().set( true );
+			}
+		}
+
+		return mask;
+
+	}
 }

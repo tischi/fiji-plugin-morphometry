@@ -1,29 +1,23 @@
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.microglia.MicrogliaMorphometry;
 import de.embl.cba.morphometry.microglia.MicrogliaMorphometrySettings;
 import de.embl.cba.morphometry.measurements.ObjectMeasurements;
-import de.embl.cba.morphometry.tracking.Tracker;
+import de.embl.cba.morphometry.segmentation.SimpleSegmenter;
+import de.embl.cba.morphometry.splitting.TrackingSplitter;
+import de.embl.cba.morphometry.tracking.MaximalOverlapTracker;
 import ij.IJ;
 import ij.ImagePlus;
-import ij.gui.Overlay;
-import ij.gui.TextRoi;
 import net.imagej.ImageJ;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
-import net.imglib2.roi.labeling.LabelRegions;
-import net.imglib2.roi.labeling.LabelingType;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
-import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 
 public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T > >
@@ -58,84 +52,120 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		settings.maximalWatershedLength = 10;
 
 		settings.closingRadius = 3;
-
 		settings.showIntermediateResults = false;
-
-		ArrayList< RandomAccessibleInterval< T > > results = new ArrayList<>();
-		ArrayList< ImgLabeling< Integer, IntType > > imgLabelings = new ArrayList<>();
-		ArrayList<  RandomAccessibleInterval< T > > intensities = new ArrayList<>();
-
-
-		ArrayList< HashMap > measurements = new ArrayList<>();
+		settings.opService = imagej.op();
 
 		long tMin = inputImages.min( 2 );
-		long tMax = 2; //inputImages.max( 2 );
+		long tMax = 1; //inputImages.max( 2 );
+
+
+		ArrayList< RandomAccessibleInterval< T > > intensities = getIntensities( inputImages, tMin, tMax );
+
+		ArrayList<  RandomAccessibleInterval< T > > masks = new ArrayList<>();
 
 		for ( long t = tMin; t <= tMax; ++t )
 		{
-			Utils.log( "# Processing timepoint " + t );
-			settings.image = Views.hyperSlice( inputImages, 2, t); // extract time point
-			MicrogliaMorphometry morphometry = new MicrogliaMorphometry( settings, imagej.op() );
-			morphometry.run();
-			results.add( morphometry.getResultImageStack() );
-			measurements.add( morphometry.getObjectMeasurements() );
-			imgLabelings.add( morphometry.getImgLabeling() );
-			intensities.add( Views.hyperSlice( inputImages, 2, t) );
-
+			final SimpleSegmenter simpleSegmenter = new SimpleSegmenter( intensities.get( ( int ) t ), settings );
+			simpleSegmenter.run();
+			masks.add( simpleSegmenter.getMask() );
 		}
 
-		RandomAccessibleInterval< T > movie = Views.addDimension( Views.stack( results ), 0, 0 );
-		movie = Views.permute( movie, 3, 4 );
-		ImagePlus show = ImageJFunctions.show( movie, settings.inputDataSetName );
-		IJ.run( show, "Grays", "");
+		ImageJFunctions.show( Views.stack( masks ), "Simple segmentation" );
 
-		final Overlay overlay = new Overlay();
+		final MaximalOverlapTracker maximalOverlapTracker = new MaximalOverlapTracker( masks );
+		maximalOverlapTracker.run();
+		maximalOverlapTracker.getLabelings();
 
-		Font font = new Font("SansSerif", Font.PLAIN, 10);
+		ImageJFunctions.show( Views.stack( maximalOverlapTracker.getLabelings() ), "Simple segmentation - Simple tracking" );
 
-		for ( long t = inputImages.min( 2 ); t <= tMax; ++t )
+
+		final TrackingSplitter splitter = new TrackingSplitter( masks, intensities, settings );
+		splitter.run();
+
+
+
+//		ArrayList< RandomAccessibleInterval< T > > results = new ArrayList<>();
+//		ArrayList< ImgLabeling< Integer, IntType > > imgLabelings = new ArrayList<>();
+
+
+
+
+//
+//		MicrogliaMorphometry morphometry = new MicrogliaMorphometry( settings, imagej.op() );
+//		morphometry.run();
+//		results.add( morphometry.getResultImageStack() );
+//		measurements.add( morphometry.getObjectMeasurements() );
+//		imgLabelings.add( morphometry.getImgLabeling() );
+//		intensities.add( Views.hyperSlice( inputImages, 2, t) );
+//
+//
+//
+//		ArrayList< HashMap > measurements = new ArrayList<>();
+//
+//
+//		RandomAccessibleInterval< T > movie = Views.addDimension( Views.stack( results ), 0, 0 );
+//		movie = Views.permute( movie, 3, 4 );
+//		ImagePlus show = ImageJFunctions.show( movie, settings.inputDataSetName );
+//		IJ.run( show, "Grays", "");
+//
+//		final Overlay overlay = new Overlay();
+//
+//		Font font = new Font("SansSerif", Font.PLAIN, 10);
+//
+//		for ( long t = inputImages.min( 2 ); t <= tMax; ++t )
+//		{
+//			final HashMap hashMap = measurements.get( ( int ) t );
+//			for ( Object label : hashMap.keySet() )
+//			{
+//				final Map< String, Object > objectMeasurements = ( Map< String, Object > ) hashMap.get( label );
+//
+//				long correctedSumIntensity = getCorrectedSumIntensity( objectMeasurements );
+//
+//				String text = "";
+//				text += label;
+//				text += ", size: " + objectMeasurements.get( ObjectMeasurements.SIZE_PIXEL_UNITS );
+//				text += ", intens: " + correctedSumIntensity;
+//				text += ", skel: " + Math.round( settings.workingVoxelSize * (long) objectMeasurements.get( ObjectMeasurements.SUM_INTENSITY + "_skeleton" ) );
+//
+//				double[] pixelPosition = getPixelPosition( settings, objectMeasurements );
+//
+//				final TextRoi textRoi = new TextRoi( pixelPosition[ 0 ], pixelPosition[ 1 ], text );
+//				textRoi.setPosition( 1,1, (int) ( t+1 ) );
+//				textRoi.setCurrentFont( font );
+//				overlay.add( textRoi );
+//
+//			}
+//		}
+//
+//		show.setOverlay( overlay );
+//		final RandomAccessibleInterval< IntType > labelings = ( RandomAccessibleInterval ) Views.hyperSlice( movie, 2, 1 );
+//		ImageJFunctions.show( labelings, "labelings" );
+//
+//		final RandomAccessibleInterval< LabelingType< Integer > > stack = Views.stack( imgLabelings );
+//
+//		final Tracker tracker = new Tracker( imgLabelings, intensities );
+//		tracker.run();
+//
+//		ImagePlus relabelled =  ImageJFunctions.show(
+//			Views.permute(
+//					Views.addDimension(
+//							Views.stack(  tracker.getLabelings() ), 0, 0 ), 2, 3)
+//		);
+//
+//		IJ.saveAsTiff( relabelled, "/Users/tischer/Desktop/relabelled.tif" );
+
+
+	}
+
+	private ArrayList< RandomAccessibleInterval< T > > getIntensities( Img< T > inputImages, long tMin, long tMax )
+	{
+		ArrayList<  RandomAccessibleInterval< T > > intensities = new ArrayList<>();
+
+		for ( long t = tMin; t <= tMax; ++t )
 		{
-			final HashMap hashMap = measurements.get( ( int ) t );
-			for ( Object label : hashMap.keySet() )
-			{
-				final Map< String, Object > objectMeasurements = ( Map< String, Object > ) hashMap.get( label );
-
-				long correctedSumIntensity = getCorrectedSumIntensity( objectMeasurements );
-
-				String text = "";
-				text += label;
-				text += ", size: " + objectMeasurements.get( ObjectMeasurements.SIZE_PIXEL_UNITS );
-				text += ", intens: " + correctedSumIntensity;
-				text += ", skel: " + Math.round( settings.workingVoxelSize * (long) objectMeasurements.get( ObjectMeasurements.SUM_INTENSITY + "_skeleton" ) );
-
-				double[] pixelPosition = getPixelPosition( settings, objectMeasurements );
-
-				final TextRoi textRoi = new TextRoi( pixelPosition[ 0 ], pixelPosition[ 1 ], text );
-				textRoi.setPosition( 1,1, (int) ( t+1 ) );
-				textRoi.setCurrentFont( font );
-				overlay.add( textRoi );
-
-			}
+			intensities.add( Views.hyperSlice( inputImages, 2, t ) );
 		}
-
-		show.setOverlay( overlay );
-		final RandomAccessibleInterval< IntType > labelings = ( RandomAccessibleInterval ) Views.hyperSlice( movie, 2, 1 );
-		ImageJFunctions.show( labelings, "labelings" );
-
-		final RandomAccessibleInterval< LabelingType< Integer > > stack = Views.stack( imgLabelings );
-
-		final Tracker tracker = new Tracker( imgLabelings, intensities );
-		tracker.run();
-
-		ImagePlus relabelled =  ImageJFunctions.show(
-			Views.permute(
-					Views.addDimension(
-							Views.stack(  tracker.getUpdatedLabelings() ), 0, 0 ), 2, 3)
-		);
-
-		IJ.saveAsTiff( relabelled, "/Users/tischer/Desktop/relabelled.tif" );
-
-
+		return intensities;
 	}
 
 	public double[] getPixelPosition( MicrogliaMorphometrySettings settings, Map< String, Object > objectMeasurements )

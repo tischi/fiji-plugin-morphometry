@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry.microglia;
 
+import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -15,9 +16,12 @@ public class MicrogliaMorphometrySettings<T extends RealType<T> & NativeType< T 
 	// morphometry length: 420
 	// morphometry width: 160
 
+	public OpService opService;
+
 	public boolean showIntermediateResults = false;
 	public double workingVoxelSize = 6.0;
 	public double outputResolution = 2.0;
+
 
 	public double watershedSeedsGlobalDistanceThreshold = Double.MAX_VALUE;
 	public double watershedSeedsLocalMaximaDistanceThreshold = 3 * workingVoxelSize; // at least 3 pixels
