@@ -83,9 +83,4 @@ public class TrackingUtils
 		return overlaps;
 	}
 
-	public static int getNumObjects( RandomAccessibleInterval< BitType > mask )
-	{
-		final LabelRegions labelRegions = new LabelRegions( Utils.asImgLabeling( mask )  );
-		return labelRegions.getExistingLabels().size() - 1;
-	}
 }
