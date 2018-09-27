@@ -61,6 +61,8 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 		nextId = Utils.getNumObjects( splitMasks.get( tMin ) );
 
+		boolean showSplittingAttempts = false;
+
 		/**
 		 * Process subsequent time-points
 		 */
@@ -98,11 +100,15 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 			}
 
 
-			if ( t == 2 )
+			if ( t == 4 )
 			{
-				ImageJFunctions.show( previousLabeling, "previous labeling" );
-				ImageJFunctions.show( currentImgLabeling.getSource(), "current labeling");
+				showSplittingAttempts = true;
 			}
+			else
+			{
+				showSplittingAttempts = false;
+			}
+
 
 			final RandomAccessibleInterval< BitType > splitMask = Utils.copyAsArrayImg( masks.get( t ) );
 
@@ -114,7 +120,8 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 					( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
 					( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize, splitMask.numDimensions() ) ),
 					( int ) ( settings.maximalWatershedLength / settings.workingVoxelSize ),
-					settings.opService );
+					settings.opService,
+					showSplittingAttempts);
 
 			splitMasks.add( splitMask );
 

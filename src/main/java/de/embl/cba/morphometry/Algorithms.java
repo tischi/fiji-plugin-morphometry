@@ -1,15 +1,12 @@
 package de.embl.cba.morphometry;
 
-import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.morphology.Closing;
-import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
-import net.imglib2.algorithm.neighborhood.RectangleShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
@@ -27,10 +24,8 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
-import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
-import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import java.util.*;
@@ -495,13 +490,18 @@ public class Algorithms
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	ArrayList< PositionAndValue > getLocalMaxima( RandomAccessibleInterval< T > rai, Shape shape, double threshold )
+	ArrayList< PositionAndValue > getLocalMaxima(
+			RandomAccessibleInterval< T > rai,
+			double minimalDistanceBetweenMaxima,
+			double threshold )
 	{
-		final ArrayList< PositionAndValue > maxima = new ArrayList<>();
 
+		Shape shape = new HyperSphereShape( (long) minimalDistanceBetweenMaxima );
 		RandomAccessible< Neighborhood< T > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendPeriodic( rai ) );
 		final Cursor< Neighborhood< T > > neighborhoodCursor = Views.iterable( Views.interval( neighborhoods, rai ) ).cursor();
 		final RandomAccess< T > randomAccess = rai.randomAccess();
+
+		final ArrayList< PositionAndValue > maxima = new ArrayList<>();
 
 		while ( neighborhoodCursor.hasNext() )
 		{
@@ -518,7 +518,24 @@ public class Algorithms
 					positionAndValue.position = new double[ rai.numDimensions() ];
 					neighborhood.localize( positionAndValue.position );
 					positionAndValue.value = centerValue.getRealDouble();
-					maxima.add( positionAndValue );
+
+					boolean isMaximumFarEnoughAwayFromOtherMaxima = true;
+
+					for ( int i = 0; i < maxima.size(); ++i )
+					{
+						double distance = LinAlgHelpers.distance( maxima.get( i ).position, positionAndValue.position );
+						if ( distance < minimalDistanceBetweenMaxima )
+						{
+							isMaximumFarEnoughAwayFromOtherMaxima = false;
+							break;
+						}
+					}
+
+					if ( isMaximumFarEnoughAwayFromOtherMaxima )
+					{
+						maxima.add( positionAndValue );
+					}
+
 				}
 			}
 		}
@@ -551,7 +568,8 @@ public class Algorithms
 			long minimalObjectWidth,
 			long minimalObjectSize,
 			long maximalWatershedBoundaryLength,
-			OpService opService )
+			OpService opService,
+			boolean showSplittingAttempts )
 	{
 
 		final LabelRegions labelRegions = new LabelRegions( imgLabeling );
@@ -564,14 +582,19 @@ public class Algorithms
 				final RandomAccessibleInterval< T > maskedAndCropped = Views.zeroMin( Utils.getMaskedAndCropped( intensity, labelRegions.getLabelRegion( label ) ) );
 				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.labelRegionAsMask( labelRegions.getLabelRegion( label ) ) );
 
-				final ArrayList< PositionAndValue > localMaxima = Algorithms.getLocalMaxima( maskedAndCropped, new HyperSphereShape( minimalObjectWidth ), 0.0 );
+				final ArrayList< PositionAndValue > localMaxima =
+						computeLocalIntensityMaxima( minimalObjectWidth, maskedAndCropped );
 
 				if ( localMaxima.size() < 2 )
 				{
+					Utils.log( "Not enough local maxima found for object: " + label );
 					continue; // TODO: check these cases
 				}
 
-				final RandomAccessibleInterval< T > seeds = getSeeds( numObjectsPerRegion, label, maskedAndCropped, localMaxima );
+				final RandomAccessibleInterval< T > seeds =
+						getSeeds( numObjectsPerRegion.get( label ), maskedAndCropped, localMaxima );
+
+				ImageJFunctions.show( seeds, "seeds" );
 
 				final ImgLabeling< Integer, IntType > watershedImgLabeling = getEmptyImgLabeling( labelRegionMask );
 				final ImgLabeling< Integer, IntType > seedsImgLabeling = Utils.asImgLabeling( seeds );
@@ -587,6 +610,11 @@ public class Algorithms
 
 				LabelRegions< Integer > splitObjects = new LabelRegions( watershedImgLabeling );
 
+				if ( showSplittingAttempts )
+				{
+					ImageJFunctions.show( watershedImgLabeling.getSource() );
+				}
+
 				if ( ! splitObjects.getExistingLabels().contains( -1 ) )
 				{
 					continue; // TODO: examine these cases
@@ -597,8 +625,6 @@ public class Algorithms
 								splitObjects,
 								minimalObjectSize,
 								maximalWatershedBoundaryLength );
-
-				// ImageJFunctions.show( watershedImgLabeling.getSource() );
 
 				Utils.log( "Valid split found: " + isValidSplit );
 
@@ -612,11 +638,28 @@ public class Algorithms
 
 	}
 
-	private static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< T > getSeeds( HashMap< Integer, Integer > numObjectsPerRegion, int label, RandomAccessibleInterval< T > maskedAndCropped, ArrayList< PositionAndValue > localMaxima )
+	public static < T extends RealType< T > & NativeType< T > >
+	ArrayList< PositionAndValue > computeLocalIntensityMaxima( long minimalObjectWidth, RandomAccessibleInterval< T > maskedAndCropped )
+	{
+		double blurSimga = minimalObjectWidth / 2.0;
+		final RandomAccessibleInterval< T > blurred = Utils.createBlurredRai( maskedAndCropped, blurSimga, 1.0 );
+		ImageJFunctions.show( blurred, "blurred" );
+		final ArrayList< PositionAndValue > sortedLocalMaxima =
+				Algorithms.getLocalMaxima(
+						blurred,
+						 minimalObjectWidth,
+						0.0 );
+		return sortedLocalMaxima;
+	}
+
+	private static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > getSeeds( int numSeeds,
+											RandomAccessibleInterval< T > maskedAndCropped,
+											ArrayList< PositionAndValue > localMaxima )
 	{
 		final RandomAccessibleInterval< T > seeds = Utils.copyAsEmptyArrayImg( maskedAndCropped );
 		final RandomAccess< T > randomAccess = seeds.randomAccess();
-		for ( int i = 0; i < numObjectsPerRegion.get( label ); ++i )
+		for ( int i = 0; i < numSeeds; ++i )
 		{
 			randomAccess.setPosition( Utils.asLongs( localMaxima.get( i ).position ) );
 			randomAccess.get().setOne();

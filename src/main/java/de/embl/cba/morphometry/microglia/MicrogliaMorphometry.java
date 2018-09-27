@@ -152,7 +152,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 				( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
 				( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize , intensityImage.numDimensions() ) ),
 				( int ) ( settings.maximalWatershedLength / settings.workingVoxelSize ),
-				opService );
+				opService, false );
 
 		if ( settings.showIntermediateResults ) show( mask, "split objects mask", null, workingCalibration, false );
 

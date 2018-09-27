@@ -57,7 +57,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		settings.opService = imagej.op();
 
 		long tMin = inputImages.min( 2 );
-		long tMax = 10; //inputImages.max( 2 );
+		long tMax = 3; //inputImages.max( 2 );
 
 		ArrayList< RandomAccessibleInterval< T > > intensities = getIntensities( inputImages, tMin, tMax );
 
