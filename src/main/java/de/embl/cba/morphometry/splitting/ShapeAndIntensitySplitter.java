@@ -52,9 +52,12 @@ public class ShapeAndIntensitySplitter< T extends RealType< T > & NativeType< T 
 
 		HashMap< Integer, Integer > numObjectsPerRegion = getNumObjectsFromSkeleton( imgLabeling, skeleton, settings );
 
-		splitMask = Algorithms.splitTouchingObjects(
+		splitMask = Utils.copyAsArrayImg( mask );
+
+		Algorithms.splitTouchingObjects(
 				imgLabeling,
 				intensity,
+				splitMask,
 				numObjectsPerRegion,
 				( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
 				( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize, intensity.numDimensions() ) ),

@@ -598,15 +598,14 @@ public class Algorithms
 								minimalObjectSize,
 								maximalWatershedBoundaryLength );
 
+				// ImageJFunctions.show( watershedImgLabeling.getSource() );
+
+				Utils.log( "Valid split found: " + isValidSplit );
+
 				if ( isValidSplit )
 				{
 					drawWatershedIntoMask( mask, labelRegions, label, splitObjects );
 				}
-
-				// Utils.applyMask( watershedImgLabeling.getSource(), mask );
-
-//				ImageJFunctions.show( seedsImgLabeling.getSource() );
-//				ImageJFunctions.show( watershedImgLabeling.getSource() );
 
 			}
 		}
@@ -632,9 +631,24 @@ public class Algorithms
 		for( LabelRegion region : splitObjects )
 		{
 			int splitObjectLabel = ( int ) region.getLabel();
+
 			if ( splitObjectLabel == -1 )
 			{
-				if ( region.size() > maximalWatershedLength )
+
+				final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( Utils.labelRegionAsMask( region ) );
+
+				final LabelRegions< Integer > splitRegions = new LabelRegions( imgLabeling );
+
+				long maximalLength = 0;
+				for ( LabelRegion splitRegion : splitRegions )
+				{
+					if ( splitRegion.size() > maximalLength )
+					{
+						maximalLength = splitRegion.size();
+					}
+				}
+
+				if ( maximalLength > maximalWatershedLength )
 				{
 					isValidSplit = false;
 					break;
