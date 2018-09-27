@@ -10,10 +10,8 @@ import net.imagej.ImageJ;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
-import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.view.Views;
 
 import java.io.File;
@@ -22,6 +20,9 @@ import java.util.Map;
 
 public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T > >
 {
+
+	public static final String SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING = "Simple segmentation - Tracking splitting - Simple tracking";
+	public static final String INTENSITIES = "intensities";
 
 	public void run()
 	{
@@ -47,7 +48,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		settings.inputDataSetName = "test";
 		settings.returnEarly = true;
 		settings.skeletonMaxLength = 600 * settings.workingVoxelSize;
-		settings.minimalObjectSize = 500;
+		settings.minimalObjectSize = 200;  // um2
 		settings.minimalObjectCenterDistance = 6;
 		settings.maximalWatershedLength = 10;
 
@@ -56,8 +57,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		settings.opService = imagej.op();
 
 		long tMin = inputImages.min( 2 );
-		long tMax = 1; //inputImages.max( 2 );
-
+		long tMax = 10; //inputImages.max( 2 );
 
 		ArrayList< RandomAccessibleInterval< T > > intensities = getIntensities( inputImages, tMin, tMax );
 
@@ -78,10 +78,15 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 
 		final MaximalOverlapTracker maximalOverlapTracker = new MaximalOverlapTracker( masks );
 		maximalOverlapTracker.run();
-		maximalOverlapTracker.getLabelings();
+		final ArrayList< RandomAccessibleInterval< T > > labelings = maximalOverlapTracker.getLabelings();
 
-		ImageJFunctions.show( Views.stack( maximalOverlapTracker.getLabelings() ), "Simple segmentation - Tracking splitting - Simple tracking" );
+		Utils.showAsIJ1Movie( labelings, SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING );
+		IJ.run("3-3-2 RGB", "");
+		Utils.showAsIJ1Movie( intensities, INTENSITIES );
+		IJ.run("16-bit", "");
 
+		IJ.run("Merge Channels...",
+				"c1=intensities c2=[Simple segmentation - Tracking splitting - Simple tracking] create ignore");
 
 
 //		ArrayList< RandomAccessibleInterval< T > > results = new ArrayList<>();

@@ -4,10 +4,9 @@ import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.ObjectMeasurements;
 import de.embl.cba.morphometry.microglia.MicrogliaMorphometrySettings;
-import net.imagej.ops.OpService;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegionCursor;
@@ -16,7 +15,6 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.util.Intervals;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,18 +65,17 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		 * Process subsequent time-points
 		 */
 
-		RandomAccessibleInterval< IntType > previousLabeling = Utils.asImgLabeling( masks.get( tMin ) ).getSource();
+		RandomAccessibleInterval< IntType > previousLabeling = Utils.asImgLabeling( splitMasks.get( tMin ) ).getSource();
 
 
 		for ( t = tMin + 1; t <= tMax; ++t )
 		{
 			final ImgLabeling< Integer, IntType > currentImgLabeling = Utils.asImgLabeling( masks.get( t ) );
 			RandomAccessibleInterval< IntType > currentLabeling = currentImgLabeling.getSource();
-			RandomAccessibleInterval< IntType > updatedLabeling = ArrayImgs.ints( Intervals.dimensionsAsLongArray( currentLabeling ) );
 
 			HashMap< Integer, Integer > numObjectsPerRegion = new HashMap<>(  );
 
-			LabelRegions< Integer > labelRegions = new LabelRegions( Utils.asImgLabeling( currentLabeling ) );
+			LabelRegions< Integer > labelRegions = new LabelRegions( currentImgLabeling );
 
 			for ( LabelRegion< Integer > region : labelRegions )
 			{
@@ -88,7 +85,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 				if ( overlaps.size() == 2 )
 				{
-					boolean splitObjects = isSplitTwoObjects( t, previousLabeling, currentLabeling, region, overlaps );
+					boolean splitObjects = isReallyTwoObjects( t, previousLabeling, currentLabeling, region, overlaps );
 
 					if ( splitObjects )
 					{
@@ -98,6 +95,13 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 				numObjectsPerRegion.put( region.getLabel(), numObjectsInRegion );
 
+			}
+
+
+			if ( t == 2 )
+			{
+				ImageJFunctions.show( previousLabeling, "previous labeling" );
+				ImageJFunctions.show( currentImgLabeling.getSource(), "current labeling");
 			}
 
 			final RandomAccessibleInterval< BitType > splitMask = Utils.copyAsArrayImg( masks.get( t ) );
@@ -118,7 +122,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		}
 	}
 
-	public boolean isSplitTwoObjects( int t, RandomAccessibleInterval< IntType > previousLabeling, RandomAccessibleInterval< IntType > currentLabeling, LabelRegion< Integer > region, HashMap< Integer, Long > overlaps )
+	public boolean isReallyTwoObjects( int t, RandomAccessibleInterval< IntType > previousLabeling, RandomAccessibleInterval< IntType > currentLabeling, LabelRegion< Integer > region, HashMap< Integer, Long > overlaps )
 	{
 		Utils.log( "Overlap with two objects" );
 		Utils.log( "Time point (one based): " + ( t + 1 ) );
@@ -248,6 +252,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 				addOverlap( overlaps, label );
 			}
 		}
+
 		return overlaps;
 	}
 

@@ -958,4 +958,15 @@ public class Utils
 		final LabelRegions labelRegions = new LabelRegions( asImgLabeling( mask )  );
 		return labelRegions.getExistingLabels().size() - 1;
 	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	void showAsIJ1Movie( ArrayList< RandomAccessibleInterval< T > > labelings, String title )
+	{
+
+		ImageJFunctions.show(
+				Views.permute(
+						Views.addDimension(
+								Views.stack( labelings ), 0,0 ), 2 ,3),
+				title );
+	}
 }
