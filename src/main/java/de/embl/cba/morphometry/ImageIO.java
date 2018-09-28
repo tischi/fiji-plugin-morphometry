@@ -1,12 +1,14 @@
 package de.embl.cba.morphometry;
 
 import ij.ImagePlus;
+import ij.io.FileSaver;
 import loci.formats.FormatException;
 import loci.plugins.in.ImagePlusReader;
 import loci.plugins.in.ImportProcess;
 import loci.plugins.in.ImporterOptions;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 
 public class ImageIO
@@ -37,4 +39,13 @@ public class ImageIO
 	}
 
 
+	public static void saveImages( String inputPath, ArrayList< ImagePlus > imps )
+	{
+		for ( ImagePlus imp : imps )
+		{
+			final String outputPath = inputPath + "-" + imp.getTitle() + ".tif";
+			FileSaver fileSaver = new FileSaver( imp );
+			fileSaver.saveAsTiff( outputPath );
+		}
+	}
 }

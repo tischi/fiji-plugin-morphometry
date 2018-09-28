@@ -26,6 +26,7 @@ import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
+import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import java.util.*;
@@ -569,6 +570,7 @@ public class Algorithms
 			long minimalObjectSize,
 			long maximalWatershedBoundaryLength,
 			OpService opService,
+			boolean forceSplit,
 			boolean showSplittingAttempts )
 	{
 
@@ -583,7 +585,7 @@ public class Algorithms
 				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.labelRegionAsMask( labelRegions.getLabelRegion( label ) ) );
 
 				final ArrayList< PositionAndValue > localMaxima =
-						computeLocalIntensityMaxima( minimalObjectWidth, maskedAndCropped );
+						computeLocalIntensityMaxima( 2 * minimalObjectWidth, maskedAndCropped, showSplittingAttempts );
 
 				if ( localMaxima.size() < 2 )
 				{
@@ -591,10 +593,9 @@ public class Algorithms
 					continue; // TODO: check these cases
 				}
 
-				final RandomAccessibleInterval< T > seeds =
-						getSeeds( numObjectsPerRegion.get( label ), maskedAndCropped, localMaxima );
+				final RandomAccessibleInterval< T > seeds = getSeeds( numObjectsPerRegion.get( label ), maskedAndCropped, localMaxima );
 
-				ImageJFunctions.show( seeds, "seeds" );
+				//ImageJFunctions.show( seeds, "seeds" );
 
 				final ImgLabeling< Integer, IntType > watershedImgLabeling = getEmptyImgLabeling( labelRegionMask );
 				final ImgLabeling< Integer, IntType > seedsImgLabeling = Utils.asImgLabeling( seeds );
@@ -620,11 +621,21 @@ public class Algorithms
 					continue; // TODO: examine these cases
 				}
 
-				boolean isValidSplit =
-						checkSplittingValidity(
-								splitObjects,
-								minimalObjectSize,
-								maximalWatershedBoundaryLength );
+
+				boolean isValidSplit;
+
+				if ( forceSplit )
+				{
+					isValidSplit = true;
+				}
+				else
+				{
+					// TODO: add integrated intensity along watershed as criterium
+					isValidSplit = checkSplittingValidity(
+							splitObjects,
+							minimalObjectSize,
+							maximalWatershedBoundaryLength );
+				}
 
 				Utils.log( "Valid split found: " + isValidSplit );
 
@@ -639,11 +650,14 @@ public class Algorithms
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	ArrayList< PositionAndValue > computeLocalIntensityMaxima( long minimalObjectWidth, RandomAccessibleInterval< T > maskedAndCropped )
+	ArrayList< PositionAndValue > computeLocalIntensityMaxima(
+			long minimalObjectWidth,
+			RandomAccessibleInterval< T > maskedAndCropped,
+			boolean showSplittingAttempts )
 	{
 		double blurSimga = minimalObjectWidth / 2.0;
 		final RandomAccessibleInterval< T > blurred = Utils.createBlurredRai( maskedAndCropped, blurSimga, 1.0 );
-		ImageJFunctions.show( blurred, "blurred" );
+		if ( showSplittingAttempts ) ImageJFunctions.show( blurred, "blurred" );
 		final ArrayList< PositionAndValue > sortedLocalMaxima =
 				Algorithms.getLocalMaxima(
 						blurred,
@@ -747,5 +761,24 @@ public class Algorithms
 		RandomAccessibleInterval< IntType > watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
 		watershedLabelImg = Transforms.getWithAdjustedOrigin( mask, watershedLabelImg );
 		return new ImgLabeling<>( watershedLabelImg );
+	}
+
+	public static < T extends RealType< T > & NativeType< T > > ArrayList< RandomAccessibleInterval< T > >
+	createMaximumProjectedIntensitiesAssumingImagePlusDimensionOrder(
+			Img< T > inputImages,
+			long c,
+			long tMin, long tMax )
+	{
+		ArrayList<  RandomAccessibleInterval< T > > intensities = new ArrayList<>();
+
+		for ( long t = tMin; t <= tMax; ++t )
+		{
+			final IntervalView< T > channelView = Views.hyperSlice( inputImages, 2, c );
+			final IntervalView< T > timePointView = Views.hyperSlice( channelView, 3, t );
+			final RandomAccessibleInterval maximum = new Projection( timePointView, 2 ).maximum();
+			intensities.add( maximum );
+		}
+
+		return intensities;
 	}
 }

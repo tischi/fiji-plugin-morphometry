@@ -29,7 +29,7 @@ import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
 public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 {
 
-	final MicrogliaMorphometrySettings settings;
+	final MicrogliaSettings settings;
 	final OpService opService;
 
 	private ArrayList< RandomAccessibleInterval< T > > resultImages;
@@ -39,7 +39,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 	private ImgLabeling< Integer, IntType > imgLabeling;
 
-	public MicrogliaMorphometry( MicrogliaMorphometrySettings settings, OpService opService )
+	public MicrogliaMorphometry( MicrogliaSettings settings, OpService opService )
 	{
 		this.settings = settings;
 		this.opService = opService;
@@ -152,7 +152,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 				( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
 				( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize , intensityImage.numDimensions() ) ),
 				( int ) ( settings.maximalWatershedLength / settings.workingVoxelSize ),
-				opService, false );
+				opService, false, false );
 
 		if ( settings.showIntermediateResults ) show( mask, "split objects mask", null, workingCalibration, false );
 

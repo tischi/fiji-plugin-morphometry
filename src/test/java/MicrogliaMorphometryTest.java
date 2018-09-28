@@ -1,5 +1,7 @@
+import de.embl.cba.morphometry.Algorithms;
+import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.microglia.MicrogliaMorphometrySettings;
+import de.embl.cba.morphometry.microglia.MicrogliaSettings;
 import de.embl.cba.morphometry.measurements.ObjectMeasurements;
 import de.embl.cba.morphometry.segmentation.SimpleSegmenter;
 import de.embl.cba.morphometry.splitting.TrackingSplitter;
@@ -30,12 +32,17 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		imagej.ui().showUI();
 
 //		final String path = MicrogliaMorphometryTest.class.getResource( "microglia/MAX_18C__t1-2.tif" ).getFile();
-		String path = "/Users/tischer/Documents/valerie-blanche-petegnief-CORBEL-microglia-quantification/data/MAX_18C.tif";
+		//String path = "/Users/tischer/Documents/valerie-blanche-petegnief-CORBEL-microglia-quantification/data/MAX_18C.tif";
 
-		final ImagePlus imagePlus = IJ.openImage( path );
+		String path = "/Users/tischer/Documents/valerie-blanche-petegnief-CORBEL-microglia-quantification--data/10C.lif";
+
+		final ImagePlus imagePlus = ImageIO.openWithBioFormats( path );
+
+		imagePlus.show();
+
 		final Img< T > inputImages = ImageJFunctions.wrapReal( imagePlus );
 
-		MicrogliaMorphometrySettings settings = new MicrogliaMorphometrySettings();
+		MicrogliaSettings settings = new MicrogliaSettings();
 		settings.inputCalibration = Utils.get2dCalibration( imagePlus ) ;
 		settings.workingVoxelSize = settings.inputCalibration[ 0 ];
 		settings.maxPossibleValueInDataSet = Math.pow( 2, imagePlus.getBitDepth() ) - 1.0;
@@ -51,15 +58,19 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		settings.minimalObjectSize = 200;  // um2
 		settings.minimalObjectCenterDistance = 6;
 		settings.maximalWatershedLength = 10;
-
 		settings.closingRadius = 3;
 		settings.showIntermediateResults = false;
 		settings.opService = imagej.op();
+		settings.microgliaChannelIndexOneBased = 2;
 
-		long tMin = inputImages.min( 2 );
-		long tMax = 3; //inputImages.max( 2 );
+		long tMin = inputImages.min( 4 );
+		long tMax = 2; //inputImages.max( 2 );
 
-		ArrayList< RandomAccessibleInterval< T > > intensities = getIntensities( inputImages, tMin, tMax );
+		ArrayList< RandomAccessibleInterval< T > > intensities =
+				Algorithms.createMaximumProjectedIntensitiesAssumingImagePlusDimensionOrder(
+					inputImages,
+					settings.microgliaChannelIndexOneBased - 1,
+					tMin, tMax );
 
 		ArrayList<  RandomAccessibleInterval< T > > masks = new ArrayList<>();
 
@@ -82,11 +93,14 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 
 		Utils.showAsIJ1Movie( labelings, SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING );
 		IJ.run("3-3-2 RGB", "");
+
 		Utils.showAsIJ1Movie( intensities, INTENSITIES );
+		IJ.wait( 500 );
 		IJ.run("16-bit", "");
 
+		IJ.wait( 500 );
 		IJ.run("Merge Channels...",
-				"c1=intensities c2=[Simple segmentation - Tracking splitting - Simple tracking] create ignore");
+				"c1=intensities c2=[Simple segmentation - Tracking splitting - Simple tracking] create");
 
 
 //		ArrayList< RandomAccessibleInterval< T > > results = new ArrayList<>();
@@ -162,18 +176,21 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 
 	}
 
-	private ArrayList< RandomAccessibleInterval< T > > getIntensities( Img< T > inputImages, long tMin, long tMax )
+	private ArrayList< RandomAccessibleInterval< T > > getIntensities( Img< T > inputImages, long channel, long tMin, long tMax )
 	{
 		ArrayList<  RandomAccessibleInterval< T > > intensities = new ArrayList<>();
 
 		for ( long t = tMin; t <= tMax; ++t )
 		{
-			intensities.add( Views.hyperSlice( inputImages, 2, t ) );
+			intensities.add(
+					Views.hyperSlice( Views.hyperSlice( inputImages, 2, channel), 2, t ) );
 		}
+
 		return intensities;
 	}
 
-	public double[] getPixelPosition( MicrogliaMorphometrySettings settings, Map< String, Object > objectMeasurements )
+
+	public double[] getPixelPosition( MicrogliaSettings settings, Map< String, Object > objectMeasurements )
 	{
 		final double[] position = ( double[] ) objectMeasurements.get( ObjectMeasurements.CALIBRATED_POSITION );
 
