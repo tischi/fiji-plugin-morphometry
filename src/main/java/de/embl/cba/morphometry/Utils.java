@@ -969,4 +969,19 @@ public class Utils
 								Views.stack( labelings ), 0,0 ), 2 ,3),
 				title );
 	}
+
+	public static boolean acceptFile( String fileNameEndsWith, String file )
+	{
+		final String[] fileNameEndsWithList = fileNameEndsWith.split( "," );
+
+		for ( String endsWith : fileNameEndsWithList )
+		{
+			if ( file.endsWith( endsWith.trim() ) )
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
 }

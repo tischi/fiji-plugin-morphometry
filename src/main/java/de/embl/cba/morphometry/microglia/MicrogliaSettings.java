@@ -7,7 +7,7 @@ import net.imglib2.type.numeric.RealType;
 
 import java.io.File;
 
-public class MicrogliaMorphometrySettings<T extends RealType<T> & NativeType< T > >
+public class MicrogliaSettings<T extends RealType<T> & NativeType< T > >
 {
 	public static final String MANUAL_THRESHOLD = "Manual threshold";
 	public static final String HUANG_AUTO_THRESHOLD = "Huang auto threshold";
@@ -49,4 +49,7 @@ public class MicrogliaMorphometrySettings<T extends RealType<T> & NativeType< T 
 	public double minimalOverlapFraction = 0.05;
 	public double minimalSumIntensityRatio = 0.5;
 	public double maximalSumIntensityRatio = 1.5;
+	public long microgliaChannelIndexOneBased;
+	public long tMin;
+	public long tMax;
 }

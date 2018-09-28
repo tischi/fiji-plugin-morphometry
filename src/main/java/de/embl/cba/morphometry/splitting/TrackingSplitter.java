@@ -3,10 +3,9 @@ package de.embl.cba.morphometry.splitting;
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.ObjectMeasurements;
-import de.embl.cba.morphometry.microglia.MicrogliaMorphometrySettings;
+import de.embl.cba.morphometry.microglia.MicrogliaSettings;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegionCursor;
@@ -28,12 +27,12 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 	private int nextId;
 
 	private ArrayList< RandomAccessibleInterval< BitType > > splitMasks;
-	final MicrogliaMorphometrySettings settings;
+	final MicrogliaSettings settings;
 
 
 	public TrackingSplitter( ArrayList< RandomAccessibleInterval< BitType > > masks,
 							 ArrayList< RandomAccessibleInterval< T > > intensities,
-							 MicrogliaMorphometrySettings settings )
+							 MicrogliaSettings settings )
 	{
 		this.masks = masks;
 		this.intensities = intensities;
@@ -100,7 +99,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 			}
 
 
-			if ( t == 4 )
+			if ( t == 6 - 1 )
 			{
 				showSplittingAttempts = true;
 			}
@@ -121,6 +120,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 					( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize, splitMask.numDimensions() ) ),
 					( int ) ( settings.maximalWatershedLength / settings.workingVoxelSize ),
 					settings.opService,
+					true,
 					showSplittingAttempts);
 
 			splitMasks.add( splitMask );
