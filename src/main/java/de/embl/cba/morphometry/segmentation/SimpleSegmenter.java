@@ -36,7 +36,7 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Creating working resolution image..." );
 
-		final double[] workingCalibration = Utils.get2dDoubleArray( settings.workingVoxelSize );
+		final double[] workingCalibration = Utils.as2dDoubleArray( settings.workingVoxelSize );
 
 		final RandomAccessibleInterval< T > image = Algorithms.createIsotropicArrayImg( intensity, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 

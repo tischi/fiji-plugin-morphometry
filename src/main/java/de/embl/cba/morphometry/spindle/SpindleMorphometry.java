@@ -66,7 +66,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Create isotropic image..." );
 
-		final double[] workingCalibration = Utils.get3dDoubleArray( settings.workingVoxelSize );
+		final double[] workingCalibration = Utils.as3dDoubleArray( settings.workingVoxelSize );
 
 		final RandomAccessibleInterval< T > dapi = Algorithms.createIsotropicArrayImg( settings.dapi, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 		final RandomAccessibleInterval< T > tubulin = Algorithms.createIsotropicArrayImg( settings.tubulin, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );

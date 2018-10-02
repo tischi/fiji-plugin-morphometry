@@ -366,13 +366,18 @@ public class Algorithms
 	{
 		final ArrayList< RandomAccessibleInterval< BitType > > holesFilled = new ArrayList<>();
 
-		for ( long coordinate = mask.min( axis ); coordinate <= mask.max( axis ); ++coordinate )
+		final IntervalView< BitType > rotated = Views.rotate( mask, axis, 2 );
+
+		for ( long coordinate = rotated.min( 2 ); coordinate <= rotated.max( 2 ); ++coordinate )
 		{
-			RandomAccessibleInterval< BitType > maskSlice = Views.hyperSlice( mask, axis, coordinate );
-			holesFilled.add(  opService.morphology().fillHoles( maskSlice ) );
+			RandomAccessibleInterval< BitType > maskSlice = Views.hyperSlice( rotated, 2, coordinate );
+			holesFilled.add( opService.morphology().fillHoles( maskSlice ) );
 		}
 
-		RandomAccessibleInterval< BitType > stack = Views.stack( holesFilled );
+		RandomAccessibleInterval< BitType > stack =  Views.stack( holesFilled );
+
+		stack = Views.zeroMin( Views.rotate( stack, 2, axis ) );
+
 		stack = Transforms.getWithAdjustedOrigin( mask, stack );
 
 		return stack;
