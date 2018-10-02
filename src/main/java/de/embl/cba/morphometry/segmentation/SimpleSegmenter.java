@@ -62,8 +62,8 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 
 		final CoordinateAndValue rightHandHalfMaximum = intensityHistogram.getRightHandHalfMaximum();
 
-		double threshold = ( rightHandHalfMaximum.position - mode.position ) * settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
-		double offset = mode.position;
+		double threshold = ( rightHandHalfMaximum.coordinate - mode.coordinate ) * settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
+		double offset = mode.coordinate;
 		Utils.log( "Intensity offset: " + offset );
 		Utils.log( "Threshold: " + ( threshold + offset ) );
 

@@ -5,6 +5,7 @@ import net.imglib2.*;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.morphology.Closing;
+import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
@@ -24,6 +25,7 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
 import net.imglib2.view.IntervalView;
@@ -48,7 +50,7 @@ public class Algorithms
 		 * Blur image
 		 */
 
-		RandomAccessibleInterval< T > blurred = createOptimallyBlurredArrayImg( input, scalingFactors );
+		final RandomAccessibleInterval< T > blurred = createOptimallyBlurredArrayImg( input, scalingFactors );
 
 		/*
 		 * Sample values from blurred image
@@ -62,32 +64,37 @@ public class Algorithms
 	private static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > createResampledArrayImg( RandomAccessibleInterval< T > input, double[] scalingFactors )
 	{
-		// TODO: is there a simple way to do this?
+		// TODO: is there a simpler way to do this?
+
+		// scale such that we can sample from integer coordinates (raster function needs this)
 		Scale scale = new Scale( scalingFactors );
 		RealRandomAccessible< T > rra = Views.interpolate( Views.extendBorder( input ), new NLinearInterpolatorFactory<>() );
 		rra = RealViews.transform( rra, scale );
+
 		final RandomAccessible< T > raster = Views.raster( rra );
 		final RandomAccessibleInterval< T > output = Views.interval( raster, createTransformedInterval( input, scale ) );
-
 		return Utils.copyAsArrayImg( output  );
 	}
 
-	private static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< T > createOptimallyBlurredArrayImg( RandomAccessibleInterval< T > input, double[] scalingFactors )
+	private static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > createOptimallyBlurredArrayImg( RandomAccessibleInterval< T > input, double[] scalingFactors )
 	{
 		final long[] inputDimensions = Intervals.dimensionsAsLongArray( input );
 		final double[] sigmas = new double[ inputDimensions.length ];
 
 		for ( int d = 0; d < inputDimensions.length; ++d )
 		{
-			sigmas[ d ] = 0.5 / scalingFactors[ d ]; // From Saalfeld
+			sigmas[ d ] = 0.5 / scalingFactors[ d ]; // From Saalfeld ... ( TODO: Reference )
 		}
 
+		// allocate output image
 		ImgFactory< T > imgFactory = new ArrayImgFactory( input.randomAccess().get()  );
-		RandomAccessibleInterval< T > blurred = Views.translate( imgFactory.create( inputDimensions ), Intervals.minAsLongArray( input )  ) ;
+		RandomAccessibleInterval< T > output = Views.translate( imgFactory.create( inputDimensions ), Intervals.minAsLongArray( input )  ) ;
 
-		Gauss3.gauss( sigmas, Views.extendBorder( input ), blurred ) ;
+		// blur input image and write into output image
+		Gauss3.gauss( sigmas, Views.extendBorder( input ), output ) ;
 
-		return blurred;
+		return output;
 	}
 
 
@@ -352,9 +359,10 @@ public class Algorithms
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< BitType > fillHoles3Din2D( RandomAccessibleInterval< BitType > mask,
-						  int axis,
-						  OpService opService )
+	RandomAccessibleInterval< BitType > fillHoles3Din2D(
+			RandomAccessibleInterval< BitType > mask,
+			int axis,
+			OpService opService )
 	{
 		final ArrayList< RandomAccessibleInterval< BitType > > holesFilled = new ArrayList<>();
 
@@ -389,13 +397,8 @@ public class Algorithms
 		final RandomAccess< T > distanceRandomAccess = distance.randomAccess();
 		final RandomAccess< BitType > seedsRandomAccess = seeds.randomAccess();
 
-		double[] centerPosition = new double[ distance.numDimensions() ];
-		double[] currentPosition = new double[ distance.numDimensions() ];
 
-		for ( int d = 0; d < centerPosition.length; ++d )
-		{
-			centerPosition[ d ] = (long) (distance.dimension( d ) / 2);
-		}
+		double[] currentPosition = new double[ distance.numDimensions() ];
 
 		while ( neighborhoodCursor.hasNext() )
 		{
@@ -410,10 +413,6 @@ public class Algorithms
 			{
 				seedsRandomAccess.get().set( true );
 			}
-			else if ( LinAlgHelpers.distance( currentPosition, centerPosition  ) < 3 )
-			{
-				// seedsRandomAccess.get().set( true );
-			}
 			else if ( Utils.isLateralBoundaryPixel( neighborhood, distance ) && distanceRandomAccess.get().getRealDouble() >  0 )
 			{
 				seedsRandomAccess.get().set( true );
@@ -422,7 +421,6 @@ public class Algorithms
 			{
 				if ( centerValue.getRealDouble() > localThreshold )
 				{
-					// local maximum and larger than local Threshold
 					seedsRandomAccess.get().set( true );
 				}
 			}
@@ -765,7 +763,7 @@ public class Algorithms
 
 	public static < T extends RealType< T > & NativeType< T > > ArrayList< RandomAccessibleInterval< T > >
 	createMaximumProjectedIntensitiesAssumingImagePlusDimensionOrder(
-			Img< T > inputImages,
+			RandomAccessibleInterval< T > inputImages,
 			long c,
 			long tMin, long tMax )
 	{
@@ -780,5 +778,15 @@ public class Algorithms
 		}
 
 		return intensities;
+	}
+
+	public static RandomAccessibleInterval< DoubleType > computeDistanceTransform( RandomAccessibleInterval< BitType > mask )
+	{
+		final RandomAccessibleInterval< DoubleType > doubleBinary = Converters.convert( mask, ( i, o ) -> o.set( i.get() ? Double.MAX_VALUE : 0 ), new DoubleType() );
+
+		final RandomAccessibleInterval< DoubleType > distance = ArrayImgs.doubles( Intervals.dimensionsAsLongArray( doubleBinary ) );
+
+		DistanceTransform.transform( doubleBinary, distance, DistanceTransform.DISTANCE_TYPE.EUCLIDIAN, 1.0D );
+		return distance;
 	}
 }

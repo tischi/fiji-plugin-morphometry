@@ -58,10 +58,7 @@ public abstract class RefractiveIndexMismatchCorrections
 		{
 			RandomAccessibleInterval< T > slice = Views.hyperSlice( rai, Z, z );
 
-			double intensityCorrectionFactor =
-					getIntensityCorrectionFactor(
-						z,
-						settings );
+			double intensityCorrectionFactor = getIntensityCorrectionFactor( z, settings );
 
 			Views.iterable( slice ).forEach( t ->
 					{
@@ -115,7 +112,7 @@ public abstract class RefractiveIndexMismatchCorrections
 	public static < T extends RealType< T > & NativeType< T > > double getIntensityOffset( RandomAccessibleInterval< T > channel )
 	{
 		final IntensityHistogram intensityHistogram = new IntensityHistogram( channel, 65535, 5 );
-		return intensityHistogram.getMode().position;
+		return intensityHistogram.getMode().coordinate;
 	}
 
 	public static void correctCalibration( double[] calibration, double correctionFactor )

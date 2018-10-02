@@ -26,7 +26,7 @@ public class ShavenBabyRegistrationSettings
 
 	public boolean showIntermediateResults = false;
 
-	public double refractiveIndexScalingCorrectionFactor = 1.6;
+	public double refractiveIndexAxialCalibrationCorrectionFactor = 1.6;
 	public double refractiveIndexIntensityCorrectionDecayLength = 170; //170;
 
 	public double registrationResolution = 6.0;

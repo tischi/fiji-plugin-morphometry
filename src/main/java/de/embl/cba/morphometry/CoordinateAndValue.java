@@ -2,6 +2,6 @@ package de.embl.cba.morphometry;
 
 public class CoordinateAndValue
 {
-	public double position;
+	public double coordinate;
 	public double value;
 }

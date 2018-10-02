@@ -46,7 +46,7 @@ public class IntensityHistogram <T extends RealType<T> & NativeType< T > >
 			if ( frequencies[ i ] > coordinateAndValue.value )
 			{
 				coordinateAndValue.value = frequencies[ i ];
-				coordinateAndValue.position = binCenters[ i ];
+				coordinateAndValue.coordinate = binCenters[ i ];
 			}
 		}
 
@@ -63,11 +63,11 @@ public class IntensityHistogram <T extends RealType<T> & NativeType< T > >
 
 		for ( int i = 0; i < numBins; ++i )
 		{
-			if ( binCenters[ i ] > maximum.position )
+			if ( binCenters[ i ] > maximum.coordinate )
 			{
 				if ( frequencies[ i ] <= maximum.value / 2.0 )
 				{
-					coordinateAndValue.position = binCenters[ i ];
+					coordinateAndValue.coordinate = binCenters[ i ];
 					coordinateAndValue.value = frequencies[ i ];
 					return coordinateAndValue;
 				}

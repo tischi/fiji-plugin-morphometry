@@ -8,6 +8,7 @@ import de.embl.cba.morphometry.splitting.TrackingSplitter;
 import de.embl.cba.morphometry.tracking.MaximalOverlapTracker;
 import ij.IJ;
 import ij.ImagePlus;
+import javafx.scene.control.RadioMenuItem;
 import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
@@ -66,14 +67,14 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 	@Parameter
 	public String fileNameEndsWith = ".lif";
 
-	@Parameter ( label = "Microglia channel index")
+	@Parameter ( label = "Microglia channel index", min = "1")
 	public long microgliaChannelIndexOneBased = settings.microgliaChannelIndexOneBased;
 
-	@Parameter ( label = "Minimal time frame to be processed")
+	@Parameter ( label = "Minimal time frame to be processed", min = "1" )
 	public long tMin = 0;
 
-	@Parameter ( label = "Maximal time frame to be processed")
-	public long tMax = -1;
+	@Parameter ( label = "Maximal time frame to be processed", min = "1" )
+	public long tMax = 100;
 
 	@Parameter
 	public boolean showIntermediateResults = settings.showIntermediateResults;
@@ -81,8 +82,6 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 
 	public void run()
 	{
-		configureSettings( imagePlus );
-
 		if ( inputModality.equals( PROCESS_CURRENT_IMAGE ) && imagePlus != null )
 		{
 			//
@@ -106,24 +105,30 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 		{
 			if ( Utils.acceptFile( fileNameEndsWith, file ) )
 			{
-				processFile( file );
+				processFile( new File ( directory + File.separator + file ) );
 			}
 		}
 	}
 
-	private void processFile( String file )
+	private void processFile( File file )
 	{
-		final ImagePlus imagePlus = ImageIO.openWithBioFormats( file );
+		final ImagePlus imagePlus = ImageIO.openWithBioFormats( file.getAbsolutePath() );
+
+		if ( imagePlus == null )
+		{
+			Utils.error( "Could not open image: " + file );
+		}
+
 		configureSettings( imagePlus );
 
 		ArrayList< RandomAccessibleInterval< T > > intensities =
 				Algorithms.createMaximumProjectedIntensitiesAssumingImagePlusDimensionOrder(
-						ImageJFunctions.wrapReal( imagePlus ),
+						( RandomAccessibleInterval ) ImageJFunctions.wrapReal( imagePlus ),
 						microgliaChannelIndexOneBased - 1,
 						tMin, tMax );
 
 		ArrayList<  RandomAccessibleInterval< T > > masks = new ArrayList<>();
-		for ( long t = tMin; t <= tMax; ++t )
+		for ( long t = 0; t <= ( tMax - tMin ) ; ++t )
 		{
 			final SimpleSegmenter simpleSegmenter = new SimpleSegmenter( intensities.get( ( int ) t ), settings );
 			simpleSegmenter.run();
@@ -154,8 +159,7 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 		IJ.run("16-bit", "");
 
 		IJ.wait( 500 );
-		IJ.run("Merge Channels...",
-				"c1=intensities c2=[Simple segmentation - Tracking splitting - Simple tracking] create");
+		IJ.run("Merge Channels...", "c1=intensities c2=[Simple segmentation - Tracking splitting - Simple tracking] create");
 	}
 
 
@@ -181,8 +185,8 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 		settings.opService = opService;
 		settings.microgliaChannelIndexOneBased = microgliaChannelIndexOneBased;
 		settings.tMin = tMin;
+		tMax = Math.min( tMax, imagePlus.getNFrames() );
 		settings.tMax = tMax;
-
 	}
 
 
