@@ -49,7 +49,7 @@ public class MicrogliaSettings<T extends RealType<T> & NativeType< T > >
 	public double minimalOverlapFraction = 0.05;
 	public double minimalSumIntensityRatio = 0.5;
 	public double maximalSumIntensityRatio = 1.5;
-	public long microgliaChannelIndexOneBased;
+	public long microgliaChannelIndexOneBased = 2;
 	public long tMin;
 	public long tMax;
 }

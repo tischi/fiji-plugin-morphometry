@@ -984,4 +984,9 @@ public class Utils
 
 		return false;
 	}
+
+	public static void error( String s )
+	{
+		IJ.showMessage( s );
+	}
 }

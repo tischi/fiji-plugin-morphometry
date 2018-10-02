@@ -85,11 +85,11 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	@Parameter
 	public double outputResolution = settings.outputResolution;
 
-	@Parameter
-	public double thresholdInUnitsOfBackgroundPeakHalfWidth = settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
+//	@Parameter
+//	public double thresholdInUnitsOfBackgroundPeakHalfWidth = settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
 
-	@Parameter
-	public double refractiveIndexScalingCorrectionFactor = settings.refractiveIndexScalingCorrectionFactor;
+//	@Parameter
+//	public double refractiveIndexAxialCalibrationCorrectionFactor = settings.refractiveIndexAxialCalibrationCorrectionFactor;
 
 	@Parameter
 	public double refractiveIndexIntensityCorrectionDecayLength = settings.refractiveIndexIntensityCorrectionDecayLength;
@@ -335,10 +335,10 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		settings.registrationResolution = registrationResolution;
 		settings.closingRadius = 0;
 		settings.outputResolution = outputResolution;
-		settings.refractiveIndexScalingCorrectionFactor = refractiveIndexScalingCorrectionFactor;
+		//settings.refractiveIndexAxialCalibrationCorrectionFactor = refractiveIndexAxialCalibrationCorrectionFactor;
 		settings.refractiveIndexIntensityCorrectionDecayLength = refractiveIndexIntensityCorrectionDecayLength;
 		settings.thresholdModality = "";
-		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = thresholdInUnitsOfBackgroundPeakHalfWidth;
+		//settings.thresholdInUnitsOfBackgroundPeakHalfWidth = thresholdInUnitsOfBackgroundPeakHalfWidth;
 		settings.rollAngleComputationMethod = rollAngleComputationMethod;
 	}
 
