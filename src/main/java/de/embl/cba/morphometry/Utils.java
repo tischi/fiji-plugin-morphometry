@@ -747,14 +747,14 @@ public class Utils
 		return intImg;
 	}
 
-	public static double[] get2dDoubleArray( double value )
+	public static double[] as2dDoubleArray( double value )
 	{
 		double[] array = new double[ 2 ];
 		Arrays.fill( array, value );
 		return array;
 	}
 
-	public static double[] get3dDoubleArray( double value )
+	public static double[] as3dDoubleArray( double value )
 	{
 		double[] array = new double[ 3 ];
 		Arrays.fill( array, value );
