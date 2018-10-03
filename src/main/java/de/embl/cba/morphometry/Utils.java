@@ -38,7 +38,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static de.embl.cba.morphometry.Constants.*;
-import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
+import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static java.lang.Math.*;
 
 public class Utils
@@ -157,16 +157,21 @@ public class Utils
 	public static <T extends RealType<T> & NativeType< T > >
 	ArrayList< RandomAccessibleInterval< T > > maskAllChannels(
 			ArrayList< RandomAccessibleInterval< T > > channels,
-			RandomAccessibleInterval< BitType > mask )
+			RandomAccessibleInterval< BitType > mask,
+			boolean showImages )
 	{
 		ArrayList< RandomAccessibleInterval< T > > maskedChannels = new ArrayList<>(  );
 
 		long numChannels = channels.size();
+
 		for ( int c = 0; c < numChannels; ++c )
 		{
 			final RandomAccessibleInterval< T > channel = Utils.copyAsArrayImg( channels.get( c ) );
 			Utils.applyMask( channel, mask );
 			maskedChannels.add( channel );
+
+			if ( showImages ) show( channel, "masked channel " + c,  Transforms.origin(), 1.0 );
+
 		}
 
 		return maskedChannels;

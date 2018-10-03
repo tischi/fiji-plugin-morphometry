@@ -270,14 +270,14 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		/**
 		 * Get transformation for demanded output resolution
 		 */
-		final AffineTransform3D registrationTransform = registration.getRegistrationTransform( inputCalibration, settings.outputResolution );
+		final AffineTransform3D registrationTransform = registration.getRegistrationTransform( registration.getCorrectedCalibration(), settings.outputResolution );
 		if ( registrationTransform == null ) return null;
 
 		/**
 		 * Get transformation for demanded output resolution
 		 */
 		Utils.log( "Applying intensity correction to all channels...." );
-		final RandomAccessibleInterval< T > correctedImages =
+		final RandomAccessibleInterval< T > intensityCorrectedImages =
 				createIntensityCorrectedImages(
 						images,
 						registration.getCorrectedCalibration()[ Z ],
@@ -286,14 +286,14 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		Utils.log( "Creating registered and masked images (can take some time)..." );
 		ArrayList< RandomAccessibleInterval< T > > registeredImages =
 				Transforms.transformAllChannels(
-						correctedImages,
+						intensityCorrectedImages,
 						registrationTransform,
 						settings.getOutputImageInterval()
 				);
 
 		// apply masking
-		final RandomAccessibleInterval< BitType > alignedMaskAtOutputResolution = registration.createAlignedMask( settings.outputResolution, settings.getOutputImageInterval();
-		registeredImages = Utils.maskAllChannels( registeredImages, alignedMaskAtOutputResolution );
+		final RandomAccessibleInterval< BitType > alignedMaskAtOutputResolution = registration.createAlignedMask( settings.outputResolution, settings.getOutputImageInterval() );
+		registeredImages = Utils.maskAllChannels( registeredImages, alignedMaskAtOutputResolution, settings.showIntermediateResults );
 
 		return Views.stack( registeredImages );
 	}

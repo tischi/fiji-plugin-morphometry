@@ -13,7 +13,7 @@ import net.imglib2.type.numeric.integer.IntType;
 import java.util.HashMap;
 
 import static de.embl.cba.morphometry.splitting.SplittingUtils.getNumObjectsFromSkeleton;
-import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
+import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 
 
 public class ShapeAndIntensitySplitter< T extends RealType< T > & NativeType< T > >

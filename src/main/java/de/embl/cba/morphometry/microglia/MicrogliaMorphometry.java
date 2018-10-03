@@ -23,7 +23,7 @@ import net.imglib2.view.Views;
 import java.util.*;
 
 import static de.embl.cba.morphometry.Transforms.getScalingFactors;
-import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
+import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 
 
 public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
