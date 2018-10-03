@@ -1,7 +1,6 @@
 package de.embl.cba.morphometry;
 
 import net.imagej.ops.OpService;
-import net.imagej.ops.Ops;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.gauss3.Gauss3;
@@ -45,18 +44,26 @@ public class Algorithms
 {
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > createIsotropicArrayImg(
+	RandomAccessibleInterval< T > createRescaledArrayImg(
 			RandomAccessibleInterval< T > input,
 			double[] scalingFactors )
 	{
 		assert scalingFactors.length == input.numDimensions();
+
+		/**
+		 * - In principle, writing a function that computes weighted averages
+		 * of an appropriate number of neighboring (not only nearest) pixels
+		 * around each requested (real) position in the new image appears to me
+		 * to be the most direct way of rescaling.
+		 * - See discussion here: http://imagej.1557.x6.nabble.com/downsampling-methods-td3690444.html
+		 */
 
 		/*
 		 * Blur image
 		 * - Down-sampling without adequate blurring, e.g. by simple binning produces sub-optimal results,
 		 *   because one bright pixel would only contribute to one binned pixel
 		 *   and not to the neighboring binned pixels, where it should also contribute to.
-		 * - TODO: reference
+		 * - See also: https://imagej.net/Downsample
 		 */
 
 		final RandomAccessibleInterval< T > blurred = createOptimallyBlurredArrayImg( input, scalingFactors );
@@ -101,20 +108,18 @@ public class Algorithms
 	{
 		/**
 		 * - https://en.wikipedia.org/wiki/Decimation_(signal_processing)
-		 * - Optimal blurring is 0.5 / M, where m is the downsampling factor
+		 * - Optimal blurring is 0.5 / M, where M is the downsampling factor
 		 */
 
-		final long[] inputDimensions = Intervals.dimensionsAsLongArray( input );
-		final double[] sigmas = new double[ inputDimensions.length ];
+		final double[] sigmas = new double[input.numDimensions() ];
 
-		for ( int d = 0; d < inputDimensions.length; ++d )
+		for ( int d = 0; d < input.numDimensions(); ++d )
 		{
 			sigmas[ d ] = 0.5 / scalingFactors[ d ];
 		}
 
 		// allocate output image
-		ImgFactory< T > imgFactory = new ArrayImgFactory( input.randomAccess().get()  );
-		RandomAccessibleInterval< T > output = Views.translate( imgFactory.create( inputDimensions ), Intervals.minAsLongArray( input )  ) ;
+		RandomAccessibleInterval< T > output = Utils.createEmptyArrayImg( input );
 
 		// blur input image and write into output image
 		Gauss3.gauss( sigmas, Views.extendBorder( input ), output ) ;
@@ -699,7 +704,7 @@ public class Algorithms
 											RandomAccessibleInterval< T > maskedAndCropped,
 											ArrayList< PositionAndValue > localMaxima )
 	{
-		final RandomAccessibleInterval< T > seeds = Utils.copyAsEmptyArrayImg( maskedAndCropped );
+		final RandomAccessibleInterval< T > seeds = Utils.createEmptyArrayImg( maskedAndCropped );
 		final RandomAccess< T > randomAccess = seeds.randomAccess();
 		for ( int i = 0; i < numSeeds; ++i )
 		{

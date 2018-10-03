@@ -68,8 +68,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final double[] workingCalibration = Utils.as3dDoubleArray( settings.workingVoxelSize );
 
-		final RandomAccessibleInterval< T > dapi = Algorithms.createIsotropicArrayImg( settings.dapi, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
-		final RandomAccessibleInterval< T > tubulin = Algorithms.createIsotropicArrayImg( settings.tubulin, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > dapi = Algorithms.createRescaledArrayImg( settings.dapi, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > tubulin = Algorithms.createRescaledArrayImg( settings.tubulin, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
 		if ( settings.showIntermediateResults ) show( dapi, "image isotropic resolution", null, workingCalibration, false );
 		if ( settings.showIntermediateResults ) show( tubulin, "tubulin isotropic resolution", null, workingCalibration, false );
@@ -79,7 +79,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 *  Compute offset and threshold
 		 */
 
-		final RandomAccessibleInterval< T > dapi3um = Algorithms.createIsotropicArrayImg( settings.dapi, getScalingFactors( settings.inputCalibration, 3.0 ) );
+		final RandomAccessibleInterval< T > dapi3um = Algorithms.createRescaledArrayImg( settings.dapi, getScalingFactors( settings.inputCalibration, 3.0 ) );
 		final double maximumValue = Algorithms.getMaximumValue( dapi3um );
 		double threshold = maximumValue / 2.0;
 

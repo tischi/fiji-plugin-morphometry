@@ -73,7 +73,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		final double[] workingCalibration = Utils.as2dDoubleArray( settings.workingVoxelSize );
 
-		final RandomAccessibleInterval< T > intensityImage = Algorithms.createIsotropicArrayImg( settings.image, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > intensityImage = Algorithms.createRescaledArrayImg( settings.image, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
 		if ( settings.showIntermediateResults ) show( intensityImage, "image isotropic resolution", null, workingCalibration, false );
 		

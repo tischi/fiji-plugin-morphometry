@@ -36,12 +36,6 @@ public class BdvViewer
 		final Bdv bdv;
 		final BdvSource bdvSource;
 
-		if ( calibration == null )
-		{
-			calibration = new double[ rai.numDimensions() ];
-			Arrays.fill( calibration, 1.0 );
-		}
-
 		if ( rai.numDimensions() ==  2 )
 		{
 			bdvSource = BdvFunctions.show( rai, title, BdvOptions.options().is2D().sourceTransform( calibration ) );

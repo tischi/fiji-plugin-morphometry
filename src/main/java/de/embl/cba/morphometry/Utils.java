@@ -636,11 +636,11 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > copyAsEmptyArrayImg( RandomAccessibleInterval< T > rai )
+	RandomAccessibleInterval< T > createEmptyArrayImg( RandomAccessibleInterval< T > rai )
 	{
-		RandomAccessibleInterval< T > copy = new ArrayImgFactory( rai.randomAccess().get() ).create( rai );
-		copy = Transforms.getWithAdjustedOrigin( rai, copy );
-		return copy;
+		RandomAccessibleInterval< T > newImage = new ArrayImgFactory( rai.randomAccess().get() ).create( rai );
+		newImage = Transforms.getWithAdjustedOrigin( rai, newImage );
+		return newImage;
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
