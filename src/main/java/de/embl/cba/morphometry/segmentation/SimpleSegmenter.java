@@ -38,7 +38,7 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 
 		final double[] workingCalibration = Utils.as2dDoubleArray( settings.workingVoxelSize );
 
-		final RandomAccessibleInterval< T > image = Algorithms.createIsotropicArrayImg( intensity, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > image = Algorithms.createRescaledArrayImg( intensity, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
 		if ( settings.showIntermediateResults ) show( image, "image isotropic resolution", null, workingCalibration, false );
 

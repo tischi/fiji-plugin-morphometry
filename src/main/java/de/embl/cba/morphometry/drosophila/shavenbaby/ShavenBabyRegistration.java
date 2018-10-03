@@ -14,7 +14,6 @@ import net.imglib2.converter.Converters;
 import net.imglib2.histogram.Histogram1d;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.interpolation.neighborsearch.NearestNeighborSearchInterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
@@ -88,6 +87,8 @@ public class ShavenBabyRegistration
 
 		correctedCalibration = RefractiveIndexMismatchCorrections.getAxiallyCorrectedCalibration( inputCalibration, settings.refractiveIndexAxialCalibrationCorrectionFactor );
 
+		if ( settings.showIntermediateResults ) show( svb, "corrected calibration", null, correctedCalibration, false );
+
 
 		/**
 		 *  Down-sampling to transformAtRegistrationResolution resolution
@@ -99,12 +100,12 @@ public class ShavenBabyRegistration
 
 		Utils.log( "Down-sampling to registration resolution..." );
 
-		final RandomAccessibleInterval< T > downscaledSvb = Algorithms.createIsotropicArrayImg( svb, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
-		final RandomAccessibleInterval< T > downscaledCh2 = Algorithms.createIsotropicArrayImg( ch2, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+		final RandomAccessibleInterval< T > downscaledSvb = Algorithms.createRescaledArrayImg( svb, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+		final RandomAccessibleInterval< T > downscaledCh2 = Algorithms.createRescaledArrayImg( ch2, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
 
 		double[] registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 
-		if ( settings.showIntermediateResults ) show( downscaledSvb, "at registration resolution", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( downscaledSvb, "isotropic sampled at registration resolution", null, registrationCalibration, false );
 
 
 		/**
