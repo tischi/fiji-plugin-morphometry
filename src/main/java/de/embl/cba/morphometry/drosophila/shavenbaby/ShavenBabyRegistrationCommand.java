@@ -10,14 +10,12 @@ import ij.ImagePlus;
 import ij.io.FileSaver;
 import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
-import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealPoint;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -30,8 +28,6 @@ import java.io.File;
 import java.util.ArrayList;
 
 import static de.embl.cba.morphometry.Constants.*;
-import static de.embl.cba.morphometry.Constants.X;
-import static de.embl.cba.morphometry.Constants.Y;
 import static de.embl.cba.morphometry.ImageIO.openWithBioFormats;
 
 
@@ -167,7 +163,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 					new FileSaver( ImageJFunctions.wrap( shavenbabyMaximum, "" ) ).saveAsTiff( inputPath + "-projection-ch1-raw.tif" );
 
 					// Save ch2 non-registered projection
-					RandomAccessibleInterval< T > ch2 = getAmnioserosaImage( getImages( inputImagePlus ) );
+					RandomAccessibleInterval< T > ch2 = getChannel2Image( getImages( inputImagePlus ) );
 					RandomAccessibleInterval ch2Maximum = new Projection( ch2, Z ).maximum();
 					new FileSaver( ImageJFunctions.wrap( ch2Maximum, "" ) ).saveAsTiff( inputPath + "-projection-ch2-raw.tif" );
 
@@ -261,40 +257,39 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	{
 		RandomAccessibleInterval< T > images = getImages( imagePlus );
 		RandomAccessibleInterval< T > shavenbaby = getShavenBabyImage( images );
-		RandomAccessibleInterval< T > amnioserosa = getAmnioserosaImage( images );
-
-		final double[] calibration = Utils.getCalibration( imagePlus );
+		RandomAccessibleInterval< T > channel2 = getChannel2Image( images );
 
 		Utils.log( "Computing registration...." );
+		registration.run( shavenbaby, channel2, Utils.getCalibration( imagePlus ) );
 
-		registration.run( shavenbaby, amnioserosa, calibration );
+		// Note: -the transform already contains the transform to the final resolution
+		final AffineTransform3D registrationTransform = registration.getTransform();
 
-		final AffineTransform3D transform = registration.getTransform();
-
-		if ( transform == null ) return null;
+		if ( registrationTransform == null ) return null;
 
 		Utils.log( "Applying intensity correction to all channels...." );
-		final RefractiveIndexMismatchCorrectionSettings correctionSettings = new RefractiveIndexMismatchCorrectionSettings();
-		correctionSettings.pixelCalibrationMicrometer = calibration[ 2 ]; // TODO: this gets implicitely modified within run to correct for the mismatch, not good style
-		correctionSettings.intensityDecayLengthMicrometer = settings.refractiveIndexIntensityCorrectionDecayLength;
-		correctionSettings.coverslipPositionMicrometer = registration.getCoverslipPosition();
-		final RandomAccessibleInterval< T > intensityCorrectedImages = RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, correctionSettings  );
+		final RandomAccessibleInterval< T > correctedImages = createIntensityCorrectedImages( registration, images );
 
-		Utils.log( "Preparing registration of all channels at a resolution of " + settings.outputResolution + " micrometer ..." );
+		Utils.log( "Creating registered and masked images (can take some time)..." );
 		ArrayList< RandomAccessibleInterval< T > > registeredImages =
 				Transforms.transformAllChannels(
-						intensityCorrectedImages,
-						transform,
+						correctedImages,
+						registrationTransform,
 						settings.getOutputImageInterval() );
 
-		Utils.log( "Applying registration and masking to all channels (can take time)..." );
-
-		// TODO (NOTE) below is slow because the registeredImages are only Views and need to be computed on demand
 		registeredImages = Utils.maskAllChannels( registeredImages, registration.getMask() );
 
 		return Views.stack( registeredImages );
 	}
 
+	public RandomAccessibleInterval< T > createIntensityCorrectedImages( ShavenBabyRegistration registration, RandomAccessibleInterval< T > images )
+	{
+		final RefractiveIndexMismatchCorrectionSettings correctionSettings = new RefractiveIndexMismatchCorrectionSettings();
+		correctionSettings.pixelCalibrationMicrometer = registration.getCorrectedCalibration()[ Z ];
+		correctionSettings.intensityDecayLengthMicrometer = settings.refractiveIndexIntensityCorrectionDecayLength;
+		correctionSettings.coverslipPositionMicrometer = registration.getCoverslipPosition();
+		return RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, correctionSettings  );
+	}
 
 
 	public RandomAccessibleInterval< T > getImages( ImagePlus imagePlus )
@@ -322,7 +317,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		return rai;
 	}
 
-	private RandomAccessibleInterval<T> getAmnioserosaImage( RandomAccessibleInterval<T> images )
+	private RandomAccessibleInterval<T> getChannel2Image( RandomAccessibleInterval<T> images )
 	{
 		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.amnioserosaChannelIndexOneBased - 1 );
 

@@ -193,14 +193,14 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 	public static double[] getScalingFactors( double[] calibration, double targetResolution )
 	{
 
-		double[] downScaling = new double[ calibration.length ];
+		double[] scalings = new double[ calibration.length ];
 
 		for ( int d = 0; d < calibration.length; ++d )
 		{
-			downScaling[ d ] = calibration[ d ] / targetResolution;
+			scalings[ d ] = calibration[ d ] / targetResolution;
 		}
 
-		return downScaling;
+		return scalings;
 	}
 
 	public static AffineTransform3D getScalingTransform( double[] calibration, double targetResolution )

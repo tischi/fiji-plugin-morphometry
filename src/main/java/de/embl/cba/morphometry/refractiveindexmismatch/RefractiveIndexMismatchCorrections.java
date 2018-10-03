@@ -115,8 +115,18 @@ public abstract class RefractiveIndexMismatchCorrections
 		return intensityHistogram.getMode().coordinate;
 	}
 
-	public static void correctCalibration( double[] calibration, double correctionFactor )
+	public static double[] getAxiallyCorrectedCalibration( double[] calibration, double axialCorrectionFactor )
 	{
-		calibration[ Z ] *= correctionFactor;
+		double[] corrected = new double[ calibration.length ];
+
+		for ( int d = 0; d < calibration.length; ++d )
+		{
+			corrected[ d ] = calibration[ d ];
+		}
+
+		corrected[ Z ] *= axialCorrectionFactor;
+
+		return corrected;
+
 	}
 }
