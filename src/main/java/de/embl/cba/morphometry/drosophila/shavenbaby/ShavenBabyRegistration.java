@@ -53,6 +53,7 @@ public class ShavenBabyRegistration
 	private AffineTransform3D registrationFromInputToOutputResolution;
 	private RandomAccessibleInterval< BitType > alignedMaskAtOutputResolution;
 	private Img< IntType > watershedLabelImg;
+	private double[] correctedCalibration;
 
 	public ShavenBabyRegistration( ShavenBabyRegistrationSettings settings, OpService opService )
 	{
@@ -61,38 +62,46 @@ public class ShavenBabyRegistration
 	}
 
 	public < T extends RealType< T > & NativeType< T > >
-	void run( RandomAccessibleInterval< T > svb, // Shavenbaby
-			  RandomAccessibleInterval< T > ch2, // Channel2
+	void run( RandomAccessibleInterval< T > svb, // https://en.wikipedia.org/wiki/Random_access
+			  RandomAccessibleInterval< T > ch2, //
 			  double[] inputCalibration )
 	{
-
-		AffineTransform3D registration = new AffineTransform3D();
-
-
-		/**
-		 *  Calibration correction
-		 *  - Compressed axially by factor 1.6 due to refractive index mismatch ( TODO: Reference ... )
-		 */
-
-		Utils.log( "Refractive index scaling correction..." );
-
-		RefractiveIndexMismatchCorrections.correctCalibration( inputCalibration, settings.refractiveIndexAxialCalibrationCorrectionFactor );
 
 		if ( settings.showIntermediateResults ) show( svb, "input image", null, inputCalibration, false );
 
 
 		/**
+		 *  Initialise registration transformation as identity transform
+		 *  - The code will sequentially concatenate transformations onto it, building up the final registration
+		 */
+
+		AffineTransform3D registration = new AffineTransform3D();
+
+
+		/**
+		 *  Axial calibration correction due to refractive index mismatch
+		 *  - We are using an NA 0.8 air lens imaging into water/embryo (1.33 < NA < 1.51)
+		 *  - Complicated topic: http://www.bio.brandeis.edu/marderlab/axial%20shift.pdf
+		 *  - We assume axial compression by factor ~1.6
+		 */
+
+		Utils.log( "Refractive index scaling correction..." );
+
+		correctedCalibration = RefractiveIndexMismatchCorrections.getAxiallyCorrectedCalibration( inputCalibration, settings.refractiveIndexAxialCalibrationCorrectionFactor );
+
+
+		/**
 		 *  Down-sampling to registration resolution
-		 *  - Runs faster (huge effect in 3D)
+		 *  - Speeds up calculations ( pow(3) effect in 3D! )
 		 *  - Reduces noise
 		 *  - Fills "holes" in staining
-		 *  - TODO: during down-sampling saturated pixels become zero
+		 *  - TODO: bug: during down-sampling saturated pixels become zero
 		 */
 
 		Utils.log( "Down-sampling to registration resolution..." );
 
-		final RandomAccessibleInterval< T > downscaledSvb = Algorithms.createIsotropicArrayImg( svb, getScalingFactors( inputCalibration, settings.registrationResolution ) );
-		final RandomAccessibleInterval< T > downscaledCh2 = Algorithms.createIsotropicArrayImg( ch2, getScalingFactors( inputCalibration, settings.registrationResolution ) );
+		final RandomAccessibleInterval< T > downscaledSvb = Algorithms.createIsotropicArrayImg( svb, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+		final RandomAccessibleInterval< T > downscaledCh2 = Algorithms.createIsotropicArrayImg( ch2, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
 
 		double[] registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 
@@ -100,7 +109,7 @@ public class ShavenBabyRegistration
 
 
 		/**
-		 *  Compute intensity offset
+		 *  Compute intensity offset (for refractive index mismatch corrections)
 		 */
 
 		Utils.log( "Computing offset and threshold..." );
@@ -118,11 +127,16 @@ public class ShavenBabyRegistration
 
 		final CoordinatesAndValues averageSvbIntensitiesAlongZ = Utils.computeAverageIntensitiesAlongAxis( downscaledSvb, 2, settings.registrationResolution );
 
+		if ( settings.showIntermediateResults ) Plots.plot( averageSvbIntensitiesAlongZ.coordinates, averageSvbIntensitiesAlongZ.values, "z [um]", "average intensities" );
+
 		final double embryoCenterPosition = Utils.computeMaxLoc( averageSvbIntensitiesAlongZ );
 		coverslipPosition = embryoCenterPosition - ShavenBabyRegistrationSettings.drosophilaWidth / 2.0;
 
 		Utils.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
 		Utils.log( "Approximate axial embryo center coordinate [um]: " + embryoCenterPosition );
+
+		if ( 1 > 0 ) return;
+
 
 		/**
 		 *  Refractive index corrections
@@ -303,6 +317,7 @@ public class ShavenBabyRegistration
 
 		/**
 		 * Aligned mask at output resolution
+		 * // TODO: compute on demand later
 		 */
 
 		Utils.log( "Creating aligned mask at output resolution..." );
@@ -323,10 +338,17 @@ public class ShavenBabyRegistration
 
 		/**
 		 * Compute final registration
+		 * // TODO: remove the output resolution and put into getter
 		 */
 
 		registrationFromInputToOutputResolution = createOutputResolutionTransform( inputCalibration, registration, registrationCalibration );
 
+	}
+
+
+	public double[] getCorrectedCalibration()
+	{
+		return correctedCalibration;
 	}
 
 	public double getCoverslipPosition()
@@ -604,7 +626,9 @@ public class ShavenBabyRegistration
 		return origin;
 	}
 
-	private AffineTransform3D createOutputResolutionTransform( double[] inputCalibration, AffineTransform3D registration, double[] registrationCalibration )
+	private AffineTransform3D createOutputResolutionTransform( double[] inputCalibration,
+															   AffineTransform3D registration,
+															   double[] registrationCalibration )
 	{
 		final AffineTransform3D transform =
 				Transforms.getScalingTransform( inputCalibration, settings.registrationResolution )

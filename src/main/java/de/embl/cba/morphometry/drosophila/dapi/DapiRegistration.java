@@ -41,7 +41,7 @@ public class DapiRegistration
 
 		if ( settings.showIntermediateResults ) show( input, "image input data", null, calibration, false );
 
-		RefractiveIndexMismatchCorrections.correctCalibration( calibration, settings.refractiveIndexCorrectionAxialScalingFactor );
+		calibration = RefractiveIndexMismatchCorrections.getAxiallyCorrectedCalibration( calibration, settings.refractiveIndexCorrectionAxialScalingFactor );
 
 		if ( settings.showIntermediateResults ) show( input, "calibration corrected createTransformedView on raw input data", null, calibration, false );
 

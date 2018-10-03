@@ -42,12 +42,18 @@ public class Algorithms
 {
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > createIsotropicArrayImg( RandomAccessibleInterval< T > input, double[] scalingFactors )
+	RandomAccessibleInterval< T > createIsotropicArrayImg(
+			RandomAccessibleInterval< T > input,
+			double[] scalingFactors )
 	{
 		assert scalingFactors.length == input.numDimensions();
 
 		/*
 		 * Blur image
+		 * - Down-sampling without adequate blurring, e.g. by simple binning produces sub-optimal results,
+		 *   because one bright pixel would only contribute to one binned pixel
+		 *   and not to the neighboring binned pixels, where it should also contribute to.
+		 * - TODO: reference
 		 */
 
 		final RandomAccessibleInterval< T > blurred = createOptimallyBlurredArrayImg( input, scalingFactors );
@@ -56,7 +62,7 @@ public class Algorithms
 		 * Sample values from blurred image
 		 */
 
-		final RandomAccessibleInterval< T > resampled = createResampledArrayImg( blurred, scalingFactors );
+		final RandomAccessibleInterval< T > resampled =  createResampledArrayImg( blurred, scalingFactors );
 
 		return resampled;
 	}
@@ -64,27 +70,43 @@ public class Algorithms
 	private static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > createResampledArrayImg( RandomAccessibleInterval< T > input, double[] scalingFactors )
 	{
-		// TODO: is there a simpler way to do this?
-
-		// scale such that we can sample from integer coordinates (raster function needs this)
-		Scale scale = new Scale( scalingFactors );
+		// Convert to RealRandomAccessible such that we can obtain values at (infinite) non-integer coordinates
 		RealRandomAccessible< T > rra = Views.interpolate( Views.extendBorder( input ), new NLinearInterpolatorFactory<>() );
-		rra = RealViews.transform( rra, scale );
 
-		final RandomAccessible< T > raster = Views.raster( rra );
-		final RandomAccessibleInterval< T > output = Views.interval( raster, createTransformedInterval( input, scale ) );
-		return Utils.copyAsArrayImg( output  );
+		// Change scale such that we can sample from integer coordinates (for raster function below)
+		Scale scale = new Scale( scalingFactors );
+		RealRandomAccessible< T > rescaledRRA  = RealViews.transform( rra, scale );
+
+		// Create view sampled at integer coordinates
+		final RandomAccessible< T > rastered = Views.raster( rescaledRRA );
+
+		// Put an interval to make it a finite "normal" image again
+		final RandomAccessibleInterval< T > finiteRastered = Views.interval( rastered, createTransformedInterval( input, scale ) );
+
+		// Convert from View to a "conventional" image in RAM
+		// - Above code would also run on, e.g. 8 TB image, within ms
+		// - Now, we really force it to create the image (we actually might now have to, depends...)
+		final RandomAccessibleInterval< T > output = Utils.copyAsArrayImg( finiteRastered );
+
+		return output;
 	}
 
 	private static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > createOptimallyBlurredArrayImg( RandomAccessibleInterval< T > input, double[] scalingFactors )
+	RandomAccessibleInterval< T > createOptimallyBlurredArrayImg(
+			RandomAccessibleInterval< T > input,
+			double[] scalingFactors )
 	{
+		/**
+		 * - https://en.wikipedia.org/wiki/Decimation_(signal_processing)
+		 * - Optimal blurring is 0.5 / M, where m is the downsampling factor
+		 */
+
 		final long[] inputDimensions = Intervals.dimensionsAsLongArray( input );
 		final double[] sigmas = new double[ inputDimensions.length ];
 
 		for ( int d = 0; d < inputDimensions.length; ++d )
 		{
-			sigmas[ d ] = 0.5 / scalingFactors[ d ]; // From Saalfeld ... ( TODO: Reference )
+			sigmas[ d ] = 0.5 / scalingFactors[ d ];
 		}
 
 		// allocate output image
