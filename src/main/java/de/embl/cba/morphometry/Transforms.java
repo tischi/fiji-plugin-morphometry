@@ -216,6 +216,19 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 		return scaling;
 	}
 
+	public static AffineTransform3D getScalingTransform( double calibration, double targetResolution )
+	{
+
+		AffineTransform3D scaling = new AffineTransform3D();
+
+		for ( int d : XYZ )
+		{
+			scaling.set( calibration / targetResolution, d, d );
+		}
+
+		return scaling;
+	}
+
 
 
 	public static AffineTransform3D createScalingTransform( double[] calibration )

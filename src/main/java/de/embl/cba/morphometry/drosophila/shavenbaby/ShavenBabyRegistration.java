@@ -48,10 +48,9 @@ public class ShavenBabyRegistration
 
 	final ShavenBabyRegistrationSettings settings;
 	final OpService opService;
-	private RandomAccessibleInterval< BitType > centralObjectMask;
+	private RandomAccessibleInterval< BitType > embryoMask;
 	private double coverslipPosition;
-	private AffineTransform3D registrationFromInputToOutputResolution;
-	private RandomAccessibleInterval< BitType > alignedMaskAtOutputResolution;
+	private AffineTransform3D transformAtRegistrationResolution;
 	private Img< IntType > watershedLabelImg;
 	private double[] correctedCalibration;
 
@@ -71,8 +70,8 @@ public class ShavenBabyRegistration
 
 
 		/**
-		 *  Initialise registration transformation as identity transform
-		 *  - The code will sequentially concatenate transformations onto it, building up the final registration
+		 *  Initialise transformAtRegistrationResolution transformation as identity transform
+		 *  - The code will sequentially concatenate transformations onto it, building up the final transformAtRegistrationResolution
 		 */
 
 		AffineTransform3D registration = new AffineTransform3D();
@@ -91,21 +90,21 @@ public class ShavenBabyRegistration
 
 
 		/**
-		 *  Down-sampling to registration resolution
+		 *  Down-sampling to transformAtRegistrationResolution resolution
 		 *  - Speeds up calculations ( pow(3) effect in 3D! )
 		 *  - Reduces noise
 		 *  - Fills "holes" in staining
 		 *  - TODO: bug: during down-sampling saturated pixels become zero
 		 */
 
-		Utils.log( "Down-sampling to registration resolution..." );
+		Utils.log( "Down-sampling to transformAtRegistrationResolution resolution..." );
 
 		final RandomAccessibleInterval< T > downscaledSvb = Algorithms.createIsotropicArrayImg( svb, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
 		final RandomAccessibleInterval< T > downscaledCh2 = Algorithms.createIsotropicArrayImg( ch2, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
 
 		double[] registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 
-		if ( settings.showIntermediateResults ) show( downscaledSvb, "at registration resolution", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( downscaledSvb, "at transformAtRegistrationResolution resolution", null, registrationCalibration, false );
 
 
 		/**
@@ -260,20 +259,20 @@ public class ShavenBabyRegistration
 			return;
 		}
 
-		centralObjectMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaledSvb ) );
+		embryoMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaledSvb ) );
 
-		if ( settings.showIntermediateResults ) show( Utils.copyAsArrayImg( centralObjectMask ), "central enbryo mask", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( Utils.copyAsArrayImg( embryoMask ), "central enbryo mask", null, registrationCalibration, false );
 
 		/**
 		 * Process main embryo mask
 		 * - TODO: put hard coded values into settings
 		 */
 
-		centralObjectMask = close( centralObjectMask, ( int ) ( 20.0 / settings.registrationResolution ) );
+		embryoMask = close( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
 
-		centralObjectMask = open( centralObjectMask, ( int ) ( 40.0 / settings.registrationResolution ) );
+		embryoMask = open( embryoMask, ( int ) ( 40.0 / settings.registrationResolution ) );
 
-		if ( settings.showIntermediateResults ) show( centralObjectMask, "central embryo mask - processed", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( embryoMask, "central embryo mask - processed", null, registrationCalibration, false );
 
 
 		/**
@@ -283,11 +282,11 @@ public class ShavenBabyRegistration
 
 		Utils.log( "Fit ellipsoid..." );
 
-		final EllipsoidParameters ellipsoidParameters = Ellipsoids.computeParametersFromBinaryImage( centralObjectMask );
+		final EllipsoidParameters ellipsoidParameters = Ellipsoids.computeParametersFromBinaryImage( embryoMask );
 
 		registration.preConcatenate( Ellipsoids.createAlignmentTransform( ellipsoidParameters ) );
 
-		final RandomAccessibleInterval< BitType > yawAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ) );
+		final RandomAccessibleInterval< BitType > yawAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( embryoMask, registration, new NearestNeighborInterpolatorFactory() ) );
 
 		final RandomAccessibleInterval yawAlignedIntensities = Utils.copyAsArrayImg( Transforms.createTransformedView( downscaledSvb, registration ) );
 
@@ -303,7 +302,7 @@ public class ShavenBabyRegistration
 
 		registration = registration.preConcatenate( orientationTransform );
 
-		final RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( centralObjectMask, registration, new NearestNeighborInterpolatorFactory() ) );
+		final RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( embryoMask, registration, new NearestNeighborInterpolatorFactory() ) );
 
 		if ( settings.showIntermediateResults ) show( yawAndOrientationAlignedMask, "long axis aligned and oriented", null, registrationCalibration, false );
 
@@ -315,33 +314,15 @@ public class ShavenBabyRegistration
 		registration = computeRollTransform( registration, registrationCalibration, intensityCorrectedSvb, intensityCorrectedCh2, yawAndOrientationAlignedMask );
 
 
-		/**
-		 * Aligned mask at output resolution
-		 * // TODO: compute on demand later
-		 */
-
-		Utils.log( "Creating aligned mask at output resolution..." );
-
-		alignedMaskAtOutputResolution = Utils.copyAsArrayImg(
-				Transforms.createTransformedView(
-						centralObjectMask,
-						registration.copy().preConcatenate( Transforms.getScalingTransform( registrationCalibration, settings.outputResolution ) ),
-						settings.getOutputImageInterval(),
-						new NearestNeighborInterpolatorFactory() ) );
 
 
 		/**
-		 * Show aligned input image at registration resolution
+		 * Show aligned input image at transformAtRegistrationResolution resolution
 		 */
 
 		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedSvb, registration ), "aligned input data ( " + settings.outputResolution + " um )", origin(), registrationCalibration, false );
 
-		/**
-		 * Compute final registration
-		 * // TODO: remove the output resolution and put into getter
-		 */
 
-		registrationFromInputToOutputResolution = createOutputResolutionTransform( inputCalibration, registration, registrationCalibration );
 
 	}
 
@@ -361,20 +342,35 @@ public class ShavenBabyRegistration
 		return watershedLabelImg;
 	}
 
-
-	public RandomAccessibleInterval< BitType > getNonRegisteredMask()
+	public AffineTransform3D getRegistrationTransform( double[] inputCalibration, double outputResolution )
 	{
-		return centralObjectMask;
+		final AffineTransform3D transform =
+				Transforms.getScalingTransform( inputCalibration, settings.registrationResolution )
+						.preConcatenate( transformAtRegistrationResolution.copy() )
+						.preConcatenate( Transforms.getScalingTransform( settings.registrationResolution, outputResolution ) );
+
+		return transform;
 	}
 
-	public AffineTransform3D getTransform()
+	public RandomAccessibleInterval< BitType > createAlignedMask( double resolution, FinalInterval interval )
 	{
-		return registrationFromInputToOutputResolution;
-	}
 
-	public RandomAccessibleInterval< BitType > getMask()
-	{
-		return alignedMaskAtOutputResolution;
+		Utils.log( "Creating aligned mask..." );
+
+		AffineTransform3D transform = transformAtRegistrationResolution.copy()
+				.preConcatenate( Transforms.getScalingTransform( settings.registrationResolution, resolution ) );
+
+		RandomAccessibleInterval< BitType > alignedMask =
+				Utils.copyAsArrayImg(
+					Transforms.createTransformedView(
+							embryoMask,
+							transform,
+							interval, // after the transform we need to specify where we want to "crop"
+							new	NearestNeighborInterpolatorFactory() // binary image => do not interpolate linearly!
+					)
+				);
+
+		return alignedMask;
 	}
 
 	public < T extends RealType< T > & NativeType< T > > AffineTransform3D computeRollTransform( AffineTransform3D registration, double[] registrationCalibration, RandomAccessibleInterval< T > intensityCorrectedSvb, RandomAccessibleInterval< T > intensityCorrectedAma, RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask )
@@ -626,17 +622,6 @@ public class ShavenBabyRegistration
 		return origin;
 	}
 
-	private AffineTransform3D createOutputResolutionTransform( double[] inputCalibration,
-															   AffineTransform3D registration,
-															   double[] registrationCalibration )
-	{
-		final AffineTransform3D transform =
-				Transforms.getScalingTransform( inputCalibration, settings.registrationResolution )
-				.preConcatenate( registration )
-				.preConcatenate( Transforms.getScalingTransform( registrationCalibration, settings.outputResolution ) );
-
-		return transform;
-	}
 
 	private Img< BitType > createMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
 	{

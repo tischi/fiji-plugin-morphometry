@@ -15,6 +15,7 @@ import net.imglib2.RealPoint;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
 import org.scijava.app.StatusService;
@@ -255,39 +256,58 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 			ImagePlus imagePlus,
 			ShavenBabyRegistration registration )
 	{
+		final double[] inputCalibration = Utils.getCalibration( imagePlus );
 		RandomAccessibleInterval< T > images = getImages( imagePlus );
 		RandomAccessibleInterval< T > shavenbaby = getShavenBabyImage( images );
 		RandomAccessibleInterval< T > channel2 = getChannel2Image( images );
 
+		/**
+		 * Compute registration
+		 */
 		Utils.log( "Computing registration...." );
-		registration.run( shavenbaby, channel2, Utils.getCalibration( imagePlus ) );
+		registration.run( shavenbaby, channel2, inputCalibration );
 
-		// Note: -the transform already contains the transform to the final resolution
-		final AffineTransform3D registrationTransform = registration.getTransform();
-
+		/**
+		 * Get transformation for demanded output resolution
+		 */
+		final AffineTransform3D registrationTransform = registration.getRegistrationTransform( inputCalibration, settings.outputResolution );
 		if ( registrationTransform == null ) return null;
 
+		/**
+		 * Get transformation for demanded output resolution
+		 */
 		Utils.log( "Applying intensity correction to all channels...." );
-		final RandomAccessibleInterval< T > correctedImages = createIntensityCorrectedImages( registration, images );
+		final RandomAccessibleInterval< T > correctedImages =
+				createIntensityCorrectedImages(
+						images,
+						registration.getCorrectedCalibration()[ Z ],
+						registration.getCoverslipPosition()  );
 
 		Utils.log( "Creating registered and masked images (can take some time)..." );
 		ArrayList< RandomAccessibleInterval< T > > registeredImages =
 				Transforms.transformAllChannels(
 						correctedImages,
 						registrationTransform,
-						settings.getOutputImageInterval() );
+						settings.getOutputImageInterval()
+				);
 
-		registeredImages = Utils.maskAllChannels( registeredImages, registration.getMask() );
+		// apply masking
+		final RandomAccessibleInterval< BitType > alignedMaskAtOutputResolution = registration.createAlignedMask( settings.outputResolution, settings.getOutputImageInterval();
+		registeredImages = Utils.maskAllChannels( registeredImages, alignedMaskAtOutputResolution );
 
 		return Views.stack( registeredImages );
 	}
 
-	public RandomAccessibleInterval< T > createIntensityCorrectedImages( ShavenBabyRegistration registration, RandomAccessibleInterval< T > images )
+	public RandomAccessibleInterval< T > createIntensityCorrectedImages( RandomAccessibleInterval< T > images,
+																		 double axialCalibration,
+																		 double coverslipPosition )
 	{
+
 		final RefractiveIndexMismatchCorrectionSettings correctionSettings = new RefractiveIndexMismatchCorrectionSettings();
-		correctionSettings.pixelCalibrationMicrometer = registration.getCorrectedCalibration()[ Z ];
+		correctionSettings.pixelCalibrationMicrometer = axialCalibration;
+		correctionSettings.coverslipPositionMicrometer = coverslipPosition;
 		correctionSettings.intensityDecayLengthMicrometer = settings.refractiveIndexIntensityCorrectionDecayLength;
-		correctionSettings.coverslipPositionMicrometer = registration.getCoverslipPosition();
+
 		return RefractiveIndexMismatchCorrections.createIntensityCorrectedImages( images, correctionSettings  );
 	}
 
