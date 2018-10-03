@@ -263,4 +263,10 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 	}
 
 
+	public static ArrayList< RealPoint > origin()
+	{
+		final ArrayList< RealPoint > origin = new ArrayList<>();
+		origin.add( new RealPoint( new double[]{ 0, 0, 0 } ) );
+		return origin;
+	}
 }

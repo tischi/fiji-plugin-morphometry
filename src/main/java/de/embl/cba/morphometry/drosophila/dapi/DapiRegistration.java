@@ -20,8 +20,8 @@ import java.util.List;
 
 import static de.embl.cba.morphometry.Constants.*;
 import static de.embl.cba.morphometry.Utils.copyAsArrayImg;
-import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
-import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
+import static de.embl.cba.morphometry.viewing.BdvViewer.show;
+import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static java.lang.Math.*;
 
 public class DapiRegistration

@@ -41,7 +41,7 @@ import java.util.List;
 import static de.embl.cba.morphometry.Algorithms.angleInRadians;
 import static de.embl.cba.morphometry.Constants.*;
 import static de.embl.cba.morphometry.Transforms.getScalingFactors;
-import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
+import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static java.lang.Math.toRadians;
 
 

@@ -9,12 +9,12 @@ import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCo
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
-import net.imglib2.algorithm.morphology.Opening;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.converter.Converters;
 import net.imglib2.histogram.Histogram1d;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.interpolation.neighborsearch.NearestNeighborSearchInterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
@@ -39,7 +39,7 @@ import java.util.*;
 import static de.embl.cba.morphometry.Constants.*;
 import static de.embl.cba.morphometry.Transforms.getScalingFactors;
 import static de.embl.cba.morphometry.drosophila.dapi.DapiRegistration.createXAxisRollTransform;
-import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
+import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static java.lang.Math.toRadians;
 
 
@@ -97,14 +97,14 @@ public class ShavenBabyRegistration
 		 *  - TODO: bug: during down-sampling saturated pixels become zero
 		 */
 
-		Utils.log( "Down-sampling to transformAtRegistrationResolution resolution..." );
+		Utils.log( "Down-sampling to registration resolution..." );
 
 		final RandomAccessibleInterval< T > downscaledSvb = Algorithms.createIsotropicArrayImg( svb, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
 		final RandomAccessibleInterval< T > downscaledCh2 = Algorithms.createIsotropicArrayImg( ch2, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
 
 		double[] registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 
-		if ( settings.showIntermediateResults ) show( downscaledSvb, "at transformAtRegistrationResolution resolution", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( downscaledSvb, "at registration resolution", null, registrationCalibration, false );
 
 
 		/**
@@ -133,9 +133,6 @@ public class ShavenBabyRegistration
 
 		Utils.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
 		Utils.log( "Approximate axial embryo center coordinate [um]: " + embryoCenterPosition );
-
-		if ( 1 > 0 ) return;
-
 
 		/**
 		 *  Refractive index corrections
@@ -224,55 +221,39 @@ public class ShavenBabyRegistration
 
 		final ImgLabeling< Integer, IntType > seedsLabelImg = createWatershedSeeds( distances );
 
-
 		/**
 		 * Watershed
 		 */
 
-		Utils.log( "Watershed..." );
-
-		// prepare result label image
-		watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
-		final ImgLabeling< Integer, IntType > watershedLabeling = new ImgLabeling<>( watershedLabelImg );
-
-		opService.image().watershed(
-				watershedLabeling,
-				Utils.invertedView( distances ),
-				seedsLabelImg,
-				false,
-				false );
-
-		Utils.applyMask( watershedLabelImg, mask );
+		final ImgLabeling< Integer, IntType > watershedLabeling = computeWatershed( mask, distances, seedsLabelImg );
 
 		if ( settings.showIntermediateResults ) show( watershedLabelImg, "watershed", null, registrationCalibration, false );
 
 		/**
 		 * Get main embryo
+		 * - TODO: replace by largest rather than central
 		 */
 
-		Utils.log( "Get central embryo..." );
+		Utils.log( "Extract main embryo..." );
 
 		final LabelRegion< Integer > centralObjectRegion = getCentralObjectLabelRegion( watershedLabeling );
 
-		if ( centralObjectRegion == null )
-		{
-			return;
-		}
+		if ( centralObjectRegion == null ) return;
 
 		embryoMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaledSvb ) );
 
-		if ( settings.showIntermediateResults ) show( Utils.copyAsArrayImg( embryoMask ), "central enbryo mask", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( Utils.copyAsArrayImg( embryoMask ), "embryo mask", null, registrationCalibration, false );
 
 		/**
 		 * Process main embryo mask
-		 * - TODO: put hard coded values into settings
+		 * - TODO: put hard-coded values into settings
 		 */
 
 		embryoMask = close( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
 
-		embryoMask = open( embryoMask, ( int ) ( 40.0 / settings.registrationResolution ) );
+		embryoMask = Algorithms.open( embryoMask, ( int ) ( 40.0 / settings.registrationResolution ) );
 
-		if ( settings.showIntermediateResults ) show( embryoMask, "central embryo mask - processed", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( embryoMask, "embryo mask - processed", null, registrationCalibration, false );
 
 
 		/**
@@ -304,7 +285,7 @@ public class ShavenBabyRegistration
 
 		final RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( embryoMask, registration, new NearestNeighborInterpolatorFactory() ) );
 
-		if ( settings.showIntermediateResults ) show( yawAndOrientationAlignedMask, "long axis aligned and oriented", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( yawAndOrientationAlignedMask, "long axis aligned and oriented", Transforms.origin(), registrationCalibration, false );
 
 
 		/**
@@ -313,17 +294,34 @@ public class ShavenBabyRegistration
 
 		registration = computeRollTransform( registration, registrationCalibration, intensityCorrectedSvb, intensityCorrectedCh2, yawAndOrientationAlignedMask );
 
-
+		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedSvb, registration ), "aligned input data at registration resolution", Transforms.origin(), registrationCalibration, false );
 
 
 		/**
-		 * Show aligned input image at transformAtRegistrationResolution resolution
+		 * Store final transformation
 		 */
 
-		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedSvb, registration ), "aligned input data ( " + settings.outputResolution + " um )", origin(), registrationCalibration, false );
+		transformAtRegistrationResolution = registration;
 
+	}
 
+	public ImgLabeling< Integer, IntType > computeWatershed( RandomAccessibleInterval< BitType > mask, RandomAccessibleInterval< DoubleType > distances, ImgLabeling< Integer, IntType > seedsLabelImg )
+	{
+		Utils.log( "Watershed..." );
 
+		// prepare result label image
+		watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
+		final ImgLabeling< Integer, IntType > watershedLabeling = new ImgLabeling<>( watershedLabelImg );
+
+		opService.image().watershed(
+				watershedLabeling,
+				Utils.invertedView( distances ),
+				seedsLabelImg,
+				false,
+				false );
+
+		Utils.applyMask( watershedLabelImg, mask );
+		return watershedLabeling;
 	}
 
 
@@ -355,7 +353,16 @@ public class ShavenBabyRegistration
 	public RandomAccessibleInterval< BitType > createAlignedMask( double resolution, FinalInterval interval )
 	{
 
+		/**
+		 * - TODO: using the mask just like this was cutting away signal from embryo..
+		 * 		   the issue might be that during the rotations the voxels do not end up
+		 * 		   precisely where they should be? Currently, I simple dilate "a bit".
+		 * 		   Feels kind of messy...better way?
+		 */
+
 		Utils.log( "Creating aligned mask..." );
+
+		final RandomAccessibleInterval< BitType > dilatedMask = Algorithms.dilate( embryoMask, 2 );
 
 		AffineTransform3D transform = transformAtRegistrationResolution.copy()
 				.preConcatenate( Transforms.getScalingTransform( settings.registrationResolution, resolution ) );
@@ -363,15 +370,19 @@ public class ShavenBabyRegistration
 		RandomAccessibleInterval< BitType > alignedMask =
 				Utils.copyAsArrayImg(
 					Transforms.createTransformedView(
-							embryoMask,
+							dilatedMask,
 							transform,
 							interval, // after the transform we need to specify where we want to "crop"
-							new	NearestNeighborInterpolatorFactory() // binary image => do not interpolate linearly!
+							new NearestNeighborInterpolatorFactory() // binary image => do not interpolate linearly!
 					)
 				);
 
+		if ( settings.showIntermediateResults ) show( alignedMask, "aligned mask at output resolution", Transforms.origin(), resolution );
+
 		return alignedMask;
 	}
+
+
 
 	public < T extends RealType< T > & NativeType< T > > AffineTransform3D computeRollTransform( AffineTransform3D registration, double[] registrationCalibration, RandomAccessibleInterval< T > intensityCorrectedSvb, RandomAccessibleInterval< T > intensityCorrectedAma, RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask )
 	{
@@ -439,25 +450,6 @@ public class ShavenBabyRegistration
 			Utils.log( "Morphological closing...");
 			Shape closingShape = new HyperSphereShape( closingRadius );
 			Closing.close( Views.extendZero( enlargedMask ), Views.iterable( enlargedMorphed ), closingShape, 1 );
-		}
-
-		return Views.interval( enlargedMorphed, mask );
-	}
-
-	public RandomAccessibleInterval< BitType > open(
-			RandomAccessibleInterval< BitType > mask,
-			int radius )
-	{
-		// TODO: Bug(?!) in imglib2 Closing.close makes this necessary
-		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
-		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai2( mask, 2 * radius );
-		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai2( morphed, 2 * radius );
-
-		if ( radius > 0 )
-		{
-			Utils.log( "Morphological opening...");
-			Shape shape = new HyperSphereShape( radius );
-			Opening.open( Views.extendZero( enlargedMask ), Views.iterable( enlargedMorphed ), shape, 1 );
 		}
 
 		return Views.interval( enlargedMorphed, mask );
@@ -613,13 +605,6 @@ public class ShavenBabyRegistration
 		double medianAngle = Utils.median( offCenterAngles );
 
 		return -medianAngle;
-	}
-
-	public static ArrayList< RealPoint > origin()
-	{
-		final ArrayList< RealPoint > origin = new ArrayList<>();
-		origin.add( new RealPoint( new double[]{ 0, 0, 0 } ) );
-		return origin;
 	}
 
 

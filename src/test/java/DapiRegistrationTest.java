@@ -13,7 +13,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 
 import static de.embl.cba.morphometry.Utils.asRealPointList;
-import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
+import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 
 public class DapiRegistrationTest
 {

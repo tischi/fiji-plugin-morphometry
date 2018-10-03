@@ -2,18 +2,21 @@ package de.embl.cba.morphometry.viewing;
 
 import bdv.util.*;
 import de.embl.cba.morphometry.Algorithms;
+import de.embl.cba.morphometry.Utils;
 import net.imagej.ImgPlus;
 import net.imagej.axis.LinearAxis;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealPoint;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class BdvImageViewer
+public class BdvViewer
 {
 	public static < T extends RealType< T > & NativeType< T > >
 	void show( RandomAccessibleInterval< T > rai )
@@ -21,6 +24,11 @@ public class BdvImageViewer
 		show( rai, "", null, null, false );
 	}
 
+	public static < T extends RealType< T > & NativeType< T > >
+	void show( RandomAccessibleInterval rai, String title, List< RealPoint > points, double calibration )
+	{
+		show( rai, title, points, Utils.as3dDoubleArray( calibration ), false );
+	}
 
 	public static < T extends RealType< T > & NativeType< T > >
 	void show( RandomAccessibleInterval rai, String title, List< RealPoint > points, double[] calibration, boolean resetViewTransform )

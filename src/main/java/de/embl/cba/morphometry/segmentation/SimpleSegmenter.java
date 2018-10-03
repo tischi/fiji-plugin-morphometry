@@ -11,7 +11,7 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 
 import static de.embl.cba.morphometry.Transforms.getScalingFactors;
-import static de.embl.cba.morphometry.viewing.BdvImageViewer.show;
+import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 
 
 public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >

@@ -1,10 +1,13 @@
 package de.embl.cba.morphometry;
 
 import net.imagej.ops.OpService;
+import net.imagej.ops.Ops;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.morphology.Closing;
+import net.imglib2.algorithm.morphology.Dilation;
+import net.imglib2.algorithm.morphology.Opening;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
@@ -815,5 +818,39 @@ public class Algorithms
 
 		DistanceTransform.transform( doubleBinary, distance, DistanceTransform.DISTANCE_TYPE.EUCLIDIAN, 1.0D );
 		return distance;
+	}
+
+	public static RandomAccessibleInterval< BitType > open(
+			RandomAccessibleInterval< BitType > mask,
+			int radius )
+	{
+		// TODO: Bug(?!) in imglib2 Closing.close makes this necessary
+		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai2( mask, 2 * radius );
+		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai2( morphed, 2 * radius );
+
+		if ( radius > 0 )
+		{
+			Utils.log( "Morphological opening...");
+			Shape shape = new HyperSphereShape( radius );
+			Opening.open( Views.extendZero( enlargedMask ), Views.iterable( enlargedMorphed ), shape, 1 );
+		}
+
+		return Views.interval( enlargedMorphed, mask );
+	}
+
+	public static RandomAccessibleInterval< BitType > dilate(
+			RandomAccessibleInterval< BitType > mask,
+			int radius )
+	{
+		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+
+		if ( radius > 0 )
+		{
+			Shape shape = new HyperSphereShape( radius );
+			Dilation.dilate( Views.extendZero( mask ), Views.iterable( morphed ), shape, 1 );
+		}
+
+		return morphed;
 	}
 }
