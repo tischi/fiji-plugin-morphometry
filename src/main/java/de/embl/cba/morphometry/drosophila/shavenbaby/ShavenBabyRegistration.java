@@ -91,7 +91,7 @@ public class ShavenBabyRegistration
 
 
 		/**
-		 *  Down-sampling to transformAtRegistrationResolution resolution
+		 *  Down-sampling to registration resolution
 		 *  - Speeds up calculations ( pow(3) effect in 3D! )
 		 *  - Reduces noise
 		 *  - Fills "holes" in staining
@@ -163,7 +163,7 @@ public class ShavenBabyRegistration
 		 */
 
 		final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( intensityCorrectedSvb ) );
-		final double huang = opService.threshold().huang( histogram ).getRealDouble();
+			final double huang = opService.threshold().huang( histogram ).getRealDouble();
 		final double otsu = opService.threshold().otsu( histogram ).getRealDouble();
 		final double yen = opService.threshold().yen( histogram ).getRealDouble();
 
@@ -346,7 +346,8 @@ public class ShavenBabyRegistration
 		final AffineTransform3D transform =
 				Transforms.getScalingTransform( inputCalibration, settings.registrationResolution )
 						.preConcatenate( transformAtRegistrationResolution.copy() )
-						.preConcatenate( Transforms.getScalingTransform( settings.registrationResolution, outputResolution ) );
+						.preConcatenate( Transforms.getScalingTransform( settings.registrationResolution,
+								outputResolution ) );
 
 		return transform;
 	}

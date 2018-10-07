@@ -160,6 +160,7 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 
 		IJ.wait( 500 );
 		IJ.run("Merge Channels...", "c1=intensities c2=[Simple segmentation - Tracking splitting - Simple tracking] create");
+
 	}
 
 
