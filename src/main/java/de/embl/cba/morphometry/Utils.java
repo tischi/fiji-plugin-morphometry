@@ -968,11 +968,12 @@ public class Utils
 	void showAsIJ1Movie( ArrayList< RandomAccessibleInterval< T > > labelings, String title )
 	{
 
-		ImageJFunctions.show(
-				Views.permute(
-						Views.addDimension(
-								Views.stack( labelings ), 0,0 ), 2 ,3),
-				title );
+		RandomAccessibleInterval movie = Views.stack( labelings );
+		movie = Views.addDimension( movie, 0, 0);
+		movie = Views.addDimension( movie, 0, 0);
+		movie = Views.permute( movie, 2,4 );
+
+		ImageJFunctions.show( movie, title );
 	}
 
 	public static boolean acceptFile( String fileNameEndsWith, String file )

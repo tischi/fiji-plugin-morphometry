@@ -270,7 +270,9 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		/**
 		 * Get transformation for demanded output resolution
 		 */
-		final AffineTransform3D registrationTransform = registration.getRegistrationTransform( registration.getCorrectedCalibration(), settings.outputResolution );
+		final AffineTransform3D registrationTransform =
+				registration.getRegistrationTransform(
+						registration.getCorrectedCalibration(), settings.outputResolution );
 		if ( registrationTransform == null ) return null;
 
 		/**
@@ -292,7 +294,8 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 				);
 
 		// apply masking
-		final RandomAccessibleInterval< BitType > alignedMaskAtOutputResolution = registration.createAlignedMask( settings.outputResolution, settings.getOutputImageInterval() );
+		final RandomAccessibleInterval< BitType > alignedMaskAtOutputResolution
+				= registration.createAlignedMask( settings.outputResolution, settings.getOutputImageInterval() );
 		registeredImages = Utils.maskAllChannels( registeredImages, alignedMaskAtOutputResolution, settings.showIntermediateResults );
 
 		return Views.stack( registeredImages );

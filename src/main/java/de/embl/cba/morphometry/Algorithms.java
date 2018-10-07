@@ -52,18 +52,18 @@ public class Algorithms
 
 		/**
 		 * - In principle, writing a function that computes weighted averages
-		 * of an appropriate number of neighboring (not only nearest) pixels
-		 * around each requested (real) position in the new image appears to me
-		 * to be the most direct way of rescaling.
-		 * - See discussion here: http://imagej.1557.x6.nabble.com/downsampling-methods-td3690444.html
+		 *   of an appropriate number of neighboring (not only nearest) pixels
+		 *   around each requested (real) position in the new image appears to me
+		 *   the most straight-forward way of rescaling.
+		 * - However, in practice, blurring and subsequent re-sampling seems to be more commonly done,
+		 *   maybe for implementation efficiency?
+		 * - http://imagej.1557.x6.nabble.com/downsampling-methods-td3690444.html
+		 * - https://github.com/axtimwalde/mpicbg/blob/050bc9110a186394ea15190fd326b3e32829e018/mpicbg/src/main/java/mpicbg/ij/util/Filter.java#L424
+		 * - https://imagej.net/Downsample
 		 */
 
 		/*
 		 * Blur image
-		 * - Down-sampling without adequate blurring, e.g. by simple binning produces sub-optimal results,
-		 *   because one bright pixel would only contribute to one binned pixel
-		 *   and not to the neighboring binned pixels, where it should also contribute to.
-		 * - See also: https://imagej.net/Downsample
 		 */
 
 		final RandomAccessibleInterval< T > blurred = createOptimallyBlurredArrayImg( input, scalingFactors );
@@ -72,7 +72,7 @@ public class Algorithms
 		 * Sample values from blurred image
 		 */
 
-		final RandomAccessibleInterval< T > resampled =  createResampledArrayImg( blurred, scalingFactors );
+		final RandomAccessibleInterval< T > resampled = createResampledArrayImg( blurred, scalingFactors );
 
 		return resampled;
 	}
