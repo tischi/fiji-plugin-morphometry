@@ -43,7 +43,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 	public void run()
 	{
 
-		int tMin = 0;
+		int tMin = 0;  // at this point the movie is already cropped in time, such that we can process the full movie
 		int tMax = masks.size() - 1;
 		int t = tMin;
 
@@ -54,6 +54,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		 * Process first time-point
 		 */
 
+		Utils.log( "Running ShapeAndIntensitySplitter on first requested time-point..." );
 		final ShapeAndIntensitySplitter splitter = new ShapeAndIntensitySplitter( masks.get( t ), intensities.get( t ), settings );
 		splitter.run();
 		splitMasks.add( splitter.getSplitMask() );
@@ -66,11 +67,14 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		 * Process subsequent time-points
 		 */
 
-		RandomAccessibleInterval< IntType > previousLabeling = Utils.asImgLabeling( splitMasks.get( tMin ) ).getSource();
+		Utils.log( "Processing subsequent time-points..." );
 
+		RandomAccessibleInterval< IntType > previousLabeling = Utils.asImgLabeling( splitMasks.get( tMin ) ).getSource();
 
 		for ( t = tMin + 1; t <= tMax; ++t )
 		{
+
+			Utils.log( "Processing timepoint (one-based) " + ( t + 1 ) );
 			final ImgLabeling< Integer, IntType > currentImgLabeling = Utils.asImgLabeling( masks.get( t ) );
 			RandomAccessibleInterval< IntType > currentLabeling = currentImgLabeling.getSource();
 
@@ -98,17 +102,6 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 			}
 
-
-			if ( t == 6 - 1 )
-			{
-				showSplittingAttempts = true;
-			}
-			else
-			{
-				showSplittingAttempts = false;
-			}
-
-
 			final RandomAccessibleInterval< BitType > splitMask = Utils.copyAsArrayImg( masks.get( t ) );
 
 			Algorithms.splitTouchingObjects(
@@ -121,7 +114,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 					( int ) ( settings.maximalWatershedLength / settings.workingVoxelSize ),
 					settings.opService,
 					true,
-					showSplittingAttempts);
+					false);
 
 			splitMasks.add( splitMask );
 

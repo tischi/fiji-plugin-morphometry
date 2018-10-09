@@ -20,11 +20,14 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 	final MicrogliaSettings settings;
 	private RandomAccessibleInterval< BitType > mask;
 	final private RandomAccessibleInterval< T > intensity;
+	final private boolean showIntermediateResults;
 
 	public SimpleSegmenter( RandomAccessibleInterval< T > intensity, MicrogliaSettings settings )
 	{
 		this.intensity = intensity;
 		this.settings = settings;
+		this.showIntermediateResults = false; //settings.showIntermediateResults;
+
 	}
 
 	public void run()
@@ -40,7 +43,7 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 
 		final RandomAccessibleInterval< T > image = Algorithms.createRescaledArrayImg( intensity, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
-		if ( settings.showIntermediateResults ) show( image, "image isotropic resolution", null, workingCalibration, false );
+		if ( showIntermediateResults ) show( image, "image isotropic resolution", null, workingCalibration, false );
 
 
 		/**
@@ -73,7 +76,7 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 
 		mask = Algorithms.createMask( image, threshold );
 
-		if ( settings.showIntermediateResults ) show( mask, "mask", null, workingCalibration, false );
+		if ( showIntermediateResults ) show( mask, "mask", null, workingCalibration, false );
 
 
 		/**
@@ -82,7 +85,7 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 
 		mask = Algorithms.removeSmallObjectsAndReturnMask( mask, settings.minimalObjectSize, settings.workingVoxelSize );
 
-		if ( settings.showIntermediateResults ) show( mask, "size filtered mask", null, workingCalibration, false );
+		if ( showIntermediateResults ) show( mask, "size filtered mask", null, workingCalibration, false );
 
 
 	}
