@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry;
 
+import ij.ImagePlus;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
@@ -42,6 +43,8 @@ import static java.lang.Math.acos;
 
 public class Algorithms
 {
+
+	public static final int WATERSHED = -1;
 
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > createRescaledArrayImg(
@@ -644,11 +647,6 @@ public class Algorithms
 
 				LabelRegions< Integer > splitObjects = new LabelRegions( watershedImgLabeling );
 
-				if ( showSplittingAttempts )
-				{
-					ImageJFunctions.show( watershedImgLabeling.getSource() );
-				}
-
 				if ( ! splitObjects.getExistingLabels().contains( -1 ) )
 				{
 					continue; // TODO: examine these cases
@@ -672,6 +670,12 @@ public class Algorithms
 
 				Utils.log( "Valid split found: " + isValidSplit );
 
+				if ( showSplittingAttempts )
+				{
+					ImageJFunctions.show( watershedImgLabeling.getSource(), "" + label + "-" + isValidSplit );
+
+				}
+
 				if ( isValidSplit )
 				{
 					drawWatershedIntoMask( mask, labelRegions, label, splitObjects );
@@ -690,7 +694,7 @@ public class Algorithms
 	{
 		double blurSimga = minimalObjectWidth / 2.0;
 		final RandomAccessibleInterval< T > blurred = Utils.createBlurredRai( maskedAndCropped, blurSimga, 1.0 );
-		if ( showSplittingAttempts ) ImageJFunctions.show( blurred, "blurred" );
+		//if ( showSplittingAttempts ) ImageJFunctions.show( blurred, "blurred" );
 		final ArrayList< PositionAndValue > sortedLocalMaxima =
 				Algorithms.getLocalMaxima(
 						blurred,
@@ -714,7 +718,38 @@ public class Algorithms
 		return seeds;
 	}
 
-	public static boolean checkSplittingValidity(  LabelRegions< Integer > splitObjects, long minimumObjectSize, long maximalWatershedLength )
+	public static boolean checkSplittingValidity(
+			LabelRegions< Integer > splitObjects,
+			long minimumObjectSize,
+			long maximalWatershedLength )
+	{
+
+		if ( ! isWatershedValid( splitObjects, maximalWatershedLength ) ) return false;
+
+		ArrayList< Long > regionSizes = new ArrayList<>(  );
+
+		for( LabelRegion region : splitObjects )
+		{
+			regionSizes.add( region.size() );
+		}
+
+
+		if ( regionSizes.size() >=2 )
+		{
+			Collections.sort( regionSizes );
+			Collections.reverse( regionSizes );
+
+			if ( regionSizes.get( 1 ) < minimumObjectSize )
+			{
+				// 2nd largest object too small
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	public static boolean isWatershedValid( LabelRegions< Integer > splitObjects, long maximalWatershedLength )
 	{
 		boolean isValidSplit = true;
 
@@ -722,11 +757,9 @@ public class Algorithms
 		{
 			int splitObjectLabel = ( int ) region.getLabel();
 
-			if ( splitObjectLabel == -1 )
+			if ( splitObjectLabel == WATERSHED )
 			{
-
 				final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( Utils.labelRegionAsMask( region ) );
-
 				final LabelRegions< Integer > splitRegions = new LabelRegions( imgLabeling );
 
 				long maximalLength = 0;
@@ -744,16 +777,7 @@ public class Algorithms
 					break;
 				}
 			}
-			else
-			{
-				if ( region.size() < minimumObjectSize )
-				{
-					isValidSplit = false;
-					break;
-				}
-			}
 		}
-
 		return isValidSplit;
 	}
 

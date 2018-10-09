@@ -182,7 +182,7 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 		settings.minimalObjectCenterDistance = 6;
 		settings.maximalWatershedLength = 10;
 		settings.closingRadius = 3;
-		settings.showIntermediateResults = false;
+		settings.showIntermediateResults = showIntermediateResults;
 		settings.opService = opService;
 		settings.microgliaChannelIndexOneBased = microgliaChannelIndexOneBased;
 		settings.tMin = tMin;
