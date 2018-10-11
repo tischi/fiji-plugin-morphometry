@@ -909,7 +909,7 @@ public class Utils
 			}
 		};
 
-		ConnectedComponents.labelAllConnectedComponents( ( RandomAccessible ) Views.extendBorder( rai ), imgLabeling, labelCreator, ConnectedComponents.StructuringElement.EIGHT_CONNECTED );
+		ConnectedComponents.labelAllConnectedComponents( ( RandomAccessible ) Views.extendBorder( rai ), imgLabeling, labelCreator, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		return imgLabeling;
 	}
@@ -937,19 +937,20 @@ public class Utils
 
 	}
 
-	public static RandomAccessibleInterval< BitType > asMask( RandomAccessibleInterval< IntType > rai )
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval<BitType> asMask( RandomAccessibleInterval< T > rai )
 	{
 		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( rai ) );
 		mask = Transforms.getWithAdjustedOrigin( rai, mask  );
 		final RandomAccess< BitType > maskAccess = mask.randomAccess();
 
-		final Cursor< IntType > cursor = Views.iterable( rai ).cursor();
+		final Cursor< T > cursor = Views.iterable( rai ).cursor();
 
 		while ( cursor.hasNext() )
 		{
 			cursor.fwd();
 
-			if ( cursor.get().getInteger() > 0 )
+			if ( cursor.get().getRealDouble() > 0 )
 			{
 				maskAccess.setPosition( cursor );
 				maskAccess.get().set( true );
