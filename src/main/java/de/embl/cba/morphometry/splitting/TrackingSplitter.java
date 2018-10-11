@@ -4,11 +4,13 @@ import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.ObjectMeasurements;
 import de.embl.cba.morphometry.microglia.MicrogliaSettings;
+import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NonBlockingGenericDialog;
 import ij.plugin.Duplicator;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.RealInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
@@ -18,6 +20,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.view.Views;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -68,8 +71,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 		if ( settings.manualSegmentationCorrectionOfFirstFrame )
 		{
-			final ImagePlus mask = getManuallyCorrectedMask( splitter );
-			splitMasks.add( Utils.asMask( ( RandomAccessibleInterval ) ImageJFunctions.wrapReal( mask ) ) );
+			splitMasks.add( getManuallyCorrectedMask( splitter ) );
 		}
 		else
 		{
@@ -128,20 +130,23 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		}
 	}
 
-	public ImagePlus getManuallyCorrectedMask( ShapeAndIntensitySplitter splitter )
+	public RandomAccessibleInterval< BitType > getManuallyCorrectedMask(
+			ShapeAndIntensitySplitter splitter )
 	{
-		final ImagePlus intensities = ImageJFunctions.show( this.intensities.get( 0 ) );
+		final ImagePlus intensitiesImp = Utils.showAsIJ1Movie( intensities, "intensities" );
 		//final ImagePlus splitMaskImp = ImageJFunctions.wrap( splitter.getSplitMask(), "mask" );
 		final Duplicator duplicator = new Duplicator();
-		final ImagePlus mask = duplicator.run( ImageJFunctions.wrap( splitter.getSplitMask(), "mask" ) );
-		mask.show();
+		final ImagePlus labelingImp = duplicator.run( ImageJFunctions.wrap( Utils.asImgLabeling( splitter.getSplitMask() ).getIndexImg(), "mask" ) );
+		labelingImp.show();
+		IJ.run(labelingImp, "Enhance Contrast", "saturated=0.35");
+		IJ.run(labelingImp, "3-3-2 RGB", "");
 		final NonBlockingGenericDialog gd = new NonBlockingGenericDialog( "Manual correction" );
-		gd.addMessage( "Please correct the segmentation and press OK when you are done." );
+		gd.addMessage( "Please correct segmentation of 1st frame and press OK when you are done.\n" );
 		gd.hideCancelButton();
 		gd.showDialog();
-		intensities.close();
-		mask.hide();
-		return mask;
+		intensitiesImp.close();
+		labelingImp.hide();
+		return Utils.asMask( (RandomAccessibleInterval) ImageJFunctions.wrapReal( labelingImp ) );
 	}
 
 	public HashMap< Integer, ArrayList< Integer > > getOverlappingObjectLabelsMap( int t, RandomAccessibleInterval< IntType > previousLabeling, ImgLabeling< Integer, IntType > currentImgLabeling, RandomAccessibleInterval< IntType > currentLabeling )
@@ -168,13 +173,14 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 							+ " overlaps with " + overlapSizes.size() + " objects in previous frame." );
 				}
 
-				final ArrayList< Integer > trulyOverlappingObjectLabels = getTrulyOverlappingObjectLabels(
-						intensities.get( t - 1 ),
-						intensities.get( t ),
-						previousLabeling,
-						currentLabeling,
-						region,
-						overlapSizes );
+				final ArrayList< Integer > trulyOverlappingObjectLabels
+						= getTrulyOverlappingObjectLabels(
+								intensities.get( t - 1 ),
+								intensities.get( t ),
+								previousLabeling,
+								currentLabeling,
+								region,
+								overlapSizes );
 
 				overlappingObjectsLabelsMap.put( region.getLabel(), trulyOverlappingObjectLabels );
 
@@ -207,7 +213,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 				final double overlapFraction = 1.0 * overlapSizes.get( previousLabel ).longValue() / previousObjectSize;
 
-				Utils.log( "Previous object size / overlap size: " + overlapFraction );
+				// Utils.log( "Previous object size / overlap size: " + overlapFraction );
 
 				if ( overlapFraction >= settings.minimalOverlapFraction )
 				{
@@ -215,7 +221,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 				}
 			}
 
-			Utils.log( "Corrected number of overlapping objects: " + trulyOverlappingObjectLabels.size() );
+			// Utils.log( "Corrected number of overlapping objects: " + trulyOverlappingObjectLabels.size() );
 
 		}
 
