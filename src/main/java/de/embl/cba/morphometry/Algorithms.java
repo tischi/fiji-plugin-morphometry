@@ -6,6 +6,7 @@ import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.morphology.Closing;
 import net.imglib2.algorithm.morphology.Dilation;
+import net.imglib2.algorithm.morphology.Erosion;
 import net.imglib2.algorithm.morphology.Opening;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
@@ -592,6 +593,113 @@ public class Algorithms
 
 
 	public static < T extends RealType< T > & NativeType< T > >
+	void splitCurrentObjectsBasedOnOverlapWithPreviousObjects(
+			RandomAccessibleInterval< BitType > outputMask,
+			HashMap< Integer, ArrayList< Integer > > overlappingObjectsLabelsMap,
+			ImgLabeling< Integer, IntType > currentImgLabeling,
+			RandomAccessibleInterval< T > currentIntensities,
+			RandomAccessibleInterval< IntType > previousLabeling,
+			long minimalObjectSize,
+			long minimalObjectWidth,
+			OpService opService,
+			boolean showSplits )
+	{
+
+		final LabelRegions currentRegions = new LabelRegions( currentImgLabeling );
+
+		for ( int currentObjectLabel : overlappingObjectsLabelsMap.keySet() )
+		{
+			final ArrayList< Integer > overlappingPreviousObjectLabels = overlappingObjectsLabelsMap.get( currentObjectLabel );
+
+			if ( overlappingPreviousObjectLabels.size() > 1 )
+			{
+				RandomAccessibleInterval< BitType > currentObjectMask = Utils.labelRegionAsMask( currentRegions.getLabelRegion( currentObjectLabel ) );
+				RandomAccessibleInterval< IntType > previousLabelingCrop =  Views.interval( previousLabeling, currentObjectMask );
+
+				currentObjectMask = Views.zeroMin( currentObjectMask );
+				previousLabelingCrop = Views.zeroMin( previousLabelingCrop );
+
+				final RandomAccessibleInterval< T > maskedAndCroppedIntensities = Views.zeroMin( Utils.getMaskedAndCropped( currentIntensities, currentRegions.getLabelRegion( currentObjectLabel ) ) );
+
+				final RandomAccessibleInterval< IntType > overlapLabeling =
+						createOverlapLabeling(
+								currentObjectMask,
+								previousLabelingCrop,
+								overlappingPreviousObjectLabels );
+
+
+//				final ArrayList< PositionAndValue > localMaxima =
+//						computeSortedLocalIntensityMaxima(
+//								2 * minimalObjectWidth,
+//								maskedAndCroppedIntensities,
+//								false );
+//
+//
+//				final RandomAccessibleInterval< BitType > seeds =
+//						positionsAsBinaryImage( overlappingPreviousObjectLabels.size(),
+//								maskedAndCroppedIntensities,
+//								localMaxima );
+
+				final ImgLabeling< Integer, IntType > watershedImgLabeling = createEmptyImgLabeling( currentObjectMask );
+
+				final ImgLabeling< Integer, IntType > seedsImgLabeling = createImgLabelingFromLabeling( overlappingPreviousObjectLabels, overlapLabeling );
+
+				final RandomAccessibleInterval< T > invertedView = Utils.invertedView( maskedAndCroppedIntensities );
+
+				opService.image().watershed(
+						watershedImgLabeling,
+						invertedView,
+						seedsImgLabeling,
+						true,
+						true,
+						currentObjectMask );
+
+
+				LabelRegions< Integer > splitObjects = new LabelRegions( watershedImgLabeling );
+
+				if ( ! splitObjects.getExistingLabels().contains( -1 ) )
+				{
+					Utils.log( "\n\nERROR DURING OBJECT SPLITTING\n\n" );
+					continue; // TODO: examine these cases
+				}
+
+
+				if ( showSplits )
+				{
+					ImageJFunctions.show( watershedImgLabeling.getSource(), "" + currentObjectLabel  );
+				}
+
+				drawWatershedIntoMask( outputMask, currentRegions, currentObjectLabel, splitObjects );
+				// sometimes the watershed is weirdly placed such that very small (single pixel) objects can occur
+				removeSmallRegionsInMask( outputMask, minimalObjectSize, 1 );
+			}
+		}
+
+	}
+
+	public static ImgLabeling< Integer, IntType > createImgLabelingFromLabeling( ArrayList< Integer > overlappingPreviousObjectLabels, RandomAccessibleInterval< IntType > seeds )
+	{
+		final ImgLabeling< Integer, IntType > seedsImgLabeling = new ImgLabeling<>( seeds );
+
+		final ArrayList< Set< Integer > > labelSets = new ArrayList< Set< Integer > >();
+		labelSets.add( new HashSet< Integer >() );
+		for ( int i = 1; i <= overlappingPreviousObjectLabels.size(); ++i )
+		{
+			final HashSet< Integer > set = new HashSet< Integer >();
+			set.add( i );
+			labelSets.add( set );
+		}
+
+		new LabelingMapping.SerialisationAccess< Integer >( seedsImgLabeling.getMapping() )
+		{
+			{
+				super.setLabelSets( labelSets );
+			}
+		};
+		return seedsImgLabeling;
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
 	void splitTouchingObjects(
 			ImgLabeling< Integer, IntType > imgLabeling,
 			RandomAccessibleInterval< T > intensity,
@@ -612,28 +720,32 @@ public class Algorithms
 			if ( numObjectsPerRegion.get( label ) > 1 )
 			{
 
-				final RandomAccessibleInterval< T > maskedAndCropped = Views.zeroMin( Utils.getMaskedAndCropped( intensity, labelRegions.getLabelRegion( label ) ) );
+				final RandomAccessibleInterval< T > maskedAndCroppedIntensities = Views.zeroMin( Utils.getMaskedAndCropped( intensity, labelRegions.getLabelRegion( label ) ) );
 				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.labelRegionAsMask( labelRegions.getLabelRegion( label ) ) );
 
 				final ArrayList< PositionAndValue > localMaxima =
-						computeLocalIntensityMaxima( 2 * minimalObjectWidth, maskedAndCropped, showSplittingAttempts );
+						computeSortedLocalIntensityMaxima(
+								2 * minimalObjectWidth,
+								maskedAndCroppedIntensities,
+								showSplittingAttempts );
 
-				if ( localMaxima.size() < 2 )
+				if ( localMaxima.size() < numObjectsPerRegion.get( label ) )
 				{
-					Utils.log( "Not enough local maxima found for object: " + label );
+					Utils.log( "\n\nERROR: Not enough local maxima found for object: " + label + "\n\n");
 					continue; // TODO: check these cases
 				}
 
-				final RandomAccessibleInterval< T > seeds = getSeeds( numObjectsPerRegion.get( label ), maskedAndCropped, localMaxima );
+				final RandomAccessibleInterval< BitType > seeds =
+						positionsAsBinaryImage( numObjectsPerRegion.get( label ),
+									maskedAndCroppedIntensities,
+									localMaxima );
 
-				//ImageJFunctions.show( seeds, "seeds" );
-
-				final ImgLabeling< Integer, IntType > watershedImgLabeling = getEmptyImgLabeling( labelRegionMask );
+				final ImgLabeling< Integer, IntType > watershedImgLabeling = createEmptyImgLabeling( labelRegionMask );
 				final ImgLabeling< Integer, IntType > seedsImgLabeling = Utils.asImgLabeling( seeds );
 
 				opService.image().watershed(
 						watershedImgLabeling,
-						Utils.invertedView( maskedAndCropped ),
+						Utils.invertedView( maskedAndCroppedIntensities ),
 						seedsImgLabeling,
 						true,
 						true,
@@ -683,8 +795,111 @@ public class Algorithms
 
 	}
 
+
 	public static < T extends RealType< T > & NativeType< T > >
-	ArrayList< PositionAndValue > computeLocalIntensityMaxima(
+	void splitTouchingObjectsTest(
+			ImgLabeling< Integer, IntType > imgLabeling,
+			RandomAccessibleInterval< T > intensity,
+			RandomAccessibleInterval< BitType > mask, // This will be changed, i.e. the split(s) will be drawn into it
+			HashMap< Integer, ArrayList< Integer > > numObjectsPerRegion,
+			long minimalObjectWidth,
+			long minimalObjectSize,
+			long maximalWatershedBoundaryLength,
+			OpService opService,
+			boolean forceSplit,
+			boolean showSplittingAttempts )
+	{
+
+		final LabelRegions currentRegions = new LabelRegions( imgLabeling );
+
+		for ( int currentObjectLabel : numObjectsPerRegion.keySet() )
+		{
+			if ( numObjectsPerRegion.get( currentObjectLabel ).size() > 1 )
+			{
+
+				RandomAccessibleInterval< BitType > currentObjectMask = Utils.labelRegionAsMask( currentRegions.getLabelRegion( currentObjectLabel ) );
+				currentObjectMask = Views.zeroMin( currentObjectMask );
+
+
+				final RandomAccessibleInterval< T > maskedAndCroppedIntensities = Views.zeroMin( Utils.getMaskedAndCropped( intensity, currentRegions.getLabelRegion( currentObjectLabel ) ) );
+				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.labelRegionAsMask( currentRegions.getLabelRegion( currentObjectLabel ) ) );
+
+				final ArrayList< PositionAndValue > localMaxima =
+						computeSortedLocalIntensityMaxima(
+								2 * minimalObjectWidth,
+								maskedAndCroppedIntensities,
+								showSplittingAttempts );
+
+				if ( localMaxima.size() < numObjectsPerRegion.get( currentObjectLabel ).size() )
+				{
+					Utils.log( "\n\nERROR: Not enough local maxima found for object: " + currentObjectLabel + "\n\n");
+					continue; // TODO: check these cases
+				}
+
+				final RandomAccessibleInterval< BitType > seeds =
+						positionsAsBinaryImage( numObjectsPerRegion.get( currentObjectLabel ).size(),
+								maskedAndCroppedIntensities,
+								localMaxima );
+
+				final ImgLabeling< Integer, IntType > watershedImgLabeling = createEmptyImgLabeling( labelRegionMask );
+				final ImgLabeling< Integer, IntType > seedsImgLabeling = Utils.asImgLabeling( seeds );
+
+				opService.image().watershed(
+						watershedImgLabeling,
+						Utils.invertedView( maskedAndCroppedIntensities ),
+						seedsImgLabeling,
+						true,
+						true,
+						labelRegionMask );
+
+
+				LabelRegions< Integer > splitObjects = new LabelRegions( watershedImgLabeling );
+
+				if ( ! splitObjects.getExistingLabels().contains( -1 ) )
+				{
+					Utils.log( "\n\nERROR DURING OBJECT SPLITTING\n\n" );
+					continue; // TODO: examine these cases
+				}
+
+
+				boolean isValidSplit;
+
+				if ( forceSplit )
+				{
+					isValidSplit = true;
+					ImageJFunctions.show( Utils.invertedView( maskedAndCroppedIntensities ) );
+				}
+				else
+				{
+					// TODO: add integrated intensity along watershed as criterium
+					isValidSplit = checkSplittingValidity(
+							splitObjects,
+							minimalObjectSize,
+							maximalWatershedBoundaryLength );
+				}
+
+				Utils.log( "Valid split found: " + isValidSplit );
+
+				if ( showSplittingAttempts )
+				{
+					ImageJFunctions.show( labelRegionMask );
+					ImageJFunctions.show( seedsImgLabeling.getSource() );
+				}
+
+				if ( isValidSplit )
+				{
+					drawWatershedIntoMask( mask, currentRegions, currentObjectLabel, splitObjects );
+					// sometimes the watershed is weirdly placed such that very small (single pixel) objects can occur
+					removeSmallRegionsInMask( mask, minimalObjectSize, 1 );
+				}
+
+			}
+		}
+
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	ArrayList< PositionAndValue > computeSortedLocalIntensityMaxima(
 			long minimalObjectWidth,
 			RandomAccessibleInterval< T > maskedAndCropped,
 			boolean showSplittingAttempts )
@@ -697,22 +912,68 @@ public class Algorithms
 						blurred,
 						 minimalObjectWidth,
 						0.0 );
+
 		return sortedLocalMaxima;
 	}
 
-	private static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > getSeeds( int numSeeds,
-											RandomAccessibleInterval< T > maskedAndCropped,
-											ArrayList< PositionAndValue > localMaxima )
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< IntType > createOverlapLabeling(
+			RandomAccessibleInterval< BitType > currentObjectMask,
+			RandomAccessibleInterval< IntType > previousLabeling,
+			ArrayList< Integer > previousLabels )
 	{
-		final RandomAccessibleInterval< T > seeds = Utils.createEmptyArrayImg( maskedAndCropped );
-		final RandomAccess< T > randomAccess = seeds.randomAccess();
-		for ( int i = 0; i < numSeeds; ++i )
+		RandomAccessibleInterval< IntType > overlapLabeling = ArrayImgs.ints( Intervals.dimensionsAsLongArray( currentObjectMask ) );
+		overlapLabeling = Transforms.getWithAdjustedOrigin( currentObjectMask, overlapLabeling );
+
+		final RandomAccess< IntType > overlapLabelingAccess = overlapLabeling.randomAccess();
+		final RandomAccess< IntType > previousLabelingAccess = previousLabeling.randomAccess();
+		final Cursor< BitType > maskCursor = Views.iterable( currentObjectMask ).cursor();
+
+//		overlapLabelingAccess.setPosition( new int[]{28,3} );
+//		overlapLabelingAccess.get().setOne();
+//		overlapLabelingAccess.setPosition( new int[]{67,109} );
+//		overlapLabelingAccess.get().setOne();
+		
+		int previousLabel;
+		while ( maskCursor.hasNext() )
 		{
-			randomAccess.setPosition( Utils.asLongs( localMaxima.get( i ).position ) );
+			if ( maskCursor.next().get() == true )
+			{
+				previousLabelingAccess.setPosition( maskCursor );
+				previousLabel = previousLabelingAccess.get().getInteger();
+				overlapLabelingAccess.setPosition( maskCursor );
+				if ( previousLabels.contains( previousLabel ) )
+				{
+					overlapLabelingAccess.get().set( previousLabels.indexOf( previousLabel ) + 1 );
+				}
+			}
+		}
+
+//		ImageJFunctions.show( currentObjectMask, "mask" );
+//		ImageJFunctions.show( previousLabeling, "previous labeling" );
+//		ImageJFunctions.show( overlapLabeling, "overlap labeling" );
+
+		// below is necessary because watershed seeds are not allowed to touch the mask boundary
+		Utils.applyMask( overlapLabeling, Algorithms.erode( currentObjectMask, 2 ) );
+
+		return overlapLabeling;
+	}
+
+	private static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< BitType > positionsAsBinaryImage( int numPositions,
+														  RandomAccessibleInterval< T > maskedAndCropped,
+														  ArrayList< PositionAndValue > positions )
+	{
+		RandomAccessibleInterval< BitType > binaryImage = ArrayImgs.bits( Intervals.dimensionsAsLongArray(  maskedAndCropped ) );
+		binaryImage = Transforms.getWithAdjustedOrigin( maskedAndCropped, binaryImage );
+
+		final RandomAccess< BitType > randomAccess = binaryImage.randomAccess();
+		for ( int i = 0; i < numPositions; ++i )
+		{
+			randomAccess.setPosition( Utils.asLongs( positions.get( i ).position ) );
 			randomAccess.get().setOne();
 		}
-		return seeds;
+		return binaryImage;
 	}
 
 	public static boolean checkSplittingValidity(
@@ -810,7 +1071,7 @@ public class Algorithms
 	}
 
 
-	public static ImgLabeling< Integer, IntType > getEmptyImgLabeling( RandomAccessibleInterval< BitType > mask )
+	public static ImgLabeling< Integer, IntType > createEmptyImgLabeling( RandomAccessibleInterval< BitType > mask )
 	{
 		RandomAccessibleInterval< IntType > watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
 		watershedLabelImg = Transforms.getWithAdjustedOrigin( mask, watershedLabelImg );
@@ -863,6 +1124,21 @@ public class Algorithms
 		}
 
 		return Views.interval( enlargedMorphed, mask );
+	}
+
+	public static RandomAccessibleInterval< BitType > erode(
+			RandomAccessibleInterval< BitType > mask,
+			int radius )
+	{
+		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+
+		if ( radius > 0 )
+		{
+			Shape shape = new HyperSphereShape( radius );
+			Erosion.erode( Views.extendZero( mask ), Views.iterable( morphed ), shape, 1 );
+		}
+
+		return morphed;
 	}
 
 	public static RandomAccessibleInterval< BitType > dilate(

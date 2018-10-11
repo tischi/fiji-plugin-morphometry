@@ -12,6 +12,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
+import sun.jvm.hotspot.debugger.cdbg.BitType;
 
 import java.util.ArrayList;
 
@@ -100,7 +101,8 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 	}
 
 	public static < S extends RealType< S > & NativeType< S >, T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > getWithAdjustedOrigin( RandomAccessibleInterval< S > reference, RandomAccessibleInterval< T > target )
+	RandomAccessibleInterval< T > getWithAdjustedOrigin( RandomAccessibleInterval< S > reference,
+														 RandomAccessibleInterval< T > target )
 	{
 		long[] offset = new long[ reference.numDimensions() ];
 		reference.min( offset );

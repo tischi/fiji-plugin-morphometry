@@ -890,7 +890,7 @@ public class Utils
 	{
 		RandomAccessibleInterval< IntType > labelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( rai ) );
 		labelImg = Transforms.getWithAdjustedOrigin( rai, labelImg );
-		final ImgLabeling< Integer, IntType > labeling = new ImgLabeling<>( labelImg );
+		final ImgLabeling< Integer, IntType > imgLabeling = new ImgLabeling<>( labelImg );
 
 		final java.util.Iterator< Integer > labelCreator = new java.util.Iterator< Integer >()
 		{
@@ -909,9 +909,9 @@ public class Utils
 			}
 		};
 
-		ConnectedComponents.labelAllConnectedComponents( ( RandomAccessible ) Views.extendBorder( rai ), labeling, labelCreator, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+		ConnectedComponents.labelAllConnectedComponents( ( RandomAccessible ) Views.extendBorder( rai ), imgLabeling, labelCreator, ConnectedComponents.StructuringElement.EIGHT_CONNECTED );
 
-		return labeling;
+		return imgLabeling;
 	}
 
 	public static void drawObject( RandomAccessibleInterval< IntType > img, LabelRegion labelRegion, int value )
@@ -937,21 +937,21 @@ public class Utils
 
 	}
 
-	public static RandomAccessibleInterval< BitType > asMask( RandomAccessibleInterval< IntType > labeling )
+	public static RandomAccessibleInterval< BitType > asMask( RandomAccessibleInterval< IntType > rai )
 	{
-		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( labeling ) );
-		mask = Transforms.getWithAdjustedOrigin( labeling, mask  );
+		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( rai ) );
+		mask = Transforms.getWithAdjustedOrigin( rai, mask  );
 		final RandomAccess< BitType > maskAccess = mask.randomAccess();
 
-		final Cursor< IntType > labelingCursor = Views.iterable( labeling ).cursor();
+		final Cursor< IntType > cursor = Views.iterable( rai ).cursor();
 
-		while ( labelingCursor.hasNext() )
+		while ( cursor.hasNext() )
 		{
-			labelingCursor.fwd();
+			cursor.fwd();
 
-			if ( labelingCursor.get().getInteger() > 0 )
+			if ( cursor.get().getInteger() > 0 )
 			{
-				maskAccess.setPosition( labelingCursor );
+				maskAccess.setPosition( cursor );
 				maskAccess.get().set( true );
 			}
 		}

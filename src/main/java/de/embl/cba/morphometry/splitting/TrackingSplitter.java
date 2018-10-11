@@ -18,8 +18,6 @@ import net.imglib2.type.numeric.integer.IntType;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static de.embl.cba.morphometry.tracking.TrackingUtils.computeOverlaps;
-
 public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 {
 
@@ -69,61 +67,41 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		 * Process subsequent time-points
 		 */
 
-
 		RandomAccessibleInterval< IntType > previousLabeling = Utils.asImgLabeling( splitMasks.get( tMin ) ).getSource();
 
 		for ( t = tMin + 1; t <= tMax; ++t )
 		{
 
 			Utils.log( "\nProcessing frame " + ( t + 1 ) );
+
 			final ImgLabeling< Integer, IntType > currentImgLabeling = Utils.asImgLabeling( masks.get( t ) );
 			RandomAccessibleInterval< IntType > currentLabeling = currentImgLabeling.getSource();
 
-			HashMap< Integer, Integer > numObjectsPerRegion = new HashMap<>(  );
-
-			LabelRegions< Integer > labelRegions = new LabelRegions( currentImgLabeling );
-
-			for ( LabelRegion< Integer > region : labelRegions )
-			{
-				final HashMap< Integer, Long > overlaps = computeOverlaps( previousLabeling, region );
-
-				int numObjectsInRegion = 1;
-
-				if ( overlaps.size() > 1 )
-				{
-
-					Utils.log( "Object at "
-							+ " x = " + (int) region.getCenterOfMass().getDoublePosition( 0 )
-							+ " y = " + (int) region.getCenterOfMass().getDoublePosition( 1 )
-							+ " overlaps with " + overlaps.size() + " objects in previous frame." );
-
-					if ( overlaps.size() == 2 )
-					{
-						boolean splitObjects = isReallyTwoObjects( t, previousLabeling, currentLabeling, region, overlaps );
-
-						if ( splitObjects )
-						{
-							numObjectsInRegion = 2;
-						}
-					}
-				}
-
-				numObjectsPerRegion.put( region.getLabel(), numObjectsInRegion );
-
-			}
+			HashMap< Integer, ArrayList< Integer > > overlappingObjectsLabelsMap = getOverlappingObjectLabelsMap( t, previousLabeling, currentImgLabeling, currentLabeling );
 
 			final RandomAccessibleInterval< BitType > splitMask = Utils.copyAsArrayImg( masks.get( t ) );
 
-			Algorithms.splitTouchingObjects(
+//			Algorithms.splitTouchingObjectsTest(
+//					currentImgLabeling,
+//					intensities.get( t ),
+//					splitMask,
+//					overlappingObjectsLabelsMap,
+//					( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
+//					( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize, splitMask.numDimensions() ) ),
+//					( int ) ( settings.maximalWatershedLength / settings.workingVoxelSize ),
+//					settings.opService,
+//					true,
+//					false);
+
+			Algorithms.splitCurrentObjectsBasedOnOverlapWithPreviousObjects(
+					splitMask,
+					overlappingObjectsLabelsMap,
 					currentImgLabeling,
 					intensities.get( t ),
-					splitMask,
-					numObjectsPerRegion,
-					( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
+					previousLabeling,
 					( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize, splitMask.numDimensions() ) ),
-					( int ) ( settings.maximalWatershedLength / settings.workingVoxelSize ),
+					( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
 					settings.opService,
-					true,
 					false);
 
 			splitMasks.add( splitMask );
@@ -132,31 +110,114 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		}
 	}
 
-	public boolean isReallyTwoObjects( int t, RandomAccessibleInterval< IntType > previousLabeling, RandomAccessibleInterval< IntType > currentLabeling, LabelRegion< Integer > region, HashMap< Integer, Long > overlaps )
+	public HashMap< Integer, ArrayList< Integer > > getOverlappingObjectLabelsMap( int t, RandomAccessibleInterval< IntType > previousLabeling, ImgLabeling< Integer, IntType > currentImgLabeling, RandomAccessibleInterval< IntType > currentLabeling )
+	{
+		HashMap< Integer, ArrayList< Integer > > overlappingObjectsLabelsMap = new HashMap<>(  );
+
+		LabelRegions< Integer > labelRegions = new LabelRegions( currentImgLabeling );
+
+		for ( LabelRegion< Integer > region : labelRegions )
+		{
+			final HashMap< Integer, Long > overlapSizes = computeOverlaps( previousLabeling, region );
+
+			if ( overlapSizes.size() == 0 )
+			{
+				overlappingObjectsLabelsMap.put( region.getLabel(), new ArrayList<>() );
+			}
+			else
+			{
+				if ( overlapSizes.size() > 1 )
+				{
+					Utils.log( "Object at "
+							+ " x = " + ( int ) region.getCenterOfMass().getDoublePosition( 0 )
+							+ " y = " + ( int ) region.getCenterOfMass().getDoublePosition( 1 )
+							+ " overlaps with " + overlapSizes.size() + " objects in previous frame." );
+				}
+
+				final ArrayList< Integer > trulyOverlappingObjectLabels = getTrulyOverlappingObjectLabels(
+						intensities.get( t - 1 ),
+						intensities.get( t ),
+						previousLabeling,
+						currentLabeling,
+						region,
+						overlapSizes );
+
+				overlappingObjectsLabelsMap.put( region.getLabel(), trulyOverlappingObjectLabels );
+
+			}
+
+		}
+		return overlappingObjectsLabelsMap;
+	}
+
+
+	public ArrayList< Integer > getTrulyOverlappingObjectLabels( RandomAccessibleInterval< T > previousIntensityImage,
+												RandomAccessibleInterval< T > currentIntensityImage,
+												RandomAccessibleInterval< IntType > previousLabeling,
+												RandomAccessibleInterval< IntType > currentLabeling,
+												LabelRegion< Integer > currentObjectRegion,
+												HashMap< Integer, Long > overlapSizes )
+	{
+
+		final ArrayList< Integer > trulyOverlappingObjectLabels = new ArrayList<>();
+
+		if ( overlapSizes.keySet().size() == 1 )
+		{
+			trulyOverlappingObjectLabels.add( overlapSizes.keySet().iterator().next() );
+		}
+		else
+		{
+			for ( int previousLabel : overlapSizes.keySet() )
+			{
+				final long previousObjectSize = ObjectMeasurements.measureSize( previousLabeling, previousLabel );
+
+				final double overlapFraction = 1.0 * overlapSizes.get( previousLabel ).longValue() / previousObjectSize;
+
+				Utils.log( "Previous object size / overlap size: " + overlapFraction );
+
+				if ( overlapFraction >= settings.minimalOverlapFraction )
+				{
+					trulyOverlappingObjectLabels.add( previousLabel );
+				}
+			}
+
+			Utils.log( "Corrected number of overlapping objects: " + trulyOverlappingObjectLabels.size() );
+
+		}
+
+		return trulyOverlappingObjectLabels;
+	}
+
+	public boolean isReallyTwoObjects( RandomAccessibleInterval< T > previousIntensityImage,
+									   RandomAccessibleInterval< T > currentIntensityImage,
+									   RandomAccessibleInterval< IntType > previousLabeling,
+									   RandomAccessibleInterval< IntType > currentLabeling,
+									   LabelRegion< Integer > currentObjectRegion,
+									   HashMap< Integer, Long > previousSizes )
 	{
 
 		boolean splitObjects =  true;
 
-		final double currentIntensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
+		final double currentObjectIntensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
 				currentLabeling,
-				region.getLabel(),
-				intensities.get( t ) );
+				currentObjectRegion.getLabel(),
+				currentIntensityImage );
 
-		Utils.log( "Object intensity: " + (long) currentIntensity );
+		Utils.log( "Object intensity: " + (long) currentObjectIntensity );
 
 		final HashMap< Integer, Double > previousIntensities = new HashMap<>();
 
-		for ( int label : overlaps.keySet() )
+		for ( int previousLabel : previousSizes.keySet() )
 		{
-			final double intensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
+			final double previousObjectIntensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
 					previousLabeling,
-					label,
-					intensities.get( t ) );
+					previousLabel,
+					previousIntensityImage );
 
-			previousIntensities.put( label , intensity );
+			previousIntensities.put( previousLabel , previousObjectIntensity );
 
-			final double overlapFraction = 1.0 * overlaps.get( label ).longValue() / region.size();
-			Utils.log( "Previous object intensity: " + (long) intensity );
+			final double overlapFraction = 1.0 * previousSizes.get( previousLabel ).longValue() / currentObjectRegion.size();
+			Utils.log( "Previous object intensity: " + (long) previousObjectIntensity );
 			Utils.log( "Overlap pixel fraction: " + overlapFraction );
 
 			if ( overlapFraction < settings.minimalOverlapFraction ) splitObjects = false;
@@ -165,7 +226,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 		double previousIntensitySum = getPreviousIntensitySum( previousIntensities );
 
-		final double sumIntensityRatio = currentIntensity / previousIntensitySum;
+		final double sumIntensityRatio = currentObjectIntensity / previousIntensitySum;
 
 		Utils.log( "Intensity ratio: " + sumIntensityRatio );
 
@@ -251,17 +312,17 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		{
 			cursor.fwd();
 			previousLabelsAccess.setPosition( cursor );
+			final int previousLabel = previousLabelsAccess.get().getInteger();
 
-			final int label = previousLabelsAccess.get().getInteger();
-
-			if ( label != 0 )
+			if ( previousLabel != 0 )
 			{
-				addOverlap( overlaps, label );
+				addOverlap( overlaps, previousLabel );
 			}
 		}
 
 		return overlaps;
 	}
+
 
 	public void addOverlap( HashMap< Integer, Long > overlaps, int integer )
 	{

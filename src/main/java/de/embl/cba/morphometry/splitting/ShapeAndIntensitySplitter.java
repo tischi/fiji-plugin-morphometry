@@ -62,7 +62,7 @@ public class ShapeAndIntensitySplitter< T extends RealType< T > & NativeType< T 
 				( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
 				( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize, intensity.numDimensions() ) ),
 				( int ) ( settings.maximalWatershedLength / settings.workingVoxelSize ),
-				settings.opService, false, settings.showIntermediateResults );
+				settings.opService, false, false );
 
 	}
 

@@ -40,7 +40,8 @@ public class ObjectMeasurements
 		}
 	}
 
-	public static void measureVolumesInVoxels( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling )
+	public static void
+	measureVolumesInVoxels( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling )
 	{
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
@@ -63,7 +64,6 @@ public class ObjectMeasurements
 	public static < T extends RealType< T > & NativeType< T > >
 	void measureSumIntensities( HashMap< Integer, Map< String, Object > > objectMeasurements, ImgLabeling< Integer, IntType > imgLabeling, RandomAccessibleInterval< T > image, String channel )
 	{
-
 		final RandomAccess< T > imageRandomAccess = image.randomAccess();
 
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
@@ -75,7 +75,6 @@ public class ObjectMeasurements
 			addMeasurement( objectMeasurements, (int) labelRegion.getLabel(), SUM_INTENSITY + "_" + channel, sum );
 
 		}
-
 	}
 
 	private static < T extends RealType< T > & NativeType< T > > long measureSumIntensity( RandomAccess< T > imageRandomAccess, LabelRegion labelRegion )
@@ -93,6 +92,27 @@ public class ObjectMeasurements
 		return sum;
 	}
 
+	public static < T extends RealType< T > & NativeType< T > >
+	long measureSize( RandomAccessibleInterval< IntType > labeling,
+					  int label )
+	{
+
+		final Cursor< IntType > labelCursor = Views.iterable( labeling ).localizingCursor();
+		long size = 0;
+
+		while ( labelCursor.hasNext() )
+		{
+			long value = labelCursor.next().getInteger();
+
+			if( value == label )
+			{
+				size++;
+			}
+		}
+
+		return size;
+
+	}
 
 	public static < T extends RealType< T > & NativeType< T > >
 	double measureBgCorrectedSumIntensity( RandomAccessibleInterval< IntType > labeling,
