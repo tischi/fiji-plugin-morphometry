@@ -4,8 +4,12 @@ import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.ObjectMeasurements;
 import de.embl.cba.morphometry.microglia.MicrogliaSettings;
+import ij.ImagePlus;
+import ij.gui.NonBlockingGenericDialog;
+import ij.plugin.Duplicator;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegionCursor;
@@ -57,11 +61,25 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		Utils.log( "\nRunning ShapeAndIntensitySplitter on frame " + settings.tMin );
 		final ShapeAndIntensitySplitter splitter = new ShapeAndIntensitySplitter( masks.get( t ), intensities.get( t ), settings );
 		splitter.run();
-		splitMasks.add( splitter.getSplitMask() );
+
+		/**
+		 * Allow user to manually correct further
+		 */
+
+		if ( settings.manualSegmentationCorrectionOfFirstFrame )
+		{
+			final ImagePlus mask = getManuallyCorrectedMask( splitter );
+			splitMasks.add( Utils.asMask( ( RandomAccessibleInterval ) ImageJFunctions.wrapReal( mask ) ) );
+		}
+		else
+		{
+			splitMasks.add( splitter.getSplitMask() );
+		}
 
 		nextId = Utils.getNumObjects( splitMasks.get( tMin ) );
 
 		boolean showSplittingAttempts = false;
+
 
 		/**
 		 * Process subsequent time-points
@@ -108,6 +126,22 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 			previousLabeling = Utils.asImgLabeling( splitMask ).getSource();
 		}
+	}
+
+	public ImagePlus getManuallyCorrectedMask( ShapeAndIntensitySplitter splitter )
+	{
+		final ImagePlus intensities = ImageJFunctions.show( this.intensities.get( 0 ) );
+		//final ImagePlus splitMaskImp = ImageJFunctions.wrap( splitter.getSplitMask(), "mask" );
+		final Duplicator duplicator = new Duplicator();
+		final ImagePlus mask = duplicator.run( ImageJFunctions.wrap( splitter.getSplitMask(), "mask" ) );
+		mask.show();
+		final NonBlockingGenericDialog gd = new NonBlockingGenericDialog( "Manual correction" );
+		gd.addMessage( "Please correct the segmentation and press OK when you are done." );
+		gd.hideCancelButton();
+		gd.showDialog();
+		intensities.close();
+		mask.hide();
+		return mask;
 	}
 
 	public HashMap< Integer, ArrayList< Integer > > getOverlappingObjectLabelsMap( int t, RandomAccessibleInterval< IntType > previousLabeling, ImgLabeling< Integer, IntType > currentImgLabeling, RandomAccessibleInterval< IntType > currentLabeling )

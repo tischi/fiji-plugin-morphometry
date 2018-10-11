@@ -933,7 +933,7 @@ public class Algorithms
 //		overlapLabelingAccess.get().setOne();
 //		overlapLabelingAccess.setPosition( new int[]{67,109} );
 //		overlapLabelingAccess.get().setOne();
-		
+
 		int previousLabel;
 		while ( maskCursor.hasNext() )
 		{
