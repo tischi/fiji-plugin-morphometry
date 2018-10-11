@@ -609,7 +609,8 @@ public class Algorithms
 
 		for ( int currentObjectLabel : overlappingObjectsLabelsMap.keySet() )
 		{
-			final ArrayList< Integer > overlappingPreviousObjectLabels = overlappingObjectsLabelsMap.get( currentObjectLabel );
+			final ArrayList< Integer > overlappingPreviousObjectLabels
+					= overlappingObjectsLabelsMap.get( currentObjectLabel );
 
 			if ( overlappingPreviousObjectLabels.size() > 1 )
 			{

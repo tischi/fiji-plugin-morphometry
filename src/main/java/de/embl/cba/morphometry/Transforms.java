@@ -12,7 +12,6 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
-import sun.jvm.hotspot.debugger.cdbg.BitType;
 
 import java.util.ArrayList;
 

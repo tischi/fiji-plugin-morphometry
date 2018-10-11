@@ -966,7 +966,7 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	void showAsIJ1Movie( ArrayList< RandomAccessibleInterval< T > > labelings, String title )
+	ImagePlus showAsIJ1Movie( ArrayList< RandomAccessibleInterval< T > > labelings, String title )
 	{
 
 		RandomAccessibleInterval movie = Views.stack( labelings );
@@ -974,7 +974,7 @@ public class Utils
 		movie = Views.addDimension( movie, 0, 0);
 		movie = Views.permute( movie, 2,4 );
 
-		ImageJFunctions.show( movie, title );
+		return ImageJFunctions.show( movie, title );
 	}
 
 	public static boolean acceptFile( String fileNameEndsWith, String file )
