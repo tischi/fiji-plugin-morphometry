@@ -909,7 +909,7 @@ public class Utils
 			}
 		};
 
-		ConnectedComponents.labelAllConnectedComponents( ( RandomAccessible ) Views.extendBorder( rai ), labeling, labelCreator, ConnectedComponents.StructuringElement.EIGHT_CONNECTED );
+		ConnectedComponents.labelAllConnectedComponents( ( RandomAccessible ) Views.extendBorder( rai ), labeling, labelCreator, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		return labeling;
 	}

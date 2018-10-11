@@ -83,7 +83,7 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 		 * Remove small objects from mask
 		 */
 
-		mask = Algorithms.removeSmallObjectsAndReturnMask( mask, settings.minimalObjectSize, settings.workingVoxelSize );
+		Algorithms.removeSmallRegionsInMask( mask, settings.minimalObjectSize, settings.workingVoxelSize );
 
 		if ( showIntermediateResults ) show( mask, "size filtered mask", null, workingCalibration, false );
 

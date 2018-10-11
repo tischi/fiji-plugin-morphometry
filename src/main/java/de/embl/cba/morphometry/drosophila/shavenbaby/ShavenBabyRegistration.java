@@ -187,7 +187,7 @@ public class ShavenBabyRegistration
 		 * - close holes
 		 */
 
-		mask = Algorithms.removeSmallObjectsAndReturnMask( mask, settings.minimalObjectSize, settings.registrationResolution );
+		Algorithms.removeSmallRegionsInMask( mask, settings.minimalObjectSize, settings.registrationResolution );
 
 		for ( int d = 0; d < 3; ++d )
 		{

@@ -1,6 +1,5 @@
 package de.embl.cba.morphometry;
 
-import ij.ImagePlus;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
@@ -14,8 +13,6 @@ import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
-import net.imglib2.img.ImgFactory;
-import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
@@ -270,41 +267,26 @@ public class Algorithms
 		return centralObjectImg;
 	}
 
-	public static ImgLabeling< Integer, IntType > removeSmallObjectsAndReturnImgLabeling( ImgLabeling< Integer, IntType > labeling, double size, double calibration )
+	public static void removeSmallRegionsInMask(
+			RandomAccessibleInterval< BitType > mask,
+			double size,
+			double calibration )
 	{
-		RandomAccessibleInterval< BitType > sizeFilteredObjects = removeSmallObjectsAndReturnMask( labeling, size, calibration );
+		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask );
 
-		ImgLabeling< Integer, IntType > labelImg = Utils.asImgLabeling( sizeFilteredObjects );
-		return labelImg;
-	}
+		long minimalObjectSize = ( long ) ( size / Math.pow( calibration, imgLabeling.numDimensions() ) );
 
-
-	private static RandomAccessibleInterval< BitType > removeSmallObjectsAndReturnMask( ImgLabeling< Integer, IntType > labeling, double size, double calibration )
-	{
-		RandomAccessibleInterval< BitType > sizeFilteredObjectsMask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( labeling ) );
-		sizeFilteredObjectsMask = Transforms.getWithAdjustedOrigin( labeling.getSource(), sizeFilteredObjectsMask  );
-
-		long minimalObjectPixelSize = ( long ) ( size / Math.pow( calibration, labeling.numDimensions() ) );
-
-		final LabelRegions< Integer > labelRegions = new LabelRegions<>( labeling );
+		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
 		{
-			if ( labelRegion.size() > minimalObjectPixelSize )
+			if ( labelRegion.size() < minimalObjectSize )
 			{
-				drawObject( sizeFilteredObjectsMask, labelRegion );
+				removeRegion( mask, labelRegion );
 			}
 		}
-
-		return sizeFilteredObjectsMask;
 	}
 
-	public static RandomAccessibleInterval< BitType >
-	removeSmallObjectsAndReturnMask( RandomAccessibleInterval< BitType > img, double size, double calibration )
-	{
-		return removeSmallObjectsAndReturnMask( Utils.asImgLabeling( img ), size, calibration );
-	}
-
-	private static void drawObject( RandomAccessibleInterval< BitType > img, LabelRegion labelRegion )
+	private static void drawRegion( RandomAccessibleInterval< BitType > img, LabelRegion labelRegion )
 	{
 		final Cursor< Void > regionCursor = labelRegion.cursor();
 		final RandomAccess< BitType > access = img.randomAccess();
@@ -317,6 +299,19 @@ public class Algorithms
 		}
 	}
 
+
+	private static void removeRegion( RandomAccessibleInterval< BitType > img, LabelRegion labelRegion )
+	{
+		final Cursor< Void > regionCursor = labelRegion.cursor();
+		final RandomAccess< BitType > access = img.randomAccess();
+		BitType bitTypeFalse = new BitType( false );
+		while ( regionCursor.hasNext() )
+		{
+			regionCursor.fwd();
+			access.setPosition( regionCursor );
+			access.get().set( bitTypeFalse );
+		}
+	}
 
 	public static Img< BitType > createMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
 	{
@@ -649,6 +644,7 @@ public class Algorithms
 
 				if ( ! splitObjects.getExistingLabels().contains( -1 ) )
 				{
+					Utils.log( "\n\nERROR DURING OBJECT SPLITTING\n\n" );
 					continue; // TODO: examine these cases
 				}
 
@@ -673,12 +669,13 @@ public class Algorithms
 				if ( showSplittingAttempts )
 				{
 					ImageJFunctions.show( watershedImgLabeling.getSource(), "" + label + "-" + isValidSplit );
-
 				}
 
 				if ( isValidSplit )
 				{
 					drawWatershedIntoMask( mask, labelRegions, label, splitObjects );
+					// sometimes the watershed is weirdly placed such that very small (single pixel) objects can occur
+					removeSmallRegionsInMask( mask, minimalObjectSize, 1 );
 				}
 
 			}

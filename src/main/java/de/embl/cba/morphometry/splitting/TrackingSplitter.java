@@ -18,6 +18,8 @@ import net.imglib2.type.numeric.integer.IntType;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import static de.embl.cba.morphometry.tracking.TrackingUtils.computeOverlaps;
+
 public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 {
 
@@ -54,7 +56,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		 * Process first time-point
 		 */
 
-		Utils.log( "Running ShapeAndIntensitySplitter on first requested time-point..." );
+		Utils.log( "\nRunning ShapeAndIntensitySplitter on frame " + settings.tMin );
 		final ShapeAndIntensitySplitter splitter = new ShapeAndIntensitySplitter( masks.get( t ), intensities.get( t ), settings );
 		splitter.run();
 		splitMasks.add( splitter.getSplitMask() );
@@ -67,14 +69,13 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		 * Process subsequent time-points
 		 */
 
-		Utils.log( "Processing subsequent time-points..." );
 
 		RandomAccessibleInterval< IntType > previousLabeling = Utils.asImgLabeling( splitMasks.get( tMin ) ).getSource();
 
 		for ( t = tMin + 1; t <= tMax; ++t )
 		{
 
-			Utils.log( "Processing timepoint (one-based) " + ( t + 1 ) );
+			Utils.log( "\nProcessing frame " + ( t + 1 ) );
 			final ImgLabeling< Integer, IntType > currentImgLabeling = Utils.asImgLabeling( masks.get( t ) );
 			RandomAccessibleInterval< IntType > currentLabeling = currentImgLabeling.getSource();
 
@@ -88,13 +89,22 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 				int numObjectsInRegion = 1;
 
-				if ( overlaps.size() == 2 )
+				if ( overlaps.size() > 1 )
 				{
-					boolean splitObjects = isReallyTwoObjects( t, previousLabeling, currentLabeling, region, overlaps );
 
-					if ( splitObjects )
+					Utils.log( "Object at "
+							+ " x = " + (int) region.getCenterOfMass().getDoublePosition( 0 )
+							+ " y = " + (int) region.getCenterOfMass().getDoublePosition( 1 )
+							+ " overlaps with " + overlaps.size() + " objects in previous frame." );
+
+					if ( overlaps.size() == 2 )
 					{
-						numObjectsInRegion = 2;
+						boolean splitObjects = isReallyTwoObjects( t, previousLabeling, currentLabeling, region, overlaps );
+
+						if ( splitObjects )
+						{
+							numObjectsInRegion = 2;
+						}
 					}
 				}
 
@@ -124,9 +134,6 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 	public boolean isReallyTwoObjects( int t, RandomAccessibleInterval< IntType > previousLabeling, RandomAccessibleInterval< IntType > currentLabeling, LabelRegion< Integer > region, HashMap< Integer, Long > overlaps )
 	{
-		Utils.log( "Overlap with two objects" );
-		Utils.log( "Time point (one based): " + ( t + 1 ) );
-		Utils.log( "Object label: " + region.getLabel() );
 
 		boolean splitObjects =  true;
 
