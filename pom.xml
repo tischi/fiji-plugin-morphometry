@@ -9,7 +9,7 @@
 	</parent>
 
 	<artifactId>fiji-plugin-morphometry</artifactId>
-	<version>0.3.30</version>
+	<version>0.3.35</version>
 	<url>https://github.com/tischi/fiji-plugin-morphometry</url>
 
 	<name>Fiji Plugin Morphometry</name>
@@ -123,6 +123,11 @@
 			<artifactId>bigdataviewer-vistools</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>fr.inra.ijpb</groupId>
+			<artifactId>MorphoLibJ_</artifactId>
+			<version>1.3.3</version>
+		</dependency>
 
 		<!-- Jama (Java Matrix package) is used for computing inertia run -->
 		<dependency>

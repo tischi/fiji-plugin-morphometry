@@ -91,10 +91,10 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 		maximalOverlapTracker.run();
 		final ArrayList< RandomAccessibleInterval< T > > labelings = maximalOverlapTracker.getLabelings();
 
-		Utils.showAsIJ1Movie( labelings, SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING );
+		Utils.createIJ1Movie( labelings, SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING );
 		IJ.run("3-3-2 RGB", "");
 
-		Utils.showAsIJ1Movie( intensities, INTENSITIES );
+		Utils.createIJ1Movie( intensities, INTENSITIES );
 		IJ.wait( 500 );
 		IJ.run("16-bit", "");
 
