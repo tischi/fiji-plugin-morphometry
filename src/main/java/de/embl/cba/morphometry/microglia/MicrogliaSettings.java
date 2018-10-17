@@ -53,4 +53,6 @@ public class MicrogliaSettings<T extends RealType<T> & NativeType< T > >
 	public long tMin;
 	public long tMax;
 	public boolean manualSegmentationCorrectionOfFirstFrame = true;
+	public boolean manualSegmentationCorrectionOfAllFrames = true;
+
 }

@@ -4,9 +4,15 @@ import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.plugin.Duplicator;
+import ij.process.LUT;
+import inra.ijpb.label.LabelImages;
+import inra.ijpb.util.ColorMaps;
 import net.imagej.Dataset;
 import net.imagej.axis.LinearAxis;
 import net.imglib2.*;
+import net.imglib2.Cursor;
+import net.imglib2.Point;
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
@@ -33,6 +39,7 @@ import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.scijava.log.LogService;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -966,15 +973,16 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	ImagePlus showAsIJ1Movie( ArrayList< RandomAccessibleInterval< T > > labelings, String title )
+	ImagePlus createIJ1Movie( ArrayList< RandomAccessibleInterval< T > > labelings, String title )
 	{
-
 		RandomAccessibleInterval movie = Views.stack( labelings );
 		movie = Views.addDimension( movie, 0, 0);
 		movie = Views.addDimension( movie, 0, 0);
 		movie = Views.permute( movie, 2,4 );
-
-		return ImageJFunctions.show( movie, title );
+		final ImagePlus wrap = ImageJFunctions.wrap( movie, title );
+		final ImagePlus imp = new Duplicator().run( wrap );
+		imp.setTitle( title );
+		return imp;
 	}
 
 	public static boolean acceptFile( String fileNameEndsWith, String file )
@@ -995,5 +1003,36 @@ public class Utils
 	public static void error( String s )
 	{
 		IJ.showMessage( s );
+	}
+
+	public static ImagePlus asLabelImagePlus( RandomAccessibleInterval< IntType > indexImg )
+	{
+		final Duplicator duplicator = new Duplicator();
+		final ImagePlus labelImagePlus = duplicator.run( ImageJFunctions.wrap( indexImg, "mask" ) );
+		labelImagePlus.setLut( getGoldenAngleLUT() );
+		return labelImagePlus;
+	}
+
+
+	public static LUT getGoldenAngleLUT()
+	{
+		byte[][] bytes = ColorMaps.CommonLabelMaps.fromLabel( ColorMaps.CommonLabelMaps.GOLDEN_ANGLE.getLabel() ).computeLut( 256, false );
+		final byte[][] rgb = new byte[ 3 ][ 256 ];
+
+		for ( int c = 0; c < 3; ++c )
+		{
+			rgb[ c ][ 0 ] = 0; // Black background
+		}
+
+		for ( int c = 0; c < 3; ++c )
+		{
+			for ( int i = 1; i < 256; ++i )
+			{
+				rgb[ c ][ i ] = bytes[ i ][ c ];
+			}
+		}
+
+		LUT lut = new LUT( rgb[ 0 ], rgb[ 1 ], rgb[ 2 ] );
+		return lut;
 	}
 }

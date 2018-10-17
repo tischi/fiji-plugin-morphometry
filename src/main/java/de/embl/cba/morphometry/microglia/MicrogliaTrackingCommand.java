@@ -8,14 +8,12 @@ import de.embl.cba.morphometry.splitting.TrackingSplitter;
 import de.embl.cba.morphometry.tracking.MaximalOverlapTracker;
 import ij.IJ;
 import ij.ImagePlus;
-import javafx.scene.control.RadioMenuItem;
 import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.view.Views;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
@@ -71,7 +69,7 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 	public long microgliaChannelIndexOneBased = settings.microgliaChannelIndexOneBased;
 
 	@Parameter ( label = "Minimal time frame to be processed", min = "1" )
-	public long tMin = 0;
+	public long tMin = 1;
 
 	@Parameter ( label = "Maximal time frame to be processed", min = "1" )
 	public long tMax = 100;
@@ -151,16 +149,20 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 
 	private void createOutput( ArrayList< RandomAccessibleInterval< T > > intensities, ArrayList< RandomAccessibleInterval< T > > labelings )
 	{
-		Utils.showAsIJ1Movie( labelings, SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING );
-		IJ.run("3-3-2 RGB", "");
+		ImagePlus labelImagePlus = Utils.createIJ1Movie( labelings, SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING );
+		labelImagePlus.setLut( Utils.getGoldenAngleLUT() );
+		labelImagePlus.setTitle( SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING );
+		labelImagePlus.show();
+		IJ.run( labelImagePlus, "Enhance Contrast", "saturated=0.35");
+		IJ.wait( 1000 );
 
-		Utils.showAsIJ1Movie( intensities, INTENSITIES );
-		IJ.wait( 500 );
+		Utils.createIJ1Movie( intensities, INTENSITIES ).show();
+		IJ.wait( 1000 );
 		IJ.run("16-bit", "");
+		IJ.run("Enhance Contrast", "saturated=0.35");
 
-		IJ.wait( 500 );
-		IJ.run("Merge Channels...", "c1=intensities c2=[Simple segmentation - Tracking splitting - Simple tracking] create");
-
+		IJ.wait( 1000 );
+		IJ.run("Merge Channels...", "c1=intensities c2=[" + SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING + "] create keep");
 	}
 
 

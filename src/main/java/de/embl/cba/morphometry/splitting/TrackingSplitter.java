@@ -7,10 +7,8 @@ import de.embl.cba.morphometry.microglia.MicrogliaSettings;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NonBlockingGenericDialog;
-import ij.plugin.Duplicator;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.RealInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
@@ -20,7 +18,6 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.view.Views;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,12 +63,13 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		splitter.run();
 
 		/**
-		 * Allow user to manually correct further
+		 * Allow user to manually correct
 		 */
 
 		if ( settings.manualSegmentationCorrectionOfFirstFrame )
 		{
-			splitMasks.add( getManuallyCorrectedMask( splitter ) );
+			IJ.run("Brightness/Contrast...");
+			splitMasks.add( getManuallyCorrectedMask( splitter.getSplitMask(), t ) );
 		}
 		else
 		{
@@ -99,19 +97,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 			HashMap< Integer, ArrayList< Integer > > overlappingObjectsLabelsMap = getOverlappingObjectLabelsMap( t, previousLabeling, currentImgLabeling, currentLabeling );
 
-			final RandomAccessibleInterval< BitType > splitMask = Utils.copyAsArrayImg( masks.get( t ) );
-
-//			Algorithms.splitTouchingObjectsTest(
-//					currentImgLabeling,
-//					intensities.get( t ),
-//					splitMask,
-//					overlappingObjectsLabelsMap,
-//					( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
-//					( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize, splitMask.numDimensions() ) ),
-//					( int ) ( settings.maximalWatershedLength / settings.workingVoxelSize ),
-//					settings.opService,
-//					true,
-//					false);
+			RandomAccessibleInterval< BitType > splitMask = Utils.copyAsArrayImg( masks.get( t ) );
 
 			Algorithms.splitCurrentObjectsBasedOnOverlapWithPreviousObjects(
 					splitMask,
@@ -124,29 +110,39 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 					settings.opService,
 					false);
 
-			splitMasks.add( splitMask );
+			if ( settings.manualSegmentationCorrectionOfAllFrames )
+			{
+				splitMask = getManuallyCorrectedMask( splitMask, t );
+			}
 
+			splitMasks.add( splitMask );
 			previousLabeling = Utils.asImgLabeling( splitMask ).getSource();
 		}
 	}
 
-	public RandomAccessibleInterval< BitType > getManuallyCorrectedMask(
-			ShapeAndIntensitySplitter splitter )
+	public RandomAccessibleInterval< BitType > getManuallyCorrectedMask( RandomAccessibleInterval< BitType > mask, int t )
 	{
-		final ImagePlus intensitiesImp = Utils.showAsIJ1Movie( intensities, "intensities" );
-		//final ImagePlus splitMaskImp = ImageJFunctions.wrap( splitter.getSplitMask(), "mask" );
-		final Duplicator duplicator = new Duplicator();
-		final ImagePlus labelingImp = duplicator.run( ImageJFunctions.wrap( Utils.asImgLabeling( splitter.getSplitMask() ).getIndexImg(), "mask" ) );
-		labelingImp.show();
-		IJ.run(labelingImp, "Enhance Contrast", "saturated=0.35");
-		IJ.run(labelingImp, "3-3-2 RGB", "");
+		final ImagePlus intensitiesImp = Utils.createIJ1Movie( intensities, "intensities" );
+		intensitiesImp.show();
+		intensitiesImp.setT( t + 1 );
+		intensitiesImp.updateImage();
+		//intensitiesImp.updateAndDraw();
+
+		final RandomAccessibleInterval< IntType > indexImg = Utils.asImgLabeling( mask ).getIndexImg();
+		ImagePlus labelImagePlus = Utils.asLabelImagePlus( indexImg );
+		labelImagePlus.setTitle( "Label mask of frame " + ( t + 1 ) );
+		labelImagePlus.show();
+		IJ.run( labelImagePlus, "Enhance Contrast", "saturated=0.35");
+		IJ.setTool( "freeline" );
+
 		final NonBlockingGenericDialog gd = new NonBlockingGenericDialog( "Manual correction" );
-		gd.addMessage( "Please correct segmentation of 1st frame and press OK when you are done.\n" );
+		gd.addMessage( "Please correct segmentation of frame " + ( t + 1 ) + " and press OK when you are done.\n" );
 		gd.hideCancelButton();
 		gd.showDialog();
 		intensitiesImp.close();
-		labelingImp.hide();
-		return Utils.asMask( (RandomAccessibleInterval) ImageJFunctions.wrapReal( labelingImp ) );
+		labelImagePlus.hide();
+
+		return Utils.asMask( (RandomAccessibleInterval) ImageJFunctions.wrapReal( labelImagePlus ) );
 	}
 
 	public HashMap< Integer, ArrayList< Integer > > getOverlappingObjectLabelsMap( int t, RandomAccessibleInterval< IntType > previousLabeling, ImgLabeling< Integer, IntType > currentImgLabeling, RandomAccessibleInterval< IntType > currentLabeling )
