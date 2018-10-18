@@ -37,7 +37,6 @@ public class Skeleton< T extends RealType< T > & NativeType< T > >
 		this.settings = settings;
 	}
 
-
 	public void run()
 	{
 
@@ -53,16 +52,21 @@ public class Skeleton< T extends RealType< T > & NativeType< T > >
 
 			final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( masks.get( t ) );
 
-			final RandomAccessibleInterval< BitType > skeletons = Algorithms.createObjectSkeletons(
-					imgLabeling,
-					settings.opService
-			);
+			final RandomAccessibleInterval< BitType > skeletons =
+					Algorithms.createObjectSkeletons(
+						imgLabeling,
+						3,
+						settings.opService
+					);
 
 			this.skeletons.add( skeletons );
 		}
 
 	}
 
-
+	public ArrayList< RandomAccessibleInterval< BitType > > getSkeletons()
+	{
+		return skeletons;
+	}
 
 }

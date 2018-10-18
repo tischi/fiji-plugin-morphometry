@@ -4,6 +4,7 @@ import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.segmentation.SimpleSegmenter;
+import de.embl.cba.morphometry.skeleton.Skeleton;
 import de.embl.cba.morphometry.splitting.TrackingSplitter;
 import de.embl.cba.morphometry.tracking.MaximalOverlapTracker;
 import ij.IJ;
@@ -13,6 +14,7 @@ import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -143,9 +145,13 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 		maximalOverlapTracker.run();
 		final ArrayList< RandomAccessibleInterval< T > > labelings = maximalOverlapTracker.getLabelings();
 
-		final MaximalOverlapTracker maximalOverlapTracker = new MaximalOverlapTracker( masks );
-		maximalOverlapTracker.run();
-		final ArrayList< RandomAccessibleInterval< T > > labelings = maximalOverlapTracker.getLabelings();
+		// TODO: this should be a separate command
+		final Skeleton skeleton = new Skeleton( masks, settings );
+		skeleton.run();
+		final ArrayList< RandomAccessibleInterval< BitType > > skeletons = skeleton.getSkeletons();
+
+		ImagePlus skeletonImagePlus = Utils.createIJ1Movie( skeletons, "Skeletons" );
+		skeletonImagePlus.show();
 
 		createOutput( intensities, labelings );
 

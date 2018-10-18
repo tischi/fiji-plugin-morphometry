@@ -45,6 +45,7 @@ public class Algorithms
 {
 
 	public static final int WATERSHED = -1;
+	private static int closingRadius;
 
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > createRescaledArrayImg(
@@ -802,6 +803,7 @@ public class Algorithms
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< BitType > createObjectSkeletons(
 			ImgLabeling< Integer, IntType > imgLabeling,
+			int closingRadius,
 			OpService opService )
 	{
 
@@ -812,9 +814,9 @@ public class Algorithms
 
 		for ( LabelRegion< IntType > labelRegion : labelRegions )
 		{
-			final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.labelRegionAsMask( labelRegion ) );
+			RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.labelRegionAsMask( labelRegion ) );
 
-			// TODO: morphological closing to smooth boundaries
+			labelRegionMask = Algorithms.close(  labelRegionMask, closingRadius );
 
 			final RandomAccessibleInterval skeleton = opService.morphology().thinGuoHall( labelRegionMask );
 
@@ -970,21 +972,20 @@ public class Algorithms
 									 RandomAccessibleInterval< BitType > skeleton,
 									 long[] regionOffset )
 	{
-		final Cursor skeletonCursor = Views.iterable( skeleton ).cursor();
+		final Cursor< BitType > skeletonCursor = Views.iterable( skeleton ).cursor();
 		final RandomAccess< BitType > outputAccess = output.randomAccess();
 
 		long[] position = new long[ output.numDimensions() ];
 
 		while( skeletonCursor.hasNext() )
 		{
-			skeletonCursor.fwd();
-
-			skeletonCursor.localize( position );
-
-			addOffset( regionOffset, position );
-
-			outputAccess.setPosition( position );
-			outputAccess.get().set( true );
+			if ( skeletonCursor.next().get() == true )
+			{
+				skeletonCursor.localize( position );
+				addOffset( regionOffset, position );
+				outputAccess.setPosition( position );
+				outputAccess.get().set( true );
+			}
 		}
 
 	}
@@ -1017,7 +1018,9 @@ public class Algorithms
 		}
 	}
 
-	public static RandomAccessibleInterval< BitType > close( RandomAccessibleInterval< BitType > mask, int closingRadius )
+	public static RandomAccessibleInterval< BitType > close(
+			RandomAccessibleInterval< BitType > mask,
+			int closingRadius )
 	{
 		RandomAccessibleInterval< BitType > closed = Utils.copyAsArrayImg( mask );
 		Shape closingShape = new HyperSphereShape( closingRadius );
