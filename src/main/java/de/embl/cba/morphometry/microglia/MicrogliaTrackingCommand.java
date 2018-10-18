@@ -143,6 +143,10 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 		maximalOverlapTracker.run();
 		final ArrayList< RandomAccessibleInterval< T > > labelings = maximalOverlapTracker.getLabelings();
 
+		final MaximalOverlapTracker maximalOverlapTracker = new MaximalOverlapTracker( masks );
+		maximalOverlapTracker.run();
+		final ArrayList< RandomAccessibleInterval< T > > labelings = maximalOverlapTracker.getLabelings();
+
 		createOutput( intensities, labelings );
 
 	}

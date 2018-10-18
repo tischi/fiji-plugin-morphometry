@@ -14,7 +14,9 @@ import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.basictypeaccess.array.LongArray;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
 import net.imglib2.loops.LoopBuilder;
@@ -798,106 +800,30 @@ public class Algorithms
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	void splitTouchingObjectsTest(
+	RandomAccessibleInterval< BitType > createObjectSkeletons(
 			ImgLabeling< Integer, IntType > imgLabeling,
-			RandomAccessibleInterval< T > intensity,
-			RandomAccessibleInterval< BitType > mask, // This will be changed, i.e. the split(s) will be drawn into it
-			HashMap< Integer, ArrayList< Integer > > numObjectsPerRegion,
-			long minimalObjectWidth,
-			long minimalObjectSize,
-			long maximalWatershedBoundaryLength,
-			OpService opService,
-			boolean forceSplit,
-			boolean showSplittingAttempts )
+			OpService opService )
 	{
 
-		final LabelRegions currentRegions = new LabelRegions( imgLabeling );
+		RandomAccessibleInterval< BitType > skeletons = ArrayImgs.bits( Intervals.dimensionsAsLongArray( imgLabeling ) );
+		skeletons = Transforms.getWithAdjustedOrigin( imgLabeling.getSource(), skeletons );
 
-		for ( int currentObjectLabel : numObjectsPerRegion.keySet() )
+		final LabelRegions< IntType > labelRegions = new LabelRegions( imgLabeling );
+
+		for ( LabelRegion< IntType > labelRegion : labelRegions )
 		{
-			if ( numObjectsPerRegion.get( currentObjectLabel ).size() > 1 )
-			{
+			final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.labelRegionAsMask( labelRegion ) );
 
-				RandomAccessibleInterval< BitType > currentObjectMask = Utils.labelRegionAsMask( currentRegions.getLabelRegion( currentObjectLabel ) );
-				currentObjectMask = Views.zeroMin( currentObjectMask );
+			// TODO: morphological closing to smooth boundaries
 
+			final RandomAccessibleInterval skeleton = opService.morphology().thinGuoHall( labelRegionMask );
 
-				final RandomAccessibleInterval< T > maskedAndCroppedIntensities = Views.zeroMin( Utils.getMaskedAndCropped( intensity, currentRegions.getLabelRegion( currentObjectLabel ) ) );
-				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.labelRegionAsMask( currentRegions.getLabelRegion( currentObjectLabel ) ) );
-
-				final ArrayList< PositionAndValue > localMaxima =
-						computeSortedLocalIntensityMaxima(
-								2 * minimalObjectWidth,
-								maskedAndCroppedIntensities,
-								showSplittingAttempts );
-
-				if ( localMaxima.size() < numObjectsPerRegion.get( currentObjectLabel ).size() )
-				{
-					Utils.log( "\n\nERROR: Not enough local maxima found for object: " + currentObjectLabel + "\n\n");
-					continue; // TODO: check these cases
-				}
-
-				final RandomAccessibleInterval< BitType > seeds =
-						positionsAsBinaryImage( numObjectsPerRegion.get( currentObjectLabel ).size(),
-								maskedAndCroppedIntensities,
-								localMaxima );
-
-				final ImgLabeling< Integer, IntType > watershedImgLabeling = createEmptyImgLabeling( labelRegionMask );
-				final ImgLabeling< Integer, IntType > seedsImgLabeling = Utils.asImgLabeling( seeds );
-
-				opService.image().watershed(
-						watershedImgLabeling,
-						Utils.invertedView( maskedAndCroppedIntensities ),
-						seedsImgLabeling,
-						true,
-						true,
-						labelRegionMask );
-
-
-				LabelRegions< Integer > splitObjects = new LabelRegions( watershedImgLabeling );
-
-				if ( ! splitObjects.getExistingLabels().contains( -1 ) )
-				{
-					Utils.log( "\n\nERROR DURING OBJECT SPLITTING\n\n" );
-					continue; // TODO: examine these cases
-				}
-
-
-				boolean isValidSplit;
-
-				if ( forceSplit )
-				{
-					isValidSplit = true;
-					ImageJFunctions.show( Utils.invertedView( maskedAndCroppedIntensities ) );
-				}
-				else
-				{
-					// TODO: add integrated intensity along watershed as criterium
-					isValidSplit = checkSplittingValidity(
-							splitObjects,
-							minimalObjectSize,
-							maximalWatershedBoundaryLength );
-				}
-
-				Utils.log( "Valid split found: " + isValidSplit );
-
-				if ( showSplittingAttempts )
-				{
-					ImageJFunctions.show( labelRegionMask );
-					ImageJFunctions.show( seedsImgLabeling.getSource() );
-				}
-
-				if ( isValidSplit )
-				{
-					drawWatershedIntoMask( mask, currentRegions, currentObjectLabel, splitObjects );
-					// sometimes the watershed is weirdly placed such that very small (single pixel) objects can occur
-					removeSmallRegionsInMask( mask, minimalObjectSize, 1 );
-				}
-
-			}
+			drawSkeleton( skeletons, skeleton, Intervals.minAsLongArray( labelRegion ) );
 		}
 
+		return skeletons;
 	}
+
 
 	public static < T extends RealType< T > & NativeType< T > >
 	ArrayList< PositionAndValue > computeSortedLocalIntensityMaxima(
@@ -1040,6 +966,37 @@ public class Algorithms
 		return isValidSplit;
 	}
 
+	public static void drawSkeleton( RandomAccessibleInterval< BitType > output,
+									 RandomAccessibleInterval< BitType > skeleton,
+									 long[] regionOffset )
+	{
+		final Cursor skeletonCursor = Views.iterable( skeleton ).cursor();
+		final RandomAccess< BitType > outputAccess = output.randomAccess();
+
+		long[] position = new long[ output.numDimensions() ];
+
+		while( skeletonCursor.hasNext() )
+		{
+			skeletonCursor.fwd();
+
+			skeletonCursor.localize( position );
+
+			addOffset( regionOffset, position );
+
+			outputAccess.setPosition( position );
+			outputAccess.get().set( true );
+		}
+
+	}
+
+	public static void addOffset( long[] regionOffset, long[] position )
+	{
+		for ( int d = 0; d < position.length; ++d )
+		{
+			position[ d ] += regionOffset[ d ];
+		}
+	}
+
 	public static void drawWatershedIntoMask( RandomAccessibleInterval< BitType > mask,
 											  LabelRegions labelRegions,
 											  int label,
@@ -1054,10 +1011,7 @@ public class Algorithms
 		{
 			cursor.fwd();
 			cursor.localize( position );
-			for ( int d = 0; d < position.length; ++d )
-			{
-				position[ d ] += regionOffset[ d ];
-			}
+			addOffset( regionOffset, position );
 			maskRandomAccess.setPosition( position );
 			maskRandomAccess.get().set( false );
 		}

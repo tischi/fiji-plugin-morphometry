@@ -9,7 +9,7 @@
 	</parent>
 
 	<artifactId>fiji-plugin-morphometry</artifactId>
-	<version>0.3.35</version>
+	<version>0.3.36</version>
 	<url>https://github.com/tischi/fiji-plugin-morphometry</url>
 
 	<name>Fiji Plugin Morphometry</name>
