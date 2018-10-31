@@ -127,7 +127,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 					if ( inputImagePlus == null )
 					{
-						logService.error( "Error opening file: " + inputPath );
+						logService.error( "Error opening inputImageFile: " + inputPath );
 						continue;
 					}
 

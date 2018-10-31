@@ -2,39 +2,46 @@ package de.embl.cba.morphometry.skeleton;
 
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.measurements.ObjectMeasurements;
-import de.embl.cba.morphometry.microglia.MicrogliaSettings;
-import ij.IJ;
-import ij.ImagePlus;
-import ij.gui.NonBlockingGenericDialog;
-import net.imglib2.RandomAccess;
+import de.embl.cba.morphometry.microglia.MicrogliaMorphometrySettings;
+import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
-import net.imglib2.roi.labeling.LabelRegion;
-import net.imglib2.roi.labeling.LabelRegionCursor;
-import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.view.Views;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class Skeleton< T extends RealType< T > & NativeType< T > >
 {
 
 	final ArrayList< RandomAccessibleInterval< BitType > > masks;
-	final MicrogliaSettings settings;
+	final MicrogliaMorphometrySettings settings;
 
 	private ArrayList< RandomAccessibleInterval< BitType > > skeletons;
 
 	public Skeleton( ArrayList< RandomAccessibleInterval< BitType > > masks,
-					 MicrogliaSettings settings )
+					 MicrogliaMorphometrySettings settings )
 	{
 		this.masks = masks;
 		this.settings = settings;
+	}
+
+	public Skeleton( RandomAccessibleInterval labelMaps,
+					 MicrogliaMorphometrySettings settings )
+	{
+		this.masks = new ArrayList<>(  );
+		this.settings = settings;
+
+		long numTimePoints = labelMaps.dimension( 2 );
+
+		for ( int t = 0; t < numTimePoints; ++t )
+		{
+			final RandomAccessibleInterval< BitType > mask = Utils.asMask( Views.hyperSlice( labelMaps, 2, t ) );
+			masks.add( mask );
+		}
 	}
 
 	public void run()
@@ -48,7 +55,7 @@ public class Skeleton< T extends RealType< T > & NativeType< T > >
 		for ( int t = tMin; t <= tMax; ++t )
 		{
 
-			Utils.log( "\nComputing skeletons for frame " + ( t + 1 ) );
+			Utils.log( "Computing skeletons for frame " + ( t + 1 ) );
 
 			final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( masks.get( t ) );
 

@@ -4,7 +4,7 @@ import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.CoordinateAndValue;
 import de.embl.cba.morphometry.IntensityHistogram;
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.microglia.MicrogliaSettings;
+import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -17,12 +17,12 @@ import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 {
 
-	final MicrogliaSettings settings;
+	final MicrogliaTrackingSettings settings;
 	private RandomAccessibleInterval< BitType > mask;
 	final private RandomAccessibleInterval< T > intensity;
 	final private boolean showIntermediateResults;
 
-	public SimpleSegmenter( RandomAccessibleInterval< T > intensity, MicrogliaSettings settings )
+	public SimpleSegmenter( RandomAccessibleInterval< T > intensity, MicrogliaTrackingSettings settings )
 	{
 		this.intensity = intensity;
 		this.settings = settings;

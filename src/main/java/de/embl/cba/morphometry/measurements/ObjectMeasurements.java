@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry.measurements;
 
+import de.embl.cba.morphometry.Utils;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
@@ -14,6 +15,7 @@ import net.imglib2.view.Views;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class ObjectMeasurements
 {
@@ -40,8 +42,8 @@ public class ObjectMeasurements
 		}
 	}
 
-	public static void
-	measureVolumesInVoxels( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling )
+	public static void measureSizes( HashMap<Integer, Map<String, Object>> objectMeasurements,
+									 ImgLabeling<Integer, IntType> imgLabeling )
 	{
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
@@ -62,22 +64,25 @@ public class ObjectMeasurements
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	void measureSumIntensities( HashMap< Integer, Map< String, Object > > objectMeasurements, ImgLabeling< Integer, IntType > imgLabeling, RandomAccessibleInterval< T > image, String channel )
+	void measureSumIntensities( HashMap< Integer, Map< String, Object > > objectMeasurements,
+								ImgLabeling< Integer, IntType > imgLabeling,
+								RandomAccessibleInterval< T > image,
+								String channel )
 	{
 		final RandomAccess< T > imageRandomAccess = image.randomAccess();
 
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+		final Set< Integer > existingLabels = labelRegions.getExistingLabels();
+
 		for ( LabelRegion labelRegion : labelRegions )
 		{
-
 			long sum = measureSumIntensity( imageRandomAccess, labelRegion );
-
 			addMeasurement( objectMeasurements, (int) labelRegion.getLabel(), SUM_INTENSITY + "_" + channel, sum );
-
 		}
 	}
 
-	private static < T extends RealType< T > & NativeType< T > > long measureSumIntensity( RandomAccess< T > imageRandomAccess, LabelRegion labelRegion )
+	private static < T extends RealType< T > & NativeType< T > >
+	long measureSumIntensity( RandomAccess< T > imageRandomAccess, LabelRegion labelRegion )
 	{
 		final LabelRegionCursor cursor = labelRegion.cursor();
 
@@ -162,5 +167,25 @@ public class ObjectMeasurements
 			final int label = ( int ) ( labelRegion.getLabel() );
 			addMeasurement( objectMeasurements, label, GOBAL_BACKGROUND_INTENSITY, offset );
 		}
+	}
+
+	public static void printMeasurements( HashMap<Integer, Map<String, Object>> measurementsMaps )
+	{
+		final Set< Integer > objectLabels = measurementsMaps.keySet();
+
+		for ( int label : objectLabels )
+		{
+			final Map< String, Object > measurementsMap = measurementsMaps.get( label );
+
+			Utils.log( "Object label: " + label );
+
+			final Set< String > measurementNames = measurementsMap.keySet();
+
+			for ( String measurementName : measurementNames )
+			{
+				Utils.log( measurementName + " = " + measurementsMap.get( measurementName ) );
+			}
+		}
+
 	}
 }

@@ -3,7 +3,7 @@ package de.embl.cba.morphometry.splitting;
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.ObjectMeasurements;
-import de.embl.cba.morphometry.microglia.MicrogliaSettings;
+import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NonBlockingGenericDialog;
@@ -31,12 +31,12 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 	private int nextId;
 
 	private ArrayList< RandomAccessibleInterval< BitType > > splitMasks;
-	final MicrogliaSettings settings;
+	final MicrogliaTrackingSettings settings;
 
 
 	public TrackingSplitter( ArrayList< RandomAccessibleInterval< BitType > > masks,
 							 ArrayList< RandomAccessibleInterval< T > > intensities,
-							 MicrogliaSettings settings )
+							 MicrogliaTrackingSettings settings )
 	{
 		this.masks = masks;
 		this.intensities = intensities;

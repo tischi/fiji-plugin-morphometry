@@ -52,7 +52,7 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 	public ImagePlus imagePlus;
 
 
-	MicrogliaSettings settings = new MicrogliaSettings();
+	MicrogliaTrackingSettings settings = new MicrogliaTrackingSettings();
 
 
 	public static final String PROCESS_DIRECTORY = "Process all files in directory";
@@ -144,14 +144,6 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 		final MaximalOverlapTracker maximalOverlapTracker = new MaximalOverlapTracker( masks );
 		maximalOverlapTracker.run();
 		final ArrayList< RandomAccessibleInterval< T > > labelings = maximalOverlapTracker.getLabelings();
-
-		// TODO: this should be a separate command
-		final Skeleton skeleton = new Skeleton( masks, settings );
-		skeleton.run();
-		final ArrayList< RandomAccessibleInterval< BitType > > skeletons = skeleton.getSkeletons();
-
-		ImagePlus skeletonImagePlus = Utils.createIJ1Movie( skeletons, "Skeletons" );
-		skeletonImagePlus.show();
 
 		createOutput( intensities, labelings );
 
