@@ -7,7 +7,7 @@ import net.imglib2.type.numeric.RealType;
 
 import java.io.File;
 
-public class MicrogliaSettings<T extends RealType<T> & NativeType< T > >
+public class MicrogliaTrackingSettings<T extends RealType<T> & NativeType< T > >
 {
 	public static final String MANUAL_THRESHOLD = "Manual threshold";
 	public static final String HUANG_AUTO_THRESHOLD = "Huang auto threshold";
@@ -21,7 +21,6 @@ public class MicrogliaSettings<T extends RealType<T> & NativeType< T > >
 	public boolean showIntermediateResults = false;
 	public double workingVoxelSize = 6.0;
 	public double outputResolution = 2.0;
-
 
 	public double watershedSeedsGlobalDistanceThreshold = Double.MAX_VALUE;
 	public double watershedSeedsLocalMaximaDistanceThreshold = 3 * workingVoxelSize; // at least 3 pixels

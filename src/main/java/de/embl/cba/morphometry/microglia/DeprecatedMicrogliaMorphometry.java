@@ -26,20 +26,19 @@ import static de.embl.cba.morphometry.Transforms.getScalingFactors;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 
 
-public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
+public class DeprecatedMicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 {
 
-	final MicrogliaSettings settings;
+	final MicrogliaTrackingSettings settings;
 	final OpService opService;
 
 	private ArrayList< RandomAccessibleInterval< T > > resultImages;
-
 
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
 
 	private ImgLabeling< Integer, IntType > imgLabeling;
 
-	public MicrogliaMorphometry( MicrogliaSettings settings, OpService opService )
+	public DeprecatedMicrogliaMorphometry( MicrogliaTrackingSettings settings, OpService opService )
 	{
 		this.settings = settings;
 		this.opService = opService;
@@ -179,7 +178,7 @@ public class MicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 
 		ObjectMeasurements.measureSumIntensities( objectMeasurements, imgLabeling, skeleton, "skeleton" );
 
-		ObjectMeasurements.measureVolumesInVoxels( objectMeasurements, imgLabeling );
+		ObjectMeasurements.measureSizes( objectMeasurements, imgLabeling );
 
 		ObjectMeasurements.measurePositions( objectMeasurements, imgLabeling, workingCalibration );
 

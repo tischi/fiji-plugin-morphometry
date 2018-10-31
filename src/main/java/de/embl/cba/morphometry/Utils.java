@@ -6,13 +6,12 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.plugin.Duplicator;
 import ij.process.LUT;
-import inra.ijpb.label.LabelImages;
-import inra.ijpb.util.ColorMaps;
 import net.imagej.Dataset;
 import net.imagej.axis.LinearAxis;
 import net.imglib2.*;
 import net.imglib2.Cursor;
 import net.imglib2.Point;
+import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
@@ -40,8 +39,7 @@ import net.imglib2.view.Views;
 import org.scijava.log.LogService;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
 
 import static de.embl.cba.morphometry.Constants.*;
@@ -921,7 +919,50 @@ public class Utils
 		return imgLabeling;
 	}
 
-	public static void drawObject( RandomAccessibleInterval< IntType > img, LabelRegion labelRegion, int value )
+	public static < T extends RealType< T > & NativeType< T >  >
+	ImgLabeling< Integer, IntType > labelMapAsImgLabelling( RandomAccessibleInterval< IntType > labelMap )
+	{
+		final ImgLabeling< Integer, IntType > imgLabeling = new ImgLabeling<>( labelMap );
+
+		Set< Integer > labelSet = Utils.getLabelSet( labelMap );
+
+		final ArrayList< Set< Integer > > labelSets = new ArrayList< >();
+		labelSets.add( new HashSet<>() );
+		for ( int label : labelSet )
+		{
+			final HashSet< Integer > set = new HashSet< >();
+			set.add( label );
+			labelSets.add( set );
+		}
+
+		new LabelingMapping.SerialisationAccess< Integer >( imgLabeling.getMapping() )
+		{
+			{
+				super.setLabelSets( labelSets );
+			}
+		};
+
+
+		return imgLabeling;
+	}
+
+	private static Set<Integer> getLabelSet( RandomAccessibleInterval<IntType> labelMap )
+	{
+		final Cursor< IntType > cursor = Views.iterable( labelMap ).cursor();
+
+		final Set< Integer > labelSet = new HashSet<>();
+
+		while ( cursor.hasNext() )
+		{
+			labelSet.add( cursor.next().getInteger() );
+		}
+
+		return labelSet;
+	}
+
+	public static void drawObject( RandomAccessibleInterval< IntType > img,
+								   LabelRegion labelRegion,
+								   int value )
 	{
 		final Cursor< Void > regionCursor = labelRegion.cursor();
 		final RandomAccess< IntType > access = img.randomAccess();
@@ -1016,7 +1057,7 @@ public class Utils
 
 	public static LUT getGoldenAngleLUT()
 	{
-		byte[][] bytes = ColorMaps.CommonLabelMaps.fromLabel( ColorMaps.CommonLabelMaps.GOLDEN_ANGLE.getLabel() ).computeLut( 256, false );
+		byte[][] bytes = createGoldenAngleLut( 256 );
 		final byte[][] rgb = new byte[ 3 ][ 256 ];
 
 		for ( int c = 0; c < 3; ++c )
@@ -1034,5 +1075,56 @@ public class Utils
 
 		LUT lut = new LUT( rgb[ 0 ], rgb[ 1 ], rgb[ 2 ] );
 		return lut;
+	}
+
+
+	/**
+	 * Make lookup table with esthetically pleasing colors based on the golden
+	 * angle
+	 *
+	 * From: MorphoLibJ
+	 * // TODO: properly cite!
+	 *
+	 * @param nColors number of colors to generate
+	 * @return lookup table with golden-angled-based colors
+	 */
+	public final static byte[][] createGoldenAngleLut( int nColors )
+	{
+		// hue for assigning new color ([0.0-1.0])
+		float hue = 0.5f;
+		// saturation for assigning new color ([0.5-1.0])
+		float saturation = 0.75f;
+
+		// create colors recursively by adding golden angle ratio to hue and
+		// saturation of previous color
+		Color[] colors = new Color[nColors];
+		for (int i = 0; i < nColors; i++)
+		{
+			// create current color
+			colors[i] = Color.getHSBColor(hue, saturation, 1);
+
+			// update hue and saturation for next color
+			hue += 0.38197f; // golden angle
+			if (hue > 1)
+				hue -= 1;
+			saturation += 0.38197f; // golden angle
+			if (saturation > 1)
+				saturation -= 1;
+			saturation = 0.5f * saturation + 0.5f;
+		}
+
+		// create map
+		byte[][] map = new byte[nColors][3];
+
+		// fill up the color map by converting color array
+		for (int i = 0; i < nColors; i++)
+		{
+			Color color = colors[i];
+			map[i][0] = (byte) color.getRed();
+			map[i][1] = (byte) color.getGreen();
+			map[i][2] = (byte) color.getBlue();
+		}
+
+		return map;
 	}
 }

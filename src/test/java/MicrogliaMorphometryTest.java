@@ -1,7 +1,7 @@
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.microglia.MicrogliaSettings;
+import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
 import de.embl.cba.morphometry.measurements.ObjectMeasurements;
 import de.embl.cba.morphometry.segmentation.SimpleSegmenter;
 import de.embl.cba.morphometry.splitting.TrackingSplitter;
@@ -42,7 +42,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 
 		final Img< T > inputImages = ImageJFunctions.wrapReal( imagePlus );
 
-		MicrogliaSettings settings = new MicrogliaSettings();
+		MicrogliaTrackingSettings settings = new MicrogliaTrackingSettings();
 		settings.inputCalibration = Utils.get2dCalibration( imagePlus ) ;
 		settings.workingVoxelSize = settings.inputCalibration[ 0 ];
 		settings.maxPossibleValueInDataSet = Math.pow( 2, imagePlus.getBitDepth() ) - 1.0;
@@ -190,7 +190,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 	}
 
 
-	public double[] getPixelPosition( MicrogliaSettings settings, Map< String, Object > objectMeasurements )
+	public double[] getPixelPosition( MicrogliaTrackingSettings settings, Map< String, Object > objectMeasurements )
 	{
 		final double[] position = ( double[] ) objectMeasurements.get( ObjectMeasurements.CALIBRATED_POSITION );
 

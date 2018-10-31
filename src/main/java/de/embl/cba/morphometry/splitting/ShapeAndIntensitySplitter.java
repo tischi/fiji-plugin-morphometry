@@ -2,7 +2,7 @@ package de.embl.cba.morphometry.splitting;
 
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.microglia.MicrogliaSettings;
+import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
@@ -19,14 +19,14 @@ import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 public class ShapeAndIntensitySplitter< T extends RealType< T > & NativeType< T > >
 {
 
-	final MicrogliaSettings settings;
+	final MicrogliaTrackingSettings settings;
 	final private RandomAccessibleInterval< BitType > mask;
 	final private RandomAccessibleInterval< T > intensity;
 	private RandomAccessibleInterval< BitType > splitMask;
 
 	public ShapeAndIntensitySplitter( RandomAccessibleInterval< BitType > mask,
 									  RandomAccessibleInterval< T > intensity,
-									  MicrogliaSettings settings )
+									  MicrogliaTrackingSettings settings )
 	{
 		this.mask = mask;
 		this.intensity = intensity;
