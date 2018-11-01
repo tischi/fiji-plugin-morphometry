@@ -16,7 +16,7 @@ public class SplittingUtils
 	public static HashMap< Integer, Integer > getNumObjectsFromSkeleton( ImgLabeling< Integer, IntType > imgLabeling, RandomAccessibleInterval< BitType > skeleton, MicrogliaTrackingSettings settings )
 	{
 		HashMap< Integer, Map< String, Object > > skeletonMeasurements = new HashMap<>();
-		ObjectMeasurements.measureSumIntensities( skeletonMeasurements, imgLabeling, skeleton, "skeleton" );
+		ObjectMeasurements.measureSumIntensities( skeletonMeasurements, imgLabeling, skeleton, "Skeleton" );
 		HashMap< Integer, Integer > numObjects = new HashMap<>();
 		for ( int label : skeletonMeasurements.keySet() )
 		{

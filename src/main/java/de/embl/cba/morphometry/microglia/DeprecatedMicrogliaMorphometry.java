@@ -176,7 +176,7 @@ public class DeprecatedMicrogliaMorphometry< T extends RealType< T > & NativeTyp
 
 		ObjectMeasurements.measureSumIntensities( objectMeasurements, imgLabeling, intensityImage, "channel01" );
 
-		ObjectMeasurements.measureSumIntensities( objectMeasurements, imgLabeling, skeleton, "skeleton" );
+		ObjectMeasurements.measureSumIntensities( objectMeasurements, imgLabeling, skeleton, "Skeleton" );
 
 		ObjectMeasurements.measureSizes( objectMeasurements, imgLabeling );
 
