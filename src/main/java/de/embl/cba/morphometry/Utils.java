@@ -25,13 +25,16 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.LongArray;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.loops.LoopBuilder;
+import net.imglib2.ops.parse.token.Int;
 import net.imglib2.outofbounds.OutOfBounds;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.*;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
 import net.imglib2.view.IntervalView;
@@ -919,16 +922,16 @@ public class Utils
 		return imgLabeling;
 	}
 
-	public static < T extends RealType< T > & NativeType< T >  >
-	ImgLabeling< Integer, IntType > labelMapAsImgLabelling( RandomAccessibleInterval< IntType > labelMap )
+	public static ImgLabeling< Integer, IntType > labelMapAsImgLabeling( RandomAccessibleInterval< IntType > labelMap )
 	{
 		final ImgLabeling< Integer, IntType > imgLabeling = new ImgLabeling<>( labelMap );
 
-		Set< Integer > labelSet = Utils.getLabelSet( labelMap );
+		final double maximumLabel = Algorithms.getMaximumValue( labelMap );
 
 		final ArrayList< Set< Integer > > labelSets = new ArrayList< >();
-		labelSets.add( new HashSet<>() );
-		for ( int label : labelSet )
+
+		labelSets.add( new HashSet<>() ); // empty 0 label
+		for ( int label = 1; label <= maximumLabel; ++label )
 		{
 			final HashSet< Integer > set = new HashSet< >();
 			set.add( label );
@@ -942,19 +945,40 @@ public class Utils
 			}
 		};
 
+		return imgLabeling;
+	}
+
+
+	public static ImgLabeling< Integer, IntType > labelMapAsImgLabelingRobert( RandomAccessibleInterval< IntType > labelMap )
+	{
+		final ImgLabeling< Integer, IntType > imgLabeling = new ImgLabeling<>( labelMap );
+
+		final Cursor< LabelingType< Integer > > labelCursor = Views.flatIterable( imgLabeling ).cursor();
+
+		for ( final IntType input : Views.flatIterable( labelMap ) ) {
+
+			final LabelingType< Integer > element = labelCursor.next();
+
+			if ( input.getRealFloat() != 0 )
+			{
+				element.add((int) input.getRealFloat());
+			}
+		}
 
 		return imgLabeling;
 	}
 
-	private static Set<Integer> getLabelSet( RandomAccessibleInterval<IntType> labelMap )
+
+
+	private static Set< Integer > getLabelSet( RandomAccessibleInterval< UnsignedShortType > labelMap )
 	{
-		final Cursor< IntType > cursor = Views.iterable( labelMap ).cursor();
+		final Cursor< UnsignedShortType > cursor = Views.iterable( labelMap ).cursor();
 
 		final Set< Integer > labelSet = new HashSet<>();
 
 		while ( cursor.hasNext() )
 		{
-			labelSet.add( cursor.next().getInteger() );
+			labelSet.add(  cursor.next().getInteger() );
 		}
 
 		return labelSet;

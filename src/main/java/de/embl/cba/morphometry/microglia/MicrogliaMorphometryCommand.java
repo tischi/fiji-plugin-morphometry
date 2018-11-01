@@ -10,8 +10,6 @@ import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
-import net.imglib2.roi.labeling.ImgLabeling;
-import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
@@ -28,7 +26,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import static de.embl.cba.morphometry.microglia.Constants.INTENSITIES;
 import static de.embl.cba.morphometry.microglia.Constants.SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING;
@@ -65,6 +62,7 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 	private ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimepointList;
 	private ArrayList< RandomAccessibleInterval< BitType > > skeletons;
+	private RandomAccessibleInterval< IntType > labelMaps;
 
 	public void run()
 	{
@@ -85,15 +83,15 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 		final RandomAccessibleInterval rai = ImageJFunctions.wrapReal( imagePlus );
 
-		final RandomAccessibleInterval< IntType > labelMaps = Views.dropSingletonDimensions( Views.hyperSlice( rai, Constants.CHANNEL, settings.labelMapChannelIndex ) );
+		labelMaps = Views.dropSingletonDimensions( Views.hyperSlice( rai, Constants.CHANNEL, settings.labelMapChannelIndex ) );
 
-		initObjectMeasurements( labelMaps );
+		initObjectMeasurements( );
 
-		skeletons = performSkeletonMeasurements( labelMaps );
+		skeletons = performSkeletonMeasurements( );
 
-		// performSizeMeasurements( labelMaps );
+		performSizeMeasurements( );
 
-		logMeasurements();
+		printMeasurements();
 
 		//ImagePlus skeletonImagePlus = Utils.createIJ1Movie( skeletons, "Skeletons" );
 		//skeletonImagePlus.show();
@@ -102,29 +100,24 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 	}
 
-	private void logMeasurements()
+	private void printMeasurements()
 	{
-		for ( int t = 0; t < measurementsTimepointList.size(); ++t )
-		{
-			Utils.log("# Measurements of time-point " + ( t + 1) );
-			ObjectMeasurements.printMeasurements( measurementsTimepointList.get( t ) );
-		}
+		ObjectMeasurements.printMeasurements( measurementsTimepointList );
 	}
 
-	private void performSizeMeasurements( RandomAccessibleInterval< IntType > labelMaps )
+	private void performSizeMeasurements( )
 	{
 		for ( int t = 0; t < labelMaps.dimension( 2 ); ++t )
 		{
 			final HashMap< Integer, Map< String, Object > > measurements = measurementsTimepointList.get( t );
 			ObjectMeasurements.measureSizes(
 					measurements,
-					Utils.asImgLabeling( labelMaps )
+					Utils.labelMapAsImgLabeling( labelMaps )
 			);
 		}
 	}
 
-	private ArrayList< RandomAccessibleInterval< BitType > > performSkeletonMeasurements(
-			RandomAccessibleInterval labelMaps )
+	private ArrayList< RandomAccessibleInterval< BitType > > performSkeletonMeasurements( )
 	{
 		final Skeleton skeleton = new Skeleton( labelMaps, settings );
 		skeleton.run();
@@ -132,22 +125,21 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 		for ( int t = 0; t < labelMaps.dimension( 2 ); ++t )
 		{
-			final ImgLabeling< Integer, IntType > imgLabeling = new ImgLabeling<>(  Views.hyperSlice( labelMaps, 2, t ) );
-
-			ImageJFunctions.show( Utils.labelMapAsImgLabelling( Views.hyperSlice( labelMaps, 2, t ) ).getIndexImg() );
+			final RandomAccessibleInterval< IntType > labelMap = Views.hyperSlice( labelMaps, 2, t );
 
 			final HashMap< Integer, Map< String, Object > > measurements = measurementsTimepointList.get( t );
+
 			ObjectMeasurements.measureSumIntensities(
 					measurements,
-					Utils.labelMapAsImgLabelling( Views.hyperSlice( labelMaps, 2, t ) ),
+					Utils.labelMapAsImgLabeling( (RandomAccessibleInterval) labelMap ),
 					skeletons.get( t ),
-					"skeleton" );
+					"Skeleton" );
 		}
 
 		return skeletons;
 	}
 
-	private void initObjectMeasurements( RandomAccessibleInterval labelMaps )
+	private void initObjectMeasurements( )
 	{
 		measurementsTimepointList = new ArrayList<>();
 		for ( int t = 0; t < labelMaps.dimension( 2 ); ++t )

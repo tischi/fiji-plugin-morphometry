@@ -13,6 +13,7 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.view.Views;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -21,7 +22,7 @@ public class ObjectMeasurements
 {
 
 	public static final String CALIBRATED_POSITION = "CalibratedPosition";
-	public static final String SIZE_PIXEL_UNITS = "PixelSize";
+	public static final String SIZE_PIXEL_UNITS = "Size_Pixels";
 	public static final String SUM_INTENSITY = "SumIntensity";
 	public static final String GOBAL_BACKGROUND_INTENSITY = "GobalBackgroundIntensity";
 
@@ -72,7 +73,6 @@ public class ObjectMeasurements
 		final RandomAccess< T > imageRandomAccess = image.randomAccess();
 
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
-		final Set< Integer > existingLabels = labelRegions.getExistingLabels();
 
 		for ( LabelRegion labelRegion : labelRegions )
 		{
@@ -169,21 +169,39 @@ public class ObjectMeasurements
 		}
 	}
 
-	public static void printMeasurements( HashMap<Integer, Map<String, Object>> measurementsMaps )
+	public static void printMeasurements( ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimePointList )
 	{
-		final Set< Integer > objectLabels = measurementsMaps.keySet();
 
-		for ( int label : objectLabels )
+		final Set< Integer > objectLabelsFirstTimePoint = measurementsTimePointList.get( 0 ).keySet();
+		final Set< String > measurementNames = measurementsTimePointList.get( 0 ).get( objectLabelsFirstTimePoint.iterator().next() ).keySet();
+
+		String header = "Object_Label";
+
+		for ( String measurementName : measurementNames )
 		{
-			final Map< String, Object > measurementsMap = measurementsMaps.get( label );
+			header += "\t" + measurementName ;
+		}
 
-			Utils.log( "Object label: " + label );
+		Utils.log( header );
 
-			final Set< String > measurementNames = measurementsMap.keySet();
+		for ( int t = 0; t < measurementsTimePointList.size(); ++t )
+		{
+			final HashMap< Integer, Map< String, Object > > measurements = measurementsTimePointList.get( t );
 
-			for ( String measurementName : measurementNames )
+			final Set< Integer > objectLabels = measurements.keySet();
+
+			for ( int label : objectLabels )
 			{
-				Utils.log( measurementName + " = " + measurementsMap.get( measurementName ) );
+				final Map< String, Object > measurementsMap = measurements.get( label );
+
+				String values = String.format( "%05d", label ) + "_T" + String.format( "%05d", t ) ;
+
+				for ( String measurementName : measurementNames )
+				{
+					values += "\t" + measurementsMap.get( measurementName );
+				}
+
+				Utils.log( values );
 			}
 		}
 
