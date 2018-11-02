@@ -54,7 +54,6 @@ public class Skeleton< T extends RealType< T > & NativeType< T > >
 
 		for ( int t = tMin; t <= tMax; ++t )
 		{
-
 			Utils.log( "Computing skeletons for frame " + ( t + 1 ) );
 
 			final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( masks.get( t ) );
@@ -62,7 +61,7 @@ public class Skeleton< T extends RealType< T > & NativeType< T > >
 			final RandomAccessibleInterval< BitType > skeletons =
 					Algorithms.createObjectSkeletons(
 						imgLabeling,
-						3,
+						3, // TODO: Make a parameter
 						settings.opService
 					);
 

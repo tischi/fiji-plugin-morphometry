@@ -51,9 +51,7 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 	@Parameter( required = false )
 	public ImagePlus imagePlus;
 
-
 	MicrogliaTrackingSettings settings = new MicrogliaTrackingSettings();
-
 
 	public static final String PROCESS_DIRECTORY = "Process all files in directory";
 	public static final String PROCESS_CURRENT_IMAGE = "Current image";
