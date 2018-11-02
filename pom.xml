@@ -135,6 +135,11 @@
 			<artifactId>jama</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.scijava</groupId>
+			<artifactId>scijava-table</artifactId>
+		</dependency>
+
 
 	</dependencies>
 
