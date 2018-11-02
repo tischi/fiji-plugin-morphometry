@@ -95,6 +95,7 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 		uiService.show( table );
 
+
 		MeasurementsUtils.saveMeasurements( outputTableFile, lines );
 	}
 
