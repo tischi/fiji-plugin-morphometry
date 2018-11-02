@@ -1,6 +1,5 @@
 package de.embl.cba.morphometry.measurements;
 
-import de.embl.cba.morphometry.Utils;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
@@ -21,25 +20,39 @@ import java.util.Set;
 public class ObjectMeasurements
 {
 
-	public static final String CALIBRATED_POSITION = "CalibratedPosition";
+	public static final String COORDINATE = "Coordinate";
 	public static final String SIZE_PIXEL_UNITS = "Size_Pixels";
+	public static final String PIXEL_UNITS = "Pixels";
 	public static final String SUM_INTENSITY = "SumIntensity";
 	public static final String GOBAL_BACKGROUND_INTENSITY = "GobalBackgroundIntensity";
+	public static final String SEP = "_";
+	private static final String FRAME_UNITS = "Frames";
 
 	public static void measurePositions( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling, double[] calibration )
 	{
+		String[] XYZ = new String[]{"X","Y","Z"};
+
+		String unit = "";
+		if ( calibration == null )
+		{
+			unit = PIXEL_UNITS;
+		}
+
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
 		{
 			final int label = ( int ) ( labelRegion.getLabel() );
-			final double[] position = new double[ calibration.length ];
+
+			final double[] position = new double[ labelRegion.numDimensions() ];
+
 			labelRegion.getCenterOfMass().localize( position );
+
 			for ( int d = 0; d < position.length; ++d )
 			{
-				position[ d ] *= calibration[ d ];
+				if ( calibration != null ) position[ d ] *= calibration[ d ];
+				addMeasurement( objectMeasurements, label, COORDINATE + SEP + XYZ[ d ] + SEP + unit, position[ d ] );
 			}
 
-			addMeasurement( objectMeasurements, label, CALIBRATED_POSITION, position );
 		}
 	}
 
@@ -50,7 +63,7 @@ public class ObjectMeasurements
 		for ( LabelRegion labelRegion : labelRegions )
 		{
 			final int label = ( int ) ( labelRegion.getLabel() );
-			addMeasurement( objectMeasurements, label, SIZE_PIXEL_UNITS, labelRegion.size() );
+			addMeasurement( objectMeasurements, label, PIXEL_UNITS, labelRegion.size() );
 		}
 	}
 
@@ -77,7 +90,7 @@ public class ObjectMeasurements
 		for ( LabelRegion labelRegion : labelRegions )
 		{
 			long sum = measureSumIntensity( imageRandomAccess, labelRegion );
-			addMeasurement( objectMeasurements, (int) labelRegion.getLabel(), SUM_INTENSITY + "_" + channel, sum );
+			addMeasurement( objectMeasurements, (int) labelRegion.getLabel(), SUM_INTENSITY + SEP + channel, sum );
 		}
 	}
 
@@ -169,20 +182,24 @@ public class ObjectMeasurements
 		}
 	}
 
-	public static void printMeasurements( ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimePointList )
+	public static ArrayList< String > printMeasurements( ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimePointList )
 	{
 
 		final Set< Integer > objectLabelsFirstTimePoint = measurementsTimePointList.get( 0 ).keySet();
 		final Set< String > measurementNames = measurementsTimePointList.get( 0 ).get( objectLabelsFirstTimePoint.iterator().next() ).keySet();
 
+		final ArrayList< String > lines = new ArrayList<>();
+
 		String header = "Object_Label";
+
+		header += "\t" + COORDINATE + SEP + "Time"+ SEP +FRAME_UNITS;
 
 		for ( String measurementName : measurementNames )
 		{
 			header += "\t" + measurementName ;
 		}
 
-		Utils.log( header );
+		lines.add( header );
 
 		for ( int t = 0; t < measurementsTimePointList.size(); ++t )
 		{
@@ -194,16 +211,19 @@ public class ObjectMeasurements
 			{
 				final Map< String, Object > measurementsMap = measurements.get( label );
 
-				String values = String.format( "%05d", label ) + "_T" + String.format( "%05d", t ) ;
+				String values = String.format( "%05d", label );
+
+				values += "\t" + String.format( "%05d", t );
 
 				for ( String measurementName : measurementNames )
 				{
 					values += "\t" + measurementsMap.get( measurementName );
 				}
 
-				Utils.log( values );
+				lines.add( values );
 			}
 		}
 
+		return lines;
 	}
 }
