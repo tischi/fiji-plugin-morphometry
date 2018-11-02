@@ -2,12 +2,14 @@ package de.embl.cba.morphometry.microglia;
 
 import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.measurements.MeasurementsUtils;
 import de.embl.cba.morphometry.measurements.ObjectMeasurements;
 import de.embl.cba.morphometry.skeleton.Skeleton;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
+import net.imagej.table.GenericTable;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
@@ -24,8 +26,6 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -87,28 +87,15 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 		performMeasurements( );
 
-		final ArrayList< String > lines = ObjectMeasurements.printMeasurements( measurementsTimepointList );
+		final ArrayList< String > lines = MeasurementsUtils.printMeasurements( measurementsTimepointList );
 
 		logMeasurements( lines );
 
-		saveMeasurements( outputTableFile, lines );
-	}
+		final GenericTable table = MeasurementsUtils.createTable( lines );
 
-	public void saveMeasurements( File file, ArrayList<String> lines )
-	{
-		try (PrintWriter out = new PrintWriter( file ) )
-		{
-			for ( String line : lines )
-			{
-				out.println( line );
-			}
+		uiService.show( table );
 
-			Utils.log( "\nSaved table to: " + file );
-		}
-		catch ( FileNotFoundException e )
-		{
-			e.printStackTrace();
-		}
+		MeasurementsUtils.saveMeasurements( outputTableFile, lines );
 	}
 
 	private RandomAccessibleInterval openInputImage( File file )
@@ -151,7 +138,7 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 					imgLabeling,
 					null);
 
-			ObjectMeasurements.measureSizes(
+			ObjectMeasurements.measureVolumes(
 					measurements,
 					imgLabeling );
 

@@ -21,12 +21,12 @@ public class ObjectMeasurements
 {
 
 	public static final String COORDINATE = "Coordinate";
-	public static final String SIZE_PIXEL_UNITS = "Size_Pixels";
+	public static final String VOLUME = "Volume";
 	public static final String PIXEL_UNITS = "Pixels";
 	public static final String SUM_INTENSITY = "SumIntensity";
 	public static final String GOBAL_BACKGROUND_INTENSITY = "GobalBackgroundIntensity";
 	public static final String SEP = "_";
-	private static final String FRAME_UNITS = "Frames";
+	public static final String FRAME_UNITS = "Frames";
 
 	public static void measurePositions( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling, double[] calibration )
 	{
@@ -56,14 +56,14 @@ public class ObjectMeasurements
 		}
 	}
 
-	public static void measureSizes( HashMap<Integer, Map<String, Object>> objectMeasurements,
-									 ImgLabeling<Integer, IntType> imgLabeling )
+	public static void measureVolumes( HashMap<Integer, Map<String, Object>> objectMeasurements,
+									   ImgLabeling<Integer, IntType> imgLabeling )
 	{
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
 		{
 			final int label = ( int ) ( labelRegion.getLabel() );
-			addMeasurement( objectMeasurements, label, PIXEL_UNITS, labelRegion.size() );
+			addMeasurement( objectMeasurements, label, VOLUME + SEP + PIXEL_UNITS, labelRegion.size() );
 		}
 	}
 
@@ -182,48 +182,4 @@ public class ObjectMeasurements
 		}
 	}
 
-	public static ArrayList< String > printMeasurements( ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimePointList )
-	{
-
-		final Set< Integer > objectLabelsFirstTimePoint = measurementsTimePointList.get( 0 ).keySet();
-		final Set< String > measurementNames = measurementsTimePointList.get( 0 ).get( objectLabelsFirstTimePoint.iterator().next() ).keySet();
-
-		final ArrayList< String > lines = new ArrayList<>();
-
-		String header = "Object_Label";
-
-		header += "\t" + COORDINATE + SEP + "Time"+ SEP +FRAME_UNITS;
-
-		for ( String measurementName : measurementNames )
-		{
-			header += "\t" + measurementName ;
-		}
-
-		lines.add( header );
-
-		for ( int t = 0; t < measurementsTimePointList.size(); ++t )
-		{
-			final HashMap< Integer, Map< String, Object > > measurements = measurementsTimePointList.get( t );
-
-			final Set< Integer > objectLabels = measurements.keySet();
-
-			for ( int label : objectLabels )
-			{
-				final Map< String, Object > measurementsMap = measurements.get( label );
-
-				String values = String.format( "%05d", label );
-
-				values += "\t" + String.format( "%05d", t );
-
-				for ( String measurementName : measurementNames )
-				{
-					values += "\t" + measurementsMap.get( measurementName );
-				}
-
-				lines.add( values );
-			}
-		}
-
-		return lines;
-	}
 }
