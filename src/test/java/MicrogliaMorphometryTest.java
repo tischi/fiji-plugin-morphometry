@@ -142,7 +142,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 //
 //				String text = "";
 //				text += label;
-//				text += ", size: " + objectMeasurements.get( ObjectMeasurements.SIZE_PIXEL_UNITS );
+//				text += ", size: " + objectMeasurements.get( ObjectMeasurements.PIXEL_UNITS );
 //				text += ", intens: " + correctedSumIntensity;
 //				text += ", skel: " + Math.round( settings.workingVoxelSize * (long) objectMeasurements.get( ObjectMeasurements.SUM_INTENSITY + "_skeleton" ) );
 //
@@ -192,7 +192,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 
 	public double[] getPixelPosition( MicrogliaTrackingSettings settings, Map< String, Object > objectMeasurements )
 	{
-		final double[] position = ( double[] ) objectMeasurements.get( ObjectMeasurements.CALIBRATED_POSITION );
+		final double[] position = ( double[] ) objectMeasurements.get( ObjectMeasurements.COORDINATE );
 
 		double[] pixelPosition = new double[ position.length ];
 		for ( int d = 0; d < pixelPosition.length; ++d )
@@ -205,7 +205,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 	public long getCorrectedSumIntensity( Map< String, Object > objectMeasurements )
 	{
 		final long sumIntensity = ( long ) objectMeasurements.get( ObjectMeasurements.SUM_INTENSITY + "_channel01" );
-		final long size = ( long ) objectMeasurements.get( ObjectMeasurements.SIZE_PIXEL_UNITS );
+		final long size = ( long ) objectMeasurements.get( ObjectMeasurements.PIXEL_UNITS );
 		final double bgIntensity = ( double ) objectMeasurements.get( ObjectMeasurements.GOBAL_BACKGROUND_INTENSITY );
 		return (long) ( sumIntensity - ( bgIntensity * size ) );
 	}
