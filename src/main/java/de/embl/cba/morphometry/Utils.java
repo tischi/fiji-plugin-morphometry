@@ -22,6 +22,7 @@ import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.basictypeaccess.array.IntArray;
 import net.imglib2.img.basictypeaccess.array.LongArray;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.loops.LoopBuilder;
@@ -34,9 +35,11 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.type.numeric.integer.UnsignedIntType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
+import net.imglib2.util.Util;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.scijava.log.LogService;
@@ -948,20 +951,20 @@ public class Utils
 		return imgLabeling;
 	}
 
-
-	public static ImgLabeling< Integer, IntType > labelMapAsImgLabelingRobert( RandomAccessibleInterval< IntType > labelMap )
+	public static <T extends IntegerType<T> > ImgLabeling< Integer, IntType > labelMapAsImgLabelingRobert( RandomAccessibleInterval< T > labelMap )
 	{
-		final ImgLabeling< Integer, IntType > imgLabeling = new ImgLabeling<>( labelMap );
+		final RandomAccessibleInterval< IntType > indexImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( labelMap ) );
+		final ImgLabeling< Integer, IntType > imgLabeling = new ImgLabeling<>( indexImg );
 
 		final Cursor< LabelingType< Integer > > labelCursor = Views.flatIterable( imgLabeling ).cursor();
 
-		for ( final IntType input : Views.flatIterable( labelMap ) ) {
+		for ( final IntegerType input : Views.flatIterable( labelMap ) ) {
 
 			final LabelingType< Integer > element = labelCursor.next();
 
 			if ( input.getRealFloat() != 0 )
 			{
-				element.add((int) input.getRealFloat());
+				element.add( (int) input.getRealFloat() );
 			}
 		}
 
