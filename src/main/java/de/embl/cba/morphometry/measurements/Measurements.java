@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class ObjectMeasurements
+public class Measurements
 {
 
 	public static final String COORDINATE = "Coordinate";
@@ -27,6 +27,7 @@ public class ObjectMeasurements
 	public static final String GOBAL_BACKGROUND_INTENSITY = "GobalBackgroundIntensity";
 	public static final String SEP = "_";
 	public static final String FRAME_UNITS = "Frames";
+	public static final String TIME = "Time";
 
 	public static void measurePositions( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling, double[] calibration )
 	{

@@ -3,7 +3,7 @@ package de.embl.cba.morphometry.microglia;
 import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.MeasurementsUtils;
-import de.embl.cba.morphometry.measurements.ObjectMeasurements;
+import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.skeleton.Skeleton;
 import de.embl.cba.morphometry.table.InteractiveTablePanel;
 import ij.IJ;
@@ -16,7 +16,6 @@ import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.view.Views;
@@ -89,19 +88,28 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 		performMeasurements( );
 
-		final ArrayList< String > lines = MeasurementsUtils.printMeasurements( measurementsTimepointList );
+		final ArrayList< String > measurements = MeasurementsUtils.asTableRows( measurementsTimepointList );
 
-		logMeasurements( lines );
+		MeasurementsUtils.saveMeasurements( outputTableFile, measurements );
 
-		final GenericTable table = MeasurementsUtils.createTable( lines );
+		showResults( file, measurements );
+
+
+	}
+
+	private void showResults( File file, ArrayList< String > measurements )
+	{
+		final ImagePlus imagePlus = IJ.openImage( file.getAbsolutePath() );
+		imagePlus.show();
+
+		final GenericTable table = MeasurementsUtils.createTable( measurements );
 
 		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( table );
-
+		interactiveTablePanel.setCoordinateColumnX( Measurements.COORDINATE + Measurements.SEP + "X" + Measurements.SEP + Measurements.PIXEL_UNITS );
+		interactiveTablePanel.setCoordinateColumnY( Measurements.COORDINATE + Measurements.SEP + "Y" + Measurements.SEP + Measurements.PIXEL_UNITS );
+		interactiveTablePanel.setCoordinateColumnT( Measurements.COORDINATE + Measurements.SEP + Measurements.TIME + Measurements.SEP + Measurements.FRAME_UNITS );
+		interactiveTablePanel.setImagePlus( imagePlus );
 		interactiveTablePanel.showTable();
-
-		// uiService.show( table );
-
-		MeasurementsUtils.saveMeasurements( outputTableFile, lines );
 	}
 
 	private RandomAccessibleInterval openInputImage( File file )
@@ -138,18 +146,16 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 			final ImgLabeling< Integer, IntType > imgLabeling = Utils.labelMapAsImgLabelingRobert( Views.hyperSlice( labelMaps, 2, t ) );
 
-			ImageJFunctions.show( imgLabeling.getIndexImg() );
-
-			ObjectMeasurements.measurePositions(
+			Measurements.measurePositions(
 					measurements,
 					imgLabeling,
 					null);
 
-			ObjectMeasurements.measureVolumes(
+			Measurements.measureVolumes(
 					measurements,
 					imgLabeling );
 
-			ObjectMeasurements.measureSumIntensities(
+			Measurements.measureSumIntensities(
 					measurements,
 					imgLabeling,
 					skeletons.get( t ),

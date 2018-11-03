@@ -1,7 +1,7 @@
 package de.embl.cba.morphometry.microglia;
 
 import de.embl.cba.morphometry.*;
-import de.embl.cba.morphometry.measurements.ObjectMeasurements;
+import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.splitting.SplittingUtils;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
@@ -174,15 +174,15 @@ public class DeprecatedMicrogliaMorphometry< T extends RealType< T > & NativeTyp
 
 		objectMeasurements = new HashMap<>();
 
-		ObjectMeasurements.measureSumIntensities( objectMeasurements, imgLabeling, intensityImage, "channel01" );
+		Measurements.measureSumIntensities( objectMeasurements, imgLabeling, intensityImage, "channel01" );
 
-		ObjectMeasurements.measureSumIntensities( objectMeasurements, imgLabeling, skeleton, "Skeleton" );
+		Measurements.measureSumIntensities( objectMeasurements, imgLabeling, skeleton, "Skeleton" );
 
-		ObjectMeasurements.measureVolumes( objectMeasurements, imgLabeling );
+		Measurements.measureVolumes( objectMeasurements, imgLabeling );
 
-		ObjectMeasurements.measurePositions( objectMeasurements, imgLabeling, workingCalibration );
+		Measurements.measurePositions( objectMeasurements, imgLabeling, workingCalibration );
 
-		ObjectMeasurements.addGlobalBackgroundMeasurement( objectMeasurements, imgLabeling, offset );
+		Measurements.addGlobalBackgroundMeasurement( objectMeasurements, imgLabeling, offset );
 
 
 

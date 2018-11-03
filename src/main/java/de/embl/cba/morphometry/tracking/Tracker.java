@@ -1,7 +1,7 @@
 package de.embl.cba.morphometry.tracking;
 
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.measurements.ObjectMeasurements;
+import de.embl.cba.morphometry.measurements.Measurements;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.array.ArrayImgs;
@@ -13,7 +13,6 @@ import net.imglib2.util.Intervals;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Set;
 
 public class Tracker < T extends RealType< T > & NativeType< T > >
 {
@@ -68,7 +67,7 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 					Utils.log( "Time point (one based): " + ( t + 1 ) );
 					Utils.log( "Object label: " + region.getLabel() );
 
-					final double currentIntensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
+					final double currentIntensity = Measurements.measureBgCorrectedSumIntensity(
 							currentLabeling,
 							region.getLabel(),
 							intensities.get( t ) );
@@ -79,7 +78,7 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 
 					for ( int label : overlaps.keySet() )
 					{
-						final double intensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
+						final double intensity = Measurements.measureBgCorrectedSumIntensity(
 								previousLabeling,
 								label,
 								intensities.get( t ) );

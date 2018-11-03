@@ -1,5 +1,8 @@
 package de.embl.cba.morphometry.table;
 
+import ij.ImagePlus;
+import ij.gui.PointRoi;
+import ij.gui.Roi;
 import net.imagej.table.GenericTable;
 
 import javax.swing.*;
@@ -10,15 +13,24 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
 
-public class InteractiveTablePanel extends JPanel implements MouseListener, KeyListener {
-    private boolean DEBUG = false;
-    JTable table;
-    JFrame frame;
-    JScrollPane scrollPane;
+public class InteractiveTablePanel extends JPanel implements MouseListener, KeyListener
+{
+    final private JTable table;
+    final private GenericTable genericTable;
 
-    public InteractiveTablePanel( GenericTable genericTable ) {
+    private JFrame frame;
+    private JScrollPane scrollPane;
+    private ImagePlus imagePlus;
+    private String coordinateColumnX;
+    private String coordinateColumnY;
+    private String coordinateColumnZ;
+    private String coordinateColumnT;
 
+    public InteractiveTablePanel( GenericTable genericTable )
+    {
         super( new GridLayout(1, 0 ) );
+
+        this.genericTable = genericTable;
 
         table = TableUtils.asJTable( genericTable );
         table.setPreferredScrollableViewportSize( new Dimension(500, 200) );
@@ -32,6 +44,33 @@ public class InteractiveTablePanel extends JPanel implements MouseListener, KeyL
         add( scrollPane );
 
     }
+
+    public void setImagePlus( ImagePlus imagePlus )
+    {
+        this.imagePlus = imagePlus;
+    }
+
+    public void setCoordinateColumnX( String coordinateColumnX )
+    {
+        this.coordinateColumnX = coordinateColumnX;
+    }
+
+    public void setCoordinateColumnY( String coordinateColumnY )
+    {
+        this.coordinateColumnY = coordinateColumnY;
+    }
+
+    public void setCoordinateColumnZ( String coordinateColumnZ )
+    {
+        this.coordinateColumnZ = coordinateColumnZ;
+    }
+
+    public void setCoordinateColumnT( String coordinateColumnT )
+    {
+        this.coordinateColumnT = coordinateColumnT;
+    }
+
+
 
     public void showTable() {
 
@@ -47,33 +86,49 @@ public class InteractiveTablePanel extends JPanel implements MouseListener, KeyL
         frame.setVisible(true);
     }
 
-    public void reactToAction() {
+    public void reactToRowSelection()
+    {
 
+        int row = table.convertRowIndexToModel( table.getSelectedRow() );
 
-        int rs = table.getSelectedRow();
-        int r = table.convertRowIndexToModel(rs);
-        
+        if ( imagePlus != null && coordinateColumnX != null && coordinateColumnY != null )
+        {
+            float x = Float.parseFloat( genericTable.get( coordinateColumnX, row ).toString() );
+            float y = Float.parseFloat( genericTable.get( coordinateColumnY, row ).toString() );
+            int slice = 1;
+            int frame = 1;
 
-//        ImagePlus imp = IJ.getImage();
+            if ( coordinateColumnZ != null )
+            {
+                slice = Integer.parseInt( genericTable.get( coordinateColumnZ, row ).toString() );
+            }
 
-//        float x = new Float(table.getModel().getValueAt(r, 1).toString());
-//        float y = new Float(table.getModel().getValueAt(r, 2).toString());
-//        float z = new Float(table.getModel().getValueAt(r, 3).toString());
-//        int t = new Integer(table.getModel().getValueAt(r, 4).toString());
-//        int id = new Integer(table.getModel().getValueAt(r, 5).toString());
-//
-//        // Values in the table are one-based already
-//        imp.setPosition(0,(int)z, t);
-//        Roi pr = new PointRoi(x,y);
-//        pr.setPosition(0,(int)z, t);
-//        imp.setRoi(pr);
+            if ( coordinateColumnT != null )
+            {
+                frame = Integer.parseInt( genericTable.get( coordinateColumnT, row ).toString() );
+            }
+
+            imagePlus.setPosition( 1, slice, frame );
+
+            markSelectedObject( x, y, slice, frame );
+        }
 
     }
+
+    public void markSelectedObject( float x, float y, int slice, int frame )
+    {
+        PointRoi pointRoi = new PointRoi( x, y );
+        pointRoi.setSize( 4 );
+        pointRoi.setStrokeColor( Color.MAGENTA );
+        pointRoi.setPosition( 0, slice, frame );
+        imagePlus.setRoi( pointRoi );
+    }
+
 
     @Override
     public void mouseClicked(MouseEvent e)
     {
-        reactToAction();
+        reactToRowSelection();
     }
 
     @Override
@@ -109,6 +164,6 @@ public class InteractiveTablePanel extends JPanel implements MouseListener, KeyL
     @Override
     public void keyReleased(KeyEvent e)
     {
-        reactToAction();
+        reactToRowSelection();
     }
 }
