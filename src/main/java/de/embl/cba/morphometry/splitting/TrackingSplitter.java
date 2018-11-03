@@ -2,7 +2,7 @@ package de.embl.cba.morphometry.splitting;
 
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.measurements.ObjectMeasurements;
+import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
 import ij.IJ;
 import ij.ImagePlus;
@@ -205,7 +205,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		{
 			for ( int previousLabel : overlapSizes.keySet() )
 			{
-				final long previousObjectSize = ObjectMeasurements.measureSize( previousLabeling, previousLabel );
+				final long previousObjectSize = Measurements.measureSize( previousLabeling, previousLabel );
 
 				final double overlapFraction = 1.0 * overlapSizes.get( previousLabel ).longValue() / previousObjectSize;
 
@@ -234,7 +234,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 		boolean splitObjects =  true;
 
-		final double currentObjectIntensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
+		final double currentObjectIntensity = Measurements.measureBgCorrectedSumIntensity(
 				currentLabeling,
 				currentObjectRegion.getLabel(),
 				currentIntensityImage );
@@ -245,7 +245,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 		for ( int previousLabel : previousSizes.keySet() )
 		{
-			final double previousObjectIntensity = ObjectMeasurements.measureBgCorrectedSumIntensity(
+			final double previousObjectIntensity = Measurements.measureBgCorrectedSumIntensity(
 					previousLabeling,
 					previousLabel,
 					previousIntensityImage );

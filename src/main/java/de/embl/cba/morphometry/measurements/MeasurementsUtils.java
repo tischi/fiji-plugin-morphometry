@@ -15,7 +15,7 @@ import java.util.Set;
 public class MeasurementsUtils
 {
 
-	public static ArrayList< String > printMeasurements( ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimePointList )
+	public static ArrayList< String > asTableRows( ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimePointList )
 	{
 
 		final Set< Integer > objectLabelsFirstTimePoint = measurementsTimePointList.get( 0 ).keySet();
@@ -25,7 +25,7 @@ public class MeasurementsUtils
 
 		String header = "Object_Label";
 
-		header += "\t" + ObjectMeasurements.COORDINATE + ObjectMeasurements.SEP + "Time"+ ObjectMeasurements.SEP + ObjectMeasurements.FRAME_UNITS;
+		header += "\t" + Measurements.COORDINATE + Measurements.SEP + Measurements.TIME+ Measurements.SEP + Measurements.FRAME_UNITS;
 
 		for ( String measurementName : measurementNames )
 		{
@@ -46,7 +46,7 @@ public class MeasurementsUtils
 
 				String values = String.format( "%05d", label );
 
-				values += "\t" + String.format( "%05d", t );
+				values += "\t" + String.format( "%05d", t + 1 ); // convert to one-based
 
 				for ( String measurementName : measurementNames )
 				{

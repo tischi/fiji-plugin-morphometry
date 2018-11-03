@@ -2,7 +2,7 @@ import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
-import de.embl.cba.morphometry.measurements.ObjectMeasurements;
+import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.segmentation.SimpleSegmenter;
 import de.embl.cba.morphometry.splitting.TrackingSplitter;
 import de.embl.cba.morphometry.tracking.MaximalOverlapTracker;
@@ -192,7 +192,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 
 	public double[] getPixelPosition( MicrogliaTrackingSettings settings, Map< String, Object > objectMeasurements )
 	{
-		final double[] position = ( double[] ) objectMeasurements.get( ObjectMeasurements.COORDINATE );
+		final double[] position = ( double[] ) objectMeasurements.get( Measurements.COORDINATE );
 
 		double[] pixelPosition = new double[ position.length ];
 		for ( int d = 0; d < pixelPosition.length; ++d )
@@ -204,9 +204,9 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 
 	public long getCorrectedSumIntensity( Map< String, Object > objectMeasurements )
 	{
-		final long sumIntensity = ( long ) objectMeasurements.get( ObjectMeasurements.SUM_INTENSITY + "_channel01" );
-		final long size = ( long ) objectMeasurements.get( ObjectMeasurements.PIXEL_UNITS );
-		final double bgIntensity = ( double ) objectMeasurements.get( ObjectMeasurements.GOBAL_BACKGROUND_INTENSITY );
+		final long sumIntensity = ( long ) objectMeasurements.get( Measurements.SUM_INTENSITY + "_channel01" );
+		final long size = ( long ) objectMeasurements.get( Measurements.PIXEL_UNITS );
+		final double bgIntensity = ( double ) objectMeasurements.get( Measurements.GOBAL_BACKGROUND_INTENSITY );
 		return (long) ( sumIntensity - ( bgIntensity * size ) );
 	}
 
