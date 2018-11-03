@@ -39,6 +39,7 @@ public class ObjectMeasurements
 		}
 
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+
 		for ( LabelRegion labelRegion : labelRegions )
 		{
 			final int label = ( int ) ( labelRegion.getLabel() );

@@ -5,6 +5,7 @@ import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.MeasurementsUtils;
 import de.embl.cba.morphometry.measurements.ObjectMeasurements;
 import de.embl.cba.morphometry.skeleton.Skeleton;
+import de.embl.cba.morphometry.table.InteractiveTablePanel;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
@@ -15,6 +16,7 @@ import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.view.Views;
@@ -93,8 +95,11 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 		final GenericTable table = MeasurementsUtils.createTable( lines );
 
-		uiService.show( table );
+		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( table );
 
+		interactiveTablePanel.showTable();
+
+		// uiService.show( table );
 
 		MeasurementsUtils.saveMeasurements( outputTableFile, lines );
 	}
@@ -125,14 +130,15 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 		}
 	}
 
-
 	private void performMeasurements( )
 	{
 		for ( int t = 0; t < labelMaps.dimension( 2 ); ++t )
 		{
 			final HashMap< Integer, Map< String, Object > > measurements = measurementsTimepointList.get( t );
 
-			final ImgLabeling< Integer, IntType > imgLabeling = Utils.labelMapAsImgLabeling( Views.hyperSlice( labelMaps, 2, t ) );
+			final ImgLabeling< Integer, IntType > imgLabeling = Utils.labelMapAsImgLabelingRobert( Views.hyperSlice( labelMaps, 2, t ) );
+
+			ImageJFunctions.show( imgLabeling.getIndexImg() );
 
 			ObjectMeasurements.measurePositions(
 					measurements,
