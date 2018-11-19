@@ -88,7 +88,7 @@ public class DeprecatedMicrogliaMorphometry< T extends RealType< T > & NativeTyp
 		 *  Compute offset and threshold
 		 */
 
-		Utils.log( "Computing offset and threshold..." );
+		Utils.log( "Offset and threshold..." );
 
 		final IntensityHistogram intensityHistogram = new IntensityHistogram( intensityImage, settings.maxPossibleValueInDataSet, 2 );
 

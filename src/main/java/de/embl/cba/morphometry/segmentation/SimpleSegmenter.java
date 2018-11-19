@@ -57,7 +57,7 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 		 *  Compute offset and threshold
 		 */
 
-		Utils.log( "Computing offset and threshold..." );
+		Utils.log( "Offset and threshold..." );
 
 		final IntensityHistogram intensityHistogram = new IntensityHistogram( image, settings.maxPossibleValueInDataSet, 2 );
 

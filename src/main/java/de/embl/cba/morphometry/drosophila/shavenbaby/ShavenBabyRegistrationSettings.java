@@ -2,17 +2,13 @@ package de.embl.cba.morphometry.drosophila.shavenbaby;
 
 import net.imglib2.FinalInterval;
 
-import static de.embl.cba.morphometry.Constants.X;
-import static de.embl.cba.morphometry.Constants.Y;
-import static de.embl.cba.morphometry.Constants.Z;
-
 public class ShavenBabyRegistrationSettings
 {
 	public static final String MANUAL_THRESHOLD = "Manual threshold";
 	public static final String HUANG_AUTO_THRESHOLD = "Huang auto threshold";
-	public static final String CENTROID_SHAPE = "Shape - Centroids";
-	public static final String AMNIOSEROSA = "Intensity - Amnioserosa";
-	public static final String PROJECTION_SHAPE = "Shape - Projection";
+	public static final String CENTROID_SHAPE_BASED_ROLL_TRANSFORM = "Shape - Centroids";
+	public static final String INTENSITY_BASED_ROLL_TRANSFORM = "Intensity - Other Channel";
+	public static final String PROJECTION_SHAPE_BASED_ROLL_TRANSFORM = "Shape - Projection";
 
 	// all spatial values are in micrometer
 	// morphometry length: 420
@@ -21,8 +17,8 @@ public class ShavenBabyRegistrationSettings
 	public static double drosophilaLength = 420;
 	public static double drosophilaWidth = 160;
 
-	public int shavenbabyChannelIndexOneBased = 1;
-	public int amnioserosaChannelIndexOneBased = 2;
+	public int svbChannelIndexOneBased = 2;
+	public int otherChannelIndexOneBased = 1;
 
 	public boolean showIntermediateResults = false;
 
@@ -50,11 +46,11 @@ public class ShavenBabyRegistrationSettings
 
 	public double minimalObjectSize = drosophilaWidth * drosophilaWidth * drosophilaWidth;
 
-	public double amaProjectionXMin = +20.0;
-	public double amaProjectionXMax = +80.0;
-	public double amaProjectionBlurSigma = 20.0;
+	public double ch2ProjectionXMin = +20.0;
+	public double ch2ProjectionXMax = +80.0;
+	public double ch2ProjectionBlurSigma = 20.0;
 	public double finalProjectionMinDistanceToCenter = 60;
-	public String rollAngleComputationMethod = CENTROID_SHAPE;
+	public String rollAngleComputationMethod = CENTROID_SHAPE_BASED_ROLL_TRANSFORM;
 	public double watershedSeedsLocalMaximaSearchRadius = 2 * registrationResolution;
 
 	public FinalInterval getOutputImageInterval()
