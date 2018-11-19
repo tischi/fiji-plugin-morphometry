@@ -65,6 +65,7 @@ public class ShavenBabyRegistration
 			  double[] inputCalibration )
 	{
 
+
 		if ( settings.showIntermediateResults ) show( svb, "input image", null, inputCalibration, false );
 
 
@@ -293,9 +294,19 @@ public class ShavenBabyRegistration
 		 *  Roll transform
 		 */
 
-		registration = computeRollTransform( registration, registrationCalibration, intensityCorrectedOther, yawAndOrientationAlignedMask );
+		final AffineTransform3D rollTransform = computeRollTransform( registration, registrationCalibration, intensityCorrectedOther, yawAndOrientationAlignedMask, settings.rollAngleComputationMethod );
+		rollTransform.rotate( X, Math.PI ); // this changes whether the found structure should be at the top or bottom
 
 		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedSvb, registration ), "aligned input data at registration resolution", Transforms.origin(), registrationCalibration, false );
+
+		if ( settings.rollAngleComputationMethod != ShavenBabyRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM )
+		{
+			// Also compute shape-based roll transform to see how well it would have worked
+			// We only do this to see the angle in the log file
+			computeRollTransform( registration, registrationCalibration, intensityCorrectedOther, yawAndOrientationAlignedMask, ShavenBabyRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM );
+		}
+
+		registration = registration.preConcatenate( rollTransform  );
 
 
 		/**
@@ -390,11 +401,12 @@ public class ShavenBabyRegistration
 			AffineTransform3D registration,
 			double[] registrationCalibration,
 			RandomAccessibleInterval< T > intensityCorrectedCh2,
-			RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask )
+			RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask,
+			String rollAngleComputationMethod )
 	{
-		Utils.log( "Computing roll transform, using method: " + settings.rollAngleComputationMethod );
+		Utils.log( "Computing roll transform, using method: " + rollAngleComputationMethod );
 
-		if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.INTENSITY_BASED_ROLL_TRANSFORM ) )
+		if ( rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.INTENSITY_BASED_ROLL_TRANSFORM ) )
 		{
 			final RandomAccessibleInterval yawAndOrientationAlignedCh2 = Utils.copyAsArrayImg( Transforms.createTransformedView( intensityCorrectedCh2, registration, new NearestNeighborInterpolatorFactory() ) );
 
@@ -405,10 +417,10 @@ public class ShavenBabyRegistration
 					settings.ch2ProjectionBlurSigma,
 					registrationCalibration );
 
-			registration = registration.preConcatenate( intensityBasedRollTransform );
+			return intensityBasedRollTransform;
 
 		}
-		else if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM ) )
+		else if ( rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM ) )
 		{
 			final CentroidsParameters centroidsParameters = Utils.computeCentroidsParametersAlongXAxis( yawAndOrientationAlignedMask, settings.registrationResolution, settings.rollAngleMaxDistanceToCenter );
 
@@ -423,10 +435,10 @@ public class ShavenBabyRegistration
 
 			final AffineTransform3D rollTransform = computeCentroidBasedRollTransform( centroidsParameters, settings );
 
-			registration = registration.preConcatenate( rollTransform );
+			return rollTransform;
 
 		}
-		else if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.PROJECTION_SHAPE_BASED_ROLL_TRANSFORM ) )
+		else if ( rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.PROJECTION_SHAPE_BASED_ROLL_TRANSFORM ) )
 		{
 
 			final RandomAccessibleInterval< UnsignedIntType > intMask = Converters.convert( yawAndOrientationAlignedMask, ( i, o ) -> o.set( i.getRealDouble() > 0 ? 1000 : 0 ), new UnsignedIntType() );
@@ -437,9 +449,11 @@ public class ShavenBabyRegistration
 					intMask.max( X ) * settings.registrationResolution,
 					12.0, registrationCalibration );
 
-			registration = registration.preConcatenate( intensityBasedRollTransform );
+			return intensityBasedRollTransform;
 		}
-		return registration;
+
+		return null;
+
 	}
 
 	public RandomAccessibleInterval< BitType > close(
@@ -560,7 +574,6 @@ public class ShavenBabyRegistration
 		if ( settings.showIntermediateResults ) show( blurred, "perpendicular projection - blurred ", realPoints, Utils.as2dDoubleArray( settings.registrationResolution ), false );
 
 		final AffineTransform3D xAxisRollTransform = createXAxisRollTransform( maximum );
-		// xAxisRollTransform.rotate( X, Math.PI );
 
 		return xAxisRollTransform;
 	}

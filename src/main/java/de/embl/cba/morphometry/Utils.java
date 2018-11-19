@@ -45,6 +45,10 @@ import net.imglib2.view.Views;
 import org.scijava.log.LogService;
 
 import java.awt.*;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.List;
 
@@ -56,9 +60,62 @@ public class Utils
 {
 	public static int imagePlusChannelDimension = 2;
 
+	public static String logFilePath = null;
+
+
+	public static void setNewLogFilePath( String aLogFilePath )
+	{
+		logFilePath = aLogFilePath;
+		createLogFile();
+	}
+
 	public static void log( String message )
 	{
 		IJ.log( message );
+
+		if ( logFilePath != null )
+		{
+			File logFile = new File( logFilePath );
+
+			if ( ! logFile.exists() )
+			{
+				createLogFile();
+			}
+			else
+			{
+				writeToLogFile( message + "\n" );
+			}
+		}
+
+	}
+
+	public static void writeToLogFile( String message )
+	{
+		try {
+			Files.write( Paths.get( logFilePath ), message.getBytes(), StandardOpenOption.APPEND);
+		}
+		catch (IOException e) {
+			//exception handling left as an exercise for the reader
+		}
+	}
+
+	public static void createLogFile()
+	{
+		PrintWriter writer = null;
+		try
+		{
+			writer = new PrintWriter( logFilePath, "UTF-8" );
+			writer.println( "Start logging..." );
+		}
+		catch ( FileNotFoundException e )
+		{
+			e.printStackTrace();
+		}
+		catch ( UnsupportedEncodingException e )
+		{
+			e.printStackTrace();
+		}
+		writer.close();
 	}
 
 

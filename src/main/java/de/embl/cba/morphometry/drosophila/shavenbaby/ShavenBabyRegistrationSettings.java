@@ -17,8 +17,8 @@ public class ShavenBabyRegistrationSettings
 	public static double drosophilaLength = 420;
 	public static double drosophilaWidth = 160;
 
-	public int svbChannelIndexOneBased = 2;
-	public int otherChannelIndexOneBased = 1;
+	public int svbChannelIndexOneBased = 3;
+	public int otherChannelIndexOneBased = 2;
 
 	public boolean showIntermediateResults = false;
 
