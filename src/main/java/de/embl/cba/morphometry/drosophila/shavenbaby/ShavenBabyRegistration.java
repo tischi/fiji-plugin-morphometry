@@ -61,7 +61,7 @@ public class ShavenBabyRegistration
 
 	public < T extends RealType< T > & NativeType< T > >
 	void run( RandomAccessibleInterval< T > svb, // https://en.wikipedia.org/wiki/Random_access
-			  RandomAccessibleInterval< T > ch2, //
+			  RandomAccessibleInterval< T > other, //
 			  double[] inputCalibration )
 	{
 
@@ -101,7 +101,7 @@ public class ShavenBabyRegistration
 		Utils.log( "Down-sampling to registration resolution..." );
 
 		final RandomAccessibleInterval< T > downscaledSvb = Algorithms.createRescaledArrayImg( svb, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
-		final RandomAccessibleInterval< T > downscaledCh2 = Algorithms.createRescaledArrayImg( ch2, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+		final RandomAccessibleInterval< T > downscaledOther = Algorithms.createRescaledArrayImg( other, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
 
 		double[] registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 
@@ -112,7 +112,7 @@ public class ShavenBabyRegistration
 		 *  Compute intensity offset (for refractive index mismatch corrections)
 		 */
 
-		Utils.log( "Computing offset and threshold..." );
+		Utils.log( "Offset and threshold..." );
 
 		final IntensityHistogram downscaledSvbIntensityHistogram = new IntensityHistogram( downscaledSvb, 65535.0, 5.0 );
 
@@ -150,8 +150,8 @@ public class ShavenBabyRegistration
 		final RandomAccessibleInterval< T > intensityCorrectedSvb = Utils.copyAsArrayImg( downscaledSvb );
 		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedSvb, correctionSettings );
 
-		final RandomAccessibleInterval< T > intensityCorrectedCh2 = Utils.copyAsArrayImg( downscaledCh2 );
-		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedCh2, correctionSettings );
+		final RandomAccessibleInterval< T > intensityCorrectedOther = Utils.copyAsArrayImg( downscaledOther );
+		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedOther, correctionSettings );
 
 		if ( settings.showIntermediateResults ) show( intensityCorrectedSvb, "intensity corrected svb", null, registrationCalibration, false );
 
@@ -163,7 +163,7 @@ public class ShavenBabyRegistration
 		 */
 
 		final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( intensityCorrectedSvb ) );
-			final double huang = opService.threshold().huang( histogram ).getRealDouble();
+		final double huang = opService.threshold().huang( histogram ).getRealDouble();
 		final double otsu = opService.threshold().otsu( histogram ).getRealDouble();
 		final double yen = opService.threshold().yen( histogram ).getRealDouble();
 
@@ -247,7 +247,7 @@ public class ShavenBabyRegistration
 
 		/**
 		 * Process main embryo mask
-		 * - TODO: put hard-coded values into settings
+		 * - TODO: put the currently hard-coded values into settings
 		 */
 
 		embryoMask = close( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
@@ -293,7 +293,7 @@ public class ShavenBabyRegistration
 		 *  Roll transform
 		 */
 
-		registration = computeRollTransform( registration, registrationCalibration, intensityCorrectedSvb, intensityCorrectedCh2, yawAndOrientationAlignedMask );
+		registration = computeRollTransform( registration, registrationCalibration, intensityCorrectedOther, yawAndOrientationAlignedMask );
 
 		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedSvb, registration ), "aligned input data at registration resolution", Transforms.origin(), registrationCalibration, false );
 
@@ -386,25 +386,29 @@ public class ShavenBabyRegistration
 
 
 
-	public < T extends RealType< T > & NativeType< T > > AffineTransform3D computeRollTransform( AffineTransform3D registration, double[] registrationCalibration, RandomAccessibleInterval< T > intensityCorrectedSvb, RandomAccessibleInterval< T > intensityCorrectedAma, RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask )
+	public < T extends RealType< T > & NativeType< T > > AffineTransform3D computeRollTransform(
+			AffineTransform3D registration,
+			double[] registrationCalibration,
+			RandomAccessibleInterval< T > intensityCorrectedCh2,
+			RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask )
 	{
 		Utils.log( "Computing roll transform, using method: " + settings.rollAngleComputationMethod );
 
-		if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.AMNIOSEROSA ) )
+		if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.INTENSITY_BASED_ROLL_TRANSFORM ) )
 		{
-			final RandomAccessibleInterval yawAndOrientationAlignedAma = Utils.copyAsArrayImg( Transforms.createTransformedView( intensityCorrectedAma, registration, new NearestNeighborInterpolatorFactory() ) );
-			final RandomAccessibleInterval yawAndOrientationAlignedSvb = Utils.copyAsArrayImg( Transforms.createTransformedView( intensityCorrectedSvb, registration, new NearestNeighborInterpolatorFactory() ) );
+			final RandomAccessibleInterval yawAndOrientationAlignedCh2 = Utils.copyAsArrayImg( Transforms.createTransformedView( intensityCorrectedCh2, registration, new NearestNeighborInterpolatorFactory() ) );
 
 			final AffineTransform3D intensityBasedRollTransform = computeIntensityBasedRollTransform(
-					yawAndOrientationAlignedAma,
-					settings.amaProjectionXMin,
-					settings.amaProjectionXMax,
-					settings.amaProjectionBlurSigma );
+					yawAndOrientationAlignedCh2,
+					settings.ch2ProjectionXMin,
+					settings.ch2ProjectionXMax,
+					settings.ch2ProjectionBlurSigma,
+					registrationCalibration );
 
 			registration = registration.preConcatenate( intensityBasedRollTransform );
 
 		}
-		else if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.CENTROID_SHAPE ) )
+		else if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM ) )
 		{
 			final CentroidsParameters centroidsParameters = Utils.computeCentroidsParametersAlongXAxis( yawAndOrientationAlignedMask, settings.registrationResolution, settings.rollAngleMaxDistanceToCenter );
 
@@ -422,7 +426,7 @@ public class ShavenBabyRegistration
 			registration = registration.preConcatenate( rollTransform );
 
 		}
-		else if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.PROJECTION_SHAPE ) )
+		else if ( settings.rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.PROJECTION_SHAPE_BASED_ROLL_TRANSFORM ) )
 		{
 
 			final RandomAccessibleInterval< UnsignedIntType > intMask = Converters.convert( yawAndOrientationAlignedMask, ( i, o ) -> o.set( i.getRealDouble() > 0 ? 1000 : 0 ), new UnsignedIntType() );
@@ -431,7 +435,7 @@ public class ShavenBabyRegistration
 					intMask,
 					intMask.min( X ) * settings.registrationResolution,
 					intMask.max( X ) * settings.registrationResolution,
-					12.0 );
+					12.0, registrationCalibration );
 
 			registration = registration.preConcatenate( intensityBasedRollTransform );
 		}
@@ -491,7 +495,7 @@ public class ShavenBabyRegistration
 
 	public ImgLabeling< Integer, IntType > createWatershedSeeds( RandomAccessibleInterval< DoubleType > distance )
 	{
-		Utils.log( "Computing seeds for watershed...");
+		Utils.log( "Seeds for watershed...");
 
 		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.registrationResolution, 2 );
 		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.registrationResolution, 2 );
@@ -532,7 +536,8 @@ public class ShavenBabyRegistration
 			RandomAccessibleInterval rai,
 			double xMin,
 			double xMax,
-			double blurSigma )
+			double blurSigma,
+			double[] registrationCalibration )
 	{
 		final RandomAccessibleInterval< T > longAxisProjection = Utils.createAverageProjectionAlongAxis(
 				rai,
@@ -541,7 +546,7 @@ public class ShavenBabyRegistration
 				xMax,
 				settings.registrationResolution );
 
-		// if ( settings.showIntermediateResults ) show( longAxisProjection, "amnioserosa projection", null, Utils.as3dDoubleArray( calibration ) , false );
+		if ( settings.showIntermediateResults ) show( longAxisProjection, "channel2 projection", null, registrationCalibration, false );
 
 		final RandomAccessibleInterval< T > blurred = Utils.createBlurredRai(
 				longAxisProjection,
@@ -555,7 +560,7 @@ public class ShavenBabyRegistration
 		if ( settings.showIntermediateResults ) show( blurred, "perpendicular projection - blurred ", realPoints, Utils.as2dDoubleArray( settings.registrationResolution ), false );
 
 		final AffineTransform3D xAxisRollTransform = createXAxisRollTransform( maximum );
-		xAxisRollTransform.rotate( X, Math.PI );
+		// xAxisRollTransform.rotate( X, Math.PI );
 
 		return xAxisRollTransform;
 	}

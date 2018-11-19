@@ -71,9 +71,9 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	public boolean showIntermediateResults = settings.showIntermediateResults;
 
 	@Parameter( choices = {
-			ShavenBabyRegistrationSettings.CENTROID_SHAPE,
-			ShavenBabyRegistrationSettings.PROJECTION_SHAPE,
-			ShavenBabyRegistrationSettings.AMNIOSEROSA})
+			ShavenBabyRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM,
+			ShavenBabyRegistrationSettings.PROJECTION_SHAPE_BASED_ROLL_TRANSFORM,
+			ShavenBabyRegistrationSettings.INTENSITY_BASED_ROLL_TRANSFORM })
 	public String rollAngleComputationMethod = settings.rollAngleComputationMethod;
 
 	@Parameter
@@ -81,6 +81,14 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 	@Parameter
 	public double outputResolution = settings.outputResolution;
+
+	@Parameter
+	public int svbChannelIndexOneBased = settings.svbChannelIndexOneBased;
+
+	@Parameter
+	public int otherChannelIndexOneBased = settings.otherChannelIndexOneBased;
+
+
 
 //	@Parameter
 //	public double thresholdInUnitsOfBackgroundPeakHalfWidth = settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
@@ -335,14 +343,14 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 	private RandomAccessibleInterval< T > getShavenBabyImage( RandomAccessibleInterval< T > images )
 	{
-		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.shavenbabyChannelIndexOneBased - 1 );
+		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.svbChannelIndexOneBased - 1 );
 
 		return rai;
 	}
 
 	private RandomAccessibleInterval<T> getChannel2Image( RandomAccessibleInterval<T> images )
 	{
-		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.amnioserosaChannelIndexOneBased - 1 );
+		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.otherChannelIndexOneBased - 1 );
 
 		return rai;
 	}
@@ -358,6 +366,8 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		settings.thresholdModality = "";
 		//settings.thresholdInUnitsOfBackgroundPeakHalfWidth = thresholdInUnitsOfBackgroundPeakHalfWidth;
 		settings.rollAngleComputationMethod = rollAngleComputationMethod;
+		settings.otherChannelIndexOneBased = otherChannelIndexOneBased;
+		settings.svbChannelIndexOneBased = svbChannelIndexOneBased;
 	}
 
 
