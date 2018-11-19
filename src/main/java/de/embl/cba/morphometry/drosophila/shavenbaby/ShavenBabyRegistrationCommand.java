@@ -64,6 +64,9 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	@Parameter( style = "directory" )
 	public File inputDirectory;
 
+	@Parameter( style = "directory" )
+	public File outputDirectory;
+
 	@Parameter
 	public String fileNameEndsWith = ".czi,.lsm";
 
@@ -120,15 +123,18 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 		if ( inputModality.equals( FROM_DIRECTORY ) )
 		{
-			final File directory = inputDirectory;//uiService.chooseFile( null, FileWidget.DIRECTORY_STYLE );
-			String[] files = directory.list();
+			String[] files = inputDirectory.list();
 
 			for( String file : files )
 			{
 				if ( acceptFile( fileNameEndsWith, file ) )
 				{
+					final String outputFilePathStump = outputDirectory + File.separator + file;
+
+					Utils.setNewLogFilePath( outputFilePathStump + ".log.txt" );
+
 					// Open
-					final String inputPath = directory + "/" + file;
+					final String inputPath = inputDirectory + File.separator + file;
 					Utils.log( " " );
 					Utils.log( "Reading: " + inputPath + "..." );
 					final ImagePlus inputImagePlus = openWithBioFormats( inputPath );
@@ -143,7 +149,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 					// Save watershed
 					RandomAccessibleInterval< T > watershed = (RandomAccessibleInterval) registration.getWatershedLabelImg();
-					new FileSaver( ImageJFunctions.wrap( watershed, "" ) ).saveAsTiff( inputPath + "-watershed.tif" );
+					new FileSaver( ImageJFunctions.wrap( watershed, "" ) ).saveAsTiff( outputFilePathStump + "-watershed.tif" );
 
 					if ( registeredImages == null )
 					{
@@ -157,24 +163,24 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 					final ArrayList< ImagePlus > projections = createProjections( registeredImages );
 
 					Utils.log( "Saving projections..." );
-					saveImages( inputPath, projections );
+					saveImages( outputFilePathStump, projections );
 
 					// Save full registered stack
 					final RandomAccessibleInterval< T > transformedWithImagePlusDimensionOrder = Utils.copyAsArrayImg( Views.permute( registeredImages, 2, 3 ) );
 					final ImagePlus transformedImagePlus = ImageJFunctions.wrap( transformedWithImagePlusDimensionOrder, "transformed" );
-					final String outputPath = inputPath + "-registered.tif";
+					final String outputPath = outputFilePathStump + "-registered.tif";
 					Utils.log( "Saving registered image: " + outputPath );
 					new FileSaver( transformedImagePlus ).saveAsTiff( outputPath );
 
 					// Save svb non-registered projection
 					RandomAccessibleInterval< T > shavenbaby = getShavenBabyImage( getImages( inputImagePlus ) );
 					RandomAccessibleInterval shavenbabyMaximum = new Projection( shavenbaby, Z ).maximum();
-					new FileSaver( ImageJFunctions.wrap( shavenbabyMaximum, "" ) ).saveAsTiff( inputPath + "-projection-ch1-raw.tif" );
+					new FileSaver( ImageJFunctions.wrap( shavenbabyMaximum, "" ) ).saveAsTiff( outputFilePathStump + "-projection-ch1-raw.tif" );
 
 					// Save ch2 non-registered projection
 					RandomAccessibleInterval< T > ch2 = getChannel2Image( getImages( inputImagePlus ) );
 					RandomAccessibleInterval ch2Maximum = new Projection( ch2, Z ).maximum();
-					new FileSaver( ImageJFunctions.wrap( ch2Maximum, "" ) ).saveAsTiff( inputPath + "-projection-ch2-raw.tif" );
+					new FileSaver( ImageJFunctions.wrap( ch2Maximum, "" ) ).saveAsTiff( outputFilePathStump + "-projection-ch2-raw.tif" );
 
 				}
 			}
@@ -201,13 +207,13 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	}
 
 
-	public void saveImages( String inputPath, ArrayList< ImagePlus > imps )
+	public void saveImages( String outputPath, ArrayList< ImagePlus > imps )
 	{
 		for ( ImagePlus imp : imps )
 		{
-			final String outputPath = inputPath + "-" + imp.getTitle() + ".tif";
+			final String outputPath2 = outputPath + "-" + imp.getTitle() + ".tif";
 			FileSaver fileSaver = new FileSaver( imp );
-			fileSaver.saveAsTiff( outputPath );
+			fileSaver.saveAsTiff( outputPath2 );
 		}
 	}
 
