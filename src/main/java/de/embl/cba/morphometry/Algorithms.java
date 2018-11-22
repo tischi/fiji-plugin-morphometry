@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry;
 
+import net.imagej.ImageJ;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
@@ -631,6 +632,21 @@ public class Algorithms
 								previousLabelingCrop,
 								overlappingPreviousObjectLabels );
 
+				final Set< Long > uniqueValues = Utils.computeUniqueValues( overlapLabeling );
+
+				if ( uniqueValues.size() <= 2 )
+				{
+					// "<=2" because it includes 0, thus for two objects there should be at least 3 unique values
+					// Normally a split should always be found, but
+					// due to a bug in the watershed algorithm, seed
+					// points cannot be at the border of objects.
+					// Thus, in createOverlapLabelling, the overlapping objects are eroded,
+					// such that it can happen that there are less than two seed points left
+					// such that no splitting will happen..
+
+					continue;
+				}
+
 
 //				final ArrayList< PositionAndValue > localMaxima =
 //						computeSortedLocalIntensityMaxima(
@@ -661,21 +677,26 @@ public class Algorithms
 
 				LabelRegions< Integer > splitObjects = new LabelRegions( watershedImgLabeling );
 
-				if ( ! splitObjects.getExistingLabels().contains( -1 ) )
+
+				if ( splitObjects.getExistingLabels().contains( -1 ) )
+				{
+					// a watershed was found
+					drawWatershedIntoMask( outputMask, currentRegions, currentObjectLabel, splitObjects );
+					// sometimes the watershed is weirdly placed such that very small (single pixel) objects can occur
+					removeSmallRegionsInMask( outputMask, minimalObjectSize, 1 );
+					if ( showSplits )
+					{
+						ImageJFunctions.show( watershedImgLabeling.getSource(), "" + currentObjectLabel );
+					}
+				}
+				else
 				{
 					Utils.log( "\n\nERROR DURING OBJECT SPLITTING\n\n" );
-					continue; // TODO: examine these cases
+					ImageJFunctions.show( overlapLabeling ).setTitle( currentObjectLabel+"overlap" );
+					ImageJFunctions.show( watershedImgLabeling.getIndexImg() ).setTitle( currentObjectLabel+"watershed" );
+					ImageJFunctions.show( previousLabelingCrop ).setTitle( currentObjectLabel+"previousLabeling" );
+					// TODO: examine these cases
 				}
-
-
-				if ( showSplits )
-				{
-					ImageJFunctions.show( watershedImgLabeling.getSource(), "" + currentObjectLabel  );
-				}
-
-				drawWatershedIntoMask( outputMask, currentRegions, currentObjectLabel, splitObjects );
-				// sometimes the watershed is weirdly placed such that very small (single pixel) objects can occur
-				removeSmallRegionsInMask( outputMask, minimalObjectSize, 1 );
 			}
 		}
 

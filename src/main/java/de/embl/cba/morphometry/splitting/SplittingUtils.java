@@ -1,6 +1,8 @@
 package de.embl.cba.morphometry.splitting;
 
+import com.sun.tools.internal.jxc.ap.Const;
 import de.embl.cba.morphometry.measurements.Measurements;
+import de.embl.cba.morphometry.microglia.Constants;
 import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.roi.labeling.ImgLabeling;
@@ -16,11 +18,11 @@ public class SplittingUtils
 	public static HashMap< Integer, Integer > getNumObjectsFromSkeleton( ImgLabeling< Integer, IntType > imgLabeling, RandomAccessibleInterval< BitType > skeleton, MicrogliaTrackingSettings settings )
 	{
 		HashMap< Integer, Map< String, Object > > skeletonMeasurements = new HashMap<>();
-		Measurements.measureSumIntensities( skeletonMeasurements, imgLabeling, skeleton, "Skeleton" );
+		Measurements.measureSumIntensities( skeletonMeasurements, imgLabeling, skeleton, Constants.SKELETON );
 		HashMap< Integer, Integer > numObjects = new HashMap<>();
 		for ( int label : skeletonMeasurements.keySet() )
 		{
-			final double skeletonLength = settings.workingVoxelSize * (long) skeletonMeasurements.get( label ).get( Measurements.SUM_INTENSITY + "_skeleton" );
+			final double skeletonLength = settings.workingVoxelSize * (long) skeletonMeasurements.get( label ).get( Measurements.SUM_INTENSITY + "_" + Constants.SKELETON );
 			int n = (int) ( Math.ceil( skeletonLength / settings.skeletonMaxLength ) );
 			numObjects.put( label, n );
 		}

@@ -29,6 +29,7 @@ import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 public class DeprecatedMicrogliaMorphometry< T extends RealType< T > & NativeType< T > >
 {
 
+	public static final String SKELETON = "Skeleton";
 	final MicrogliaTrackingSettings settings;
 	final OpService opService;
 
@@ -139,7 +140,7 @@ public class DeprecatedMicrogliaMorphometry< T extends RealType< T > & NativeTyp
 
 		RandomAccessibleInterval< BitType > skeleton = opService.morphology().thinGuoHall(  mask );
 
-		if ( settings.showIntermediateResults ) show( skeleton, "skeleton", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( skeleton, Constants.SKELETON, null, workingCalibration, false );
 
 		HashMap< Integer, Integer > numObjectsPerRegion = SplittingUtils.getNumObjectsFromSkeleton( imgLabeling, skeleton, settings );
 
@@ -176,7 +177,7 @@ public class DeprecatedMicrogliaMorphometry< T extends RealType< T > & NativeTyp
 
 		Measurements.measureSumIntensities( objectMeasurements, imgLabeling, intensityImage, "channel01" );
 
-		Measurements.measureSumIntensities( objectMeasurements, imgLabeling, skeleton, "Skeleton" );
+		Measurements.measureSumIntensities( objectMeasurements, imgLabeling, skeleton, SKELETON );
 
 		Measurements.measureVolumes( objectMeasurements, imgLabeling );
 
