@@ -297,8 +297,6 @@ public class ShavenBabyRegistration
 		final AffineTransform3D rollTransform = computeRollTransform( registration, registrationCalibration, intensityCorrectedOther, yawAndOrientationAlignedMask, settings.rollAngleComputationMethod );
 		rollTransform.rotate( X, Math.PI ); // this changes whether the found structure should be at the top or bottom
 
-		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedSvb, registration ), "aligned input data at registration resolution", Transforms.origin(), registrationCalibration, false );
-
 		if ( settings.rollAngleComputationMethod != ShavenBabyRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM )
 		{
 			// Also compute shape-based roll transform to see how well it would have worked
@@ -307,6 +305,8 @@ public class ShavenBabyRegistration
 		}
 
 		registration = registration.preConcatenate( rollTransform  );
+
+		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedSvb, registration ), "aligned svb at registration resolution", Transforms.origin(), registrationCalibration, false );
 
 
 		/**
@@ -408,7 +408,7 @@ public class ShavenBabyRegistration
 
 		if ( rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.INTENSITY_BASED_ROLL_TRANSFORM ) )
 		{
-			final RandomAccessibleInterval yawAndOrientationAlignedCh2 = Utils.copyAsArrayImg( Transforms.createTransformedView( intensityCorrectedCh2, registration, new NearestNeighborInterpolatorFactory() ) );
+			final RandomAccessibleInterval yawAndOrientationAlignedCh2 = Utils.copyAsArrayImg( Transforms.createTransformedView( intensityCorrectedCh2, registration.copy(), new NearestNeighborInterpolatorFactory() ) );
 
 			final AffineTransform3D intensityBasedRollTransform = computeIntensityBasedRollTransform(
 					yawAndOrientationAlignedCh2,

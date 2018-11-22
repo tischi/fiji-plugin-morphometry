@@ -1,8 +1,8 @@
-import de.embl.cba.morphometry.drosophila.shavenbaby.ShavenBabyRegistrationCommand;
+import de.embl.cba.morphometry.microglia.MicrogliaMorphometryCommand;
 import de.embl.cba.morphometry.microglia.MicrogliaTrackingCommand;
 import net.imagej.ImageJ;
 
-public class MicrogliaTrackingCommandTest
+public class TestMicrogliaMorphometryCommand
 {
 
 	public static void main(final String... args) throws Exception
@@ -11,7 +11,7 @@ public class MicrogliaTrackingCommandTest
 		ij.ui().showUI();
 
 		// invoke the plugin
-		ij.command().run( MicrogliaTrackingCommand.class, true );
+		ij.command().run( MicrogliaMorphometryCommand.class, true );
 	}
 
 }

@@ -159,7 +159,7 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 					measurements,
 					imgLabeling,
 					skeletons.get( t ),
-					"Skeleton" );
+					Constants.SKELETON );
 
 
 		}

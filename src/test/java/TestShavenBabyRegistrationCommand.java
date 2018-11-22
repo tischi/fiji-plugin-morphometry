@@ -1,7 +1,7 @@
 import de.embl.cba.morphometry.drosophila.shavenbaby.ShavenBabyRegistrationCommand;
 import net.imagej.ImageJ;
 
-public class ShavenBabyRegistrationCommandTest
+public class TestShavenBabyRegistrationCommand
 {
 
 	public static void main(final String... args) throws Exception

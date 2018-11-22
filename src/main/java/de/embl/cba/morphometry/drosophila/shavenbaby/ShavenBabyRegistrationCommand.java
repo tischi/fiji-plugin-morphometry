@@ -157,8 +157,6 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 						continue;
 					}
 
-					if ( settings.showIntermediateResults ) showWithBdv( registeredImages, "registered" );
-
 					Utils.log( "Creating projections..." );
 					final ArrayList< ImagePlus > projections = createProjections( registeredImages );
 

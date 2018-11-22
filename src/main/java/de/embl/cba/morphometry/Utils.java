@@ -34,6 +34,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.AbstractIntegerType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
@@ -1210,5 +1211,20 @@ public class Utils
 		}
 
 		return map;
+	}
+
+	public static < T extends AbstractIntegerType< T > >
+	Set< Long > computeUniqueValues( RandomAccessibleInterval< T > rai )
+	{
+		final Set< Long > unique = new HashSet<>(  );
+
+		final Cursor< T > cursor = Views.iterable( rai ).cursor();
+
+		while ( cursor.hasNext() )
+		{
+			unique.add( cursor.next().getIntegerLong() );
+		}
+
+		return unique;
 	}
 }

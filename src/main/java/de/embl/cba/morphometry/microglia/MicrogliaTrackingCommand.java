@@ -110,7 +110,7 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 
 	private void processFile( File file )
 	{
-		final ImagePlus imagePlus = ImageIO.openWithBioFormats( file.getAbsolutePath() );
+		ImagePlus imagePlus = ImageIO.openWithBioFormats( file.getAbsolutePath() );
 
 		if ( imagePlus == null )
 		{
@@ -119,12 +119,37 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 
 		configureSettings( imagePlus );
 
-		ArrayList< RandomAccessibleInterval< T > > intensities =
-				Algorithms.createMaximumProjectedIntensitiesAssumingImagePlusDimensionOrder(
-						( RandomAccessibleInterval ) ImageJFunctions.wrapReal( imagePlus ),
-						microgliaChannelIndexOneBased - 1,
-						tMin, tMax );
+		ArrayList< RandomAccessibleInterval< T > > intensities = createMaximumProjection( imagePlus );
 
+		imagePlus = null; System.gc();
+
+		ArrayList< RandomAccessibleInterval< T > > masks = createBinaryMasks( intensities );
+
+		masks = splitTouchingObjects( intensities, masks );
+
+		final ArrayList< RandomAccessibleInterval< T > > labelings = createTrackingBasedLabels( masks );
+
+		createOutput( intensities, labelings );
+
+	}
+
+	private ArrayList< RandomAccessibleInterval< T > > createTrackingBasedLabels( ArrayList< RandomAccessibleInterval< T > > masks )
+	{
+		final MaximalOverlapTracker maximalOverlapTracker = new MaximalOverlapTracker( masks );
+		maximalOverlapTracker.run();
+		return (ArrayList< RandomAccessibleInterval< T > > ) maximalOverlapTracker.getLabelings();
+	}
+
+	private ArrayList< RandomAccessibleInterval< T > > splitTouchingObjects( ArrayList< RandomAccessibleInterval< T > > intensities, ArrayList< RandomAccessibleInterval< T > > masks )
+	{
+		final TrackingSplitter splitter = new TrackingSplitter( masks, intensities, settings );
+		splitter.run();
+		masks = splitter.getSplitMasks();
+		return masks;
+	}
+
+	private ArrayList< RandomAccessibleInterval< T > > createBinaryMasks( ArrayList< RandomAccessibleInterval< T > > intensities )
+	{
 		ArrayList<  RandomAccessibleInterval< T > > masks = new ArrayList<>();
 		for ( long t = 0; t <= ( tMax - tMin ) ; ++t )
 		{
@@ -132,19 +157,19 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 			simpleSegmenter.run();
 			masks.add( simpleSegmenter.getMask() );
 		}
+		return masks;
+	}
 
-		// ImageJFunctions.show( Views.stack( masks ), "Simple segmentation" );
+	private ArrayList< RandomAccessibleInterval< T > > createMaximumProjection( ImagePlus imagePlus )
+	{
+		ArrayList< RandomAccessibleInterval< T > > intensities =
+				Algorithms.createMaximumProjectedIntensitiesAssumingImagePlusDimensionOrder(
+						( RandomAccessibleInterval ) ImageJFunctions.wrapReal( imagePlus ),
+						microgliaChannelIndexOneBased - 1,
+						tMin, tMax );
 
-		final TrackingSplitter splitter = new TrackingSplitter( masks, intensities, settings );
-		splitter.run();
-		masks = splitter.getSplitMasks();
 
-		final MaximalOverlapTracker maximalOverlapTracker = new MaximalOverlapTracker( masks );
-		maximalOverlapTracker.run();
-		final ArrayList< RandomAccessibleInterval< T > > labelings = maximalOverlapTracker.getLabelings();
-
-		createOutput( intensities, labelings );
-
+		return intensities;
 	}
 
 	private void createOutput( ArrayList< RandomAccessibleInterval< T > > intensities, ArrayList< RandomAccessibleInterval< T > > labelings )
@@ -155,11 +180,13 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 		labelImagePlus.show();
 		IJ.run( labelImagePlus, "Enhance Contrast", "saturated=0.35");
 		IJ.wait( 1000 );
+		labelings = null; System.gc();
 
 		Utils.createIJ1Movie( intensities, INTENSITIES ).show();
 		IJ.wait( 1000 );
 		IJ.run("16-bit", "");
 		IJ.run("Enhance Contrast", "saturated=0.35");
+		intensities = null; System.gc();
 
 		IJ.wait( 1000 );
 		IJ.run("Merge Channels...", "c1=intensities c2=[" + SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING + "] create keep");

@@ -7,6 +7,7 @@ import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NonBlockingGenericDialog;
+import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
@@ -16,11 +17,15 @@ import net.imglib2.roi.labeling.LabelRegionCursor;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.view.Views;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 {
@@ -32,7 +37,6 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 	private ArrayList< RandomAccessibleInterval< BitType > > splitMasks;
 	final MicrogliaTrackingSettings settings;
-
 
 	public TrackingSplitter( ArrayList< RandomAccessibleInterval< BitType > > masks,
 							 ArrayList< RandomAccessibleInterval< T > > intensities,
@@ -116,7 +120,9 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 			}
 
 			splitMasks.add( splitMask );
+
 			previousLabeling = Utils.asImgLabeling( splitMask ).getSource();
+
 		}
 	}
 
@@ -136,9 +142,16 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		IJ.setTool( "freeline" );
 
 		final NonBlockingGenericDialog gd = new NonBlockingGenericDialog( "Manual correction" );
-		gd.addMessage( "Please correct segmentation of frame " + ( t + 1 ) + " and press OK when you are done.\n" );
-		gd.hideCancelButton();
+		gd.addMessage( "Please correct segmentation of frame " + ( t + 1 )
+				+ " and click [Ok] when you are done.\n"
+				+ "Please click [Cancel] in order to skip manual correction of all proceeding frames." );
 		gd.showDialog();
+
+		if ( gd.wasCanceled() )
+		{
+			settings.manualSegmentationCorrectionOfAllFrames = false;
+		}
+
 		intensitiesImp.close();
 		labelImagePlus.hide();
 
