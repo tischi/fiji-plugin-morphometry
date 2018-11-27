@@ -539,6 +539,31 @@ public class Utils
 		return maxLoc;
 	}
 
+
+	public static double computeMinLoc( ArrayList< Double > coordinates, ArrayList< Double > values, double[] coordinateRangeMinMax )
+	{
+		double minValue = Double.MAX_VALUE;
+		double minLoc = coordinates.get( 0 );
+
+		for ( int i = 0; i < values.size(); ++i )
+		{
+			if ( coordinateRangeMinMax != null )
+			{
+				if ( coordinates.get( i ) < coordinateRangeMinMax[ 0 ] ) continue;
+				if ( coordinates.get( i ) > coordinateRangeMinMax[ 1 ] ) continue;
+			}
+
+			if ( values.get( i ) < minValue )
+			{
+				minValue = values.get( i );
+				minLoc = coordinates.get( i );
+			}
+		}
+
+		return minLoc;
+	}
+
+
 	public static double[] getCalibration( Dataset dataset )
 	{
 		double[] calibration = new double[ 3 ];
@@ -1237,5 +1262,13 @@ public class Utils
 		}
 
 		return unique;
+	}
+
+	public static ImagePlus asImagePlus( RandomAccessibleInterval alignedDapiMask )
+	{
+		return ImageJFunctions.wrap(
+				Views.permute(
+						Views.addDimension( alignedDapiMask, 0, 0 ),
+						2, 3), "aligned_dapi_mask" );
 	}
 }

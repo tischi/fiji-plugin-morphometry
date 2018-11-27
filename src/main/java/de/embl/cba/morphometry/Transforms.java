@@ -5,6 +5,7 @@ import net.imglib2.concatenate.Concatenable;
 import net.imglib2.concatenate.PreConcatenable;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.interpolation.InterpolatorFactory;
+import net.imglib2.interpolation.randomaccess.ClampingNLinearInterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.*;
@@ -79,7 +80,7 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 	RandomAccessibleInterval createTransformedView( RandomAccessibleInterval< T > rai,
 													InvertibleRealTransform transform )
 	{
-		final RandomAccessible transformedRA = createTransformedRaView( rai, transform, new NLinearInterpolatorFactory() );
+		final RandomAccessible transformedRA = createTransformedRaView( rai, transform, new ClampingNLinearInterpolatorFactory() );
 		final FinalInterval transformedInterval = createTransformedInterval( rai, transform );
 		final RandomAccessibleInterval< T > transformedIntervalView = Views.interval( transformedRA, transformedInterval );
 

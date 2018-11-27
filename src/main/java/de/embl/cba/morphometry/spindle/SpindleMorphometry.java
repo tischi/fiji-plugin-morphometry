@@ -1,13 +1,11 @@
 package de.embl.cba.morphometry.spindle;
 
-import bdv.util.Bdv;
-import bdv.util.BdvFunctions;
-import bdv.util.BdvOptions;
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.EllipsoidParameters;
 import de.embl.cba.morphometry.geometry.Ellipsoids;
 import ij.IJ;
+import ij.ImagePlus;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
@@ -62,15 +60,15 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final RandomAccessibleInterval< T > tubulin = Algorithms.createRescaledArrayImg( settings.tubulinImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
 		if ( settings.showIntermediateResults ) show( dapi, "image isotropic resolution", null, workingCalibration, false );
-		if ( settings.showIntermediateResults ) show( tubulin, "tubulinImage isotropic resolution", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( tubulin, "tubulin isotropic resolution", null, workingCalibration, false );
 
 
 		/**
 		 *  Compute offset and threshold
 		 */
 
-		final RandomAccessibleInterval< T > dapi3um = Algorithms.createRescaledArrayImg( settings.dapiImage, getScalingFactors( settings.inputCalibration, 3.0 ) );
-		final double maximumValue = Algorithms.getMaximumValue( dapi3um );
+		final RandomAccessibleInterval< T > dapiDownscaledToSpindleWidth = Algorithms.createRescaledArrayImg( settings.dapiImage, getScalingFactors( settings.inputCalibration, 3.0 ) );
+		final double maximumValue = Algorithms.getMaximumValue( dapiDownscaledToSpindleWidth );
 		double threshold = maximumValue / 2.0;
 
 		Utils.log( "Dapi threshold: " + threshold );
@@ -82,16 +80,20 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		RandomAccessibleInterval< BitType > mask = createMask( dapi, threshold );
 
-		if ( settings.showIntermediateResults ) show( mask, "mask", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( mask, "dapi mask", null, workingCalibration, false );
 
 		/**
-		 * Morphological closing
+		 * Morphological filtering
+		 *
+		 * - it appears that the principal axes determination is not working robustly
+		 * if the meta-phase plate is too thick
 		 */
 
-//		RandomAccessibleInterval< BitType > closed = close( mask );
-		RandomAccessibleInterval< BitType > closed =  mask ;
+		Utils.log( "Perform morphological filtering on dapi mask..." );
 
-//		if ( settings.showIntermediateResults ) show( closed, "closed", null, workingCalibration, false );
+		RandomAccessibleInterval< BitType > closed = Algorithms.erode( mask, (int) Math.ceil( 1.0 / settings.workingVoxelSize )  );
+
+		if ( settings.showIntermediateResults ) show( closed, "filtered dapi mask", null, workingCalibration, false );
 
 
 		/**
@@ -112,9 +114,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * Compute ellipsoid alignment
 		 */
 
-		// TODO: maybe fit intensities rather than mask, but how to mask the intensities of the this cell
-
-		Utils.log( "Determining metaphase plate axes..." );
+		Utils.log( "Determining meta-phase plate axes..." );
 
 		final EllipsoidParameters ellipsoidParameters = Ellipsoids.computeParametersFromBinaryImage( dapiMask );
 
@@ -123,8 +123,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final AffineTransform3D alignmentTransform = Ellipsoids.createAlignmentTransform( ellipsoidParameters );
 		final RandomAccessibleInterval aligendTubulin = Utils.copyAsArrayImg( Transforms.createTransformedView( tubulin, alignmentTransform, new NearestNeighborInterpolatorFactory() ) );
 		final RandomAccessibleInterval alignedDapi = Utils.copyAsArrayImg( Transforms.createTransformedView( dapi, alignmentTransform ) );
+		final RandomAccessibleInterval alignedDapiMask = Utils.copyAsArrayImg( Transforms.createTransformedView( dapiMask, alignmentTransform ) );
 
-		if ( settings.showIntermediateResults ) show( alignedDapi, "aligned image", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( alignedDapi, "aligned dapi", Transforms.origin(), workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( alignedDapiMask, "aligned dapi mask", Transforms.origin(), workingCalibration, false );
 
 		RandomAccessibleInterval< T > interestPoints = Utils.copyAsArrayImg( dapi );
 		Utils.setValues( interestPoints, 0.0 );
@@ -141,34 +143,50 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		Utils.log( "Determining widths..." );
 
 		final CoordinatesAndValues dapiProfile = Utils.computeAverageIntensitiesAlongAxis( alignedDapi, settings.maxShortAxisDist, 2, settings.workingVoxelSize );
-		if ( settings.showIntermediateResults ) Plots.plot( dapiProfile.coordinates, dapiProfile.values, "distance to center", "image intensity" );
+		if ( settings.showIntermediateResults ) Plots.plot( dapiProfile.coordinates, dapiProfile.values, "distance to center", "dapi intensity along shortest axis" );
+
+		// TODO: compute meta-phase width, using FWHM and write to log window
 
 		/**
 		 * Compute spindle length
 		 */
 
 		final CoordinatesAndValues tubulinProfile = Utils.computeMaximumIntensitiesAlongAxis( aligendTubulin, settings.maxShortAxisDist, 2, settings.workingVoxelSize );
-		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfile.values, "distance to center", "tubulinImage intensity" );
+		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfile.values, "distance to center", "tubulin maximal intensities" );
 
-		final ArrayList< Double > tubulinProfileAbsoluteDerivative = Algorithms.computeAbsoluteDerivatives( tubulinProfile.values, ( int ) ( 1.0 / settings.workingVoxelSize ) );
-		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfileAbsoluteDerivative, "distance to center", "tubulinImage intensity absolute derivative" );
+		final CoordinatesAndValues tubulinProfileDerivative = Algorithms.computeDerivatives( tubulinProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
+		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values, "distance to center", "tubulin intensity derivative" );
 
-		double[] maxLocs = getLeftAndRightMaxLocs( tubulinProfile, tubulinProfileAbsoluteDerivative );
+		double[] spindlePoles = getLeftMaxAndRightMinLoc( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values );
 
-		addSpindlePolesAsInterestPoints( alignmentTransform, interestPoints, maxLocs );
+		Utils.log( "Left spindle pole found at: " + spindlePoles[ 0 ] );
+		Utils.log( "Right spindle pole found at: " + spindlePoles[ 1 ] );
+
+		addSpindlePolesAsInterestPoints( alignmentTransform, interestPoints, spindlePoles );
 
 		final ArrayList< RealPoint > spindleLengthPoints = new ArrayList<>(  );
-		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, maxLocs[ 0 ] } ));
-		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, maxLocs[ 1 ] } ));
 
-		if ( settings.showIntermediateResults ) show( aligendTubulin, "aligned tubulinImage", spindleLengthPoints, workingCalibration, false );
+		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, 0 } ));
+		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, spindlePoles[ 0 ] } ));
+		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, spindlePoles[ 1 ] } ));
 
+		if ( settings.showIntermediateResults ) show( aligendTubulin, "aligned tubulin", spindleLengthPoints, workingCalibration, false );
+
+
+		/**
+		 * Create output images
+		 */
 
 		AffineTransform3D rotation = alignmentTransform.copy();
 		rotation.setTranslation( new double[ 3 ] );
 
 		final double[] zAxis = { 0, 0, 1 };
 		final double[] xAxis = { 1, 0, 0 };
+
+		// OCS = Orthogonal Coverslip System
+		// Create views that do not tilt the coverslip
+		// This was biologically interesting to see how the axes
+		// are with respect to the coverslip surface
 
 		final double[] shortDnaAxisOCS = new double[ 3 ];
 
@@ -181,20 +199,24 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final double angleInRadians = angleInRadians( xAxis, sideViewDirectionOCS );
 
 		rotation = new AffineTransform3D();
-		rotation.rotate( 2,  - angleInRadians );
+
+		// TODO: maybe the sign of the angle depends on its magnitude??
+		rotation.rotate( 2,  +angleInRadians );
 
 		final RandomAccessibleInterval transformedDapiView = Transforms.createTransformedView( dapi, rotation );
 		final RandomAccessibleInterval transformedTubulinView = Transforms.createTransformedView( tubulin, rotation );
 		final RandomAccessibleInterval transformedInterestPointView = Transforms.createTransformedView( interestPoints, rotation );
 
-		Bdv bdv = null;
-		if ( settings.showIntermediateResults ) BdvFunctions.show( interestPoints, "" ).getBdvHandle();
-		if ( settings.showIntermediateResults ) bdv = BdvFunctions.show( transformedDapiView, "" ).getBdvHandle();
-		if ( settings.showIntermediateResults ) BdvFunctions.show( transformedInterestPointView, "", BdvOptions.options().addTo( bdv ) );
+//		Bdv bdv = null;
+//		if ( settings.showIntermediateResults ) BdvFunctions.show( interestPoints, "" ).getBdvHandle();
+//		if ( settings.showIntermediateResults ) bdv = BdvFunctions.show( transformedDapiView, "" ).getBdvHandle();
+//		if ( settings.showIntermediateResults ) BdvFunctions.show( transformedInterestPointView, "", BdvOptions.options().addTo( bdv ) );
 
 		Utils.log( "Saving result images..." );
-		saveMaximumProjections( transformedDapiView, "image" );
-		saveMaximumProjections( transformedTubulinView, "tubulinImage" );
+
+		saveImagePlus( Utils.asImagePlus( alignedDapiMask ) );
+		saveMaximumProjections( transformedDapiView, "dapi" );
+		saveMaximumProjections( transformedTubulinView, "tubulin" );
 		saveMaximumProjections( transformedInterestPointView, "points" );
 
 //		if ( settings.showIntermediateResults )  show( transformedView, "side view image", null, workingCalibration, false );
@@ -221,6 +243,24 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			IJ.saveAsTiff( ImageJFunctions.wrap( new Projection( transformedDapiView, d ).maximum(), title ), path );
 		}
 	}
+
+	public void saveImagePlus( ImagePlus imagePlus )
+	{
+
+		final String path = settings.outputDirectory.getAbsolutePath()
+					+ File.separator
+					+ settings.inputDataSetName
+					+ File.separator
+					+ imagePlus.getTitle() + ".tiff";
+
+		new File(path).getParentFile().mkdirs();
+
+		IJ.saveAsTiff( imagePlus, path );
+
+	}
+
+
+
 
 	public void addSpindlePolesAsInterestPoints( AffineTransform3D alignmentTransform, RandomAccessibleInterval< T > interestPoints, double[] maxLocs )
 	{
@@ -269,13 +309,35 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		double[] rangeMinMax = new double[ 2 ];
 		double[] maxLocs = new double[ 2 ];
 
+		// left
+		rangeMinMax[ 0 ] = - Double.MAX_VALUE;
+		rangeMinMax[ 1 ] = 0;
+		maxLocs[ 1 ] = Utils.computeMaxLoc( tubulinProfile.coordinates, tubulinProfileAbsoluteDerivative, rangeMinMax );
+
+		// right
 		rangeMinMax[ 0 ] = 0;
 		rangeMinMax[ 1 ] = Double.MAX_VALUE;
 		maxLocs[ 0 ] = Utils.computeMaxLoc( tubulinProfile.coordinates, tubulinProfileAbsoluteDerivative, rangeMinMax );
 
+		return maxLocs;
+	}
+
+	public static double[] getLeftMaxAndRightMinLoc( ArrayList< Double > coordinates, ArrayList< Double > derivative )
+	{
+		double[] rangeMinMax = new double[ 2 ];
+		double[] maxLocs = new double[ 2 ];
+
+		// left
 		rangeMinMax[ 0 ] = - Double.MAX_VALUE;
 		rangeMinMax[ 1 ] = 0;
-		maxLocs[ 1 ] = Utils.computeMaxLoc( tubulinProfile.coordinates, tubulinProfileAbsoluteDerivative, rangeMinMax );
+		maxLocs[ 1 ] = Utils.computeMaxLoc( coordinates, derivative, rangeMinMax );
+
+		// right
+		rangeMinMax[ 0 ] = 0;
+		rangeMinMax[ 1 ] = Double.MAX_VALUE;
+		maxLocs[ 0 ] = Utils.computeMinLoc( coordinates, derivative, rangeMinMax );
+
+
 		return maxLocs;
 	}
 

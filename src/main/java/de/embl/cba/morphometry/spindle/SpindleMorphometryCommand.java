@@ -66,12 +66,12 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.workingVoxelSize = 0.25;
 		settings.maxShortAxisDist = 6;
+		settings.derivativeDelta = 1.0;
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 		settings.watershedSeedsLocalMaximaDistanceThreshold = 1.0;
 		settings.watershedSeedsGlobalDistanceThreshold = 2.0;
 		settings.interestPointsRadius = 0.5;
 		settings.outputDirectory = outputDirectory;
-		settings.inputDataSetName = "test";
 	}
 
 	private void processFile( File file )
@@ -91,12 +91,15 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		SpindleMorphometry morphometry = new SpindleMorphometry( settings, opService );
 		morphometry.run();
 
+		Utils.log( "Done!" );
+
 	}
 
 	private void setSettingsFromImagePlus( ImagePlus imagePlus )
 	{
 		settings.inputCalibration = Utils.getCalibration( imagePlus );
 		settings.maxPossibleValueInDataSet = Math.pow( 2, imagePlus.getBitDepth() ) - 1.0;
+		settings.inputDataSetName = imagePlus.getTitle();
 	}
 
 }
