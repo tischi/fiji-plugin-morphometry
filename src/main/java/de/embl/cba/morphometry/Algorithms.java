@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry;
 
+import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import net.imagej.ImageJ;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
@@ -351,6 +352,21 @@ public class Algorithms
 		}
 
 		return derivatives;
+	}
+
+	public static CoordinatesAndValues computeDerivatives( CoordinatesAndValues coordinatesAndValues, int di )
+	{
+		final CoordinatesAndValues derivative = new CoordinatesAndValues();
+
+
+		for ( int i = di / 2 + 1; i < coordinatesAndValues.values.size() - di / 2 - 1; ++i )
+		{
+			derivative.values.add( coordinatesAndValues.values.get( i + di / 2 ) - coordinatesAndValues.values.get( i - di / 2 ) );
+			derivative.coordinates.add( 0.5 * ( coordinatesAndValues.coordinates.get( i + di / 2 ) + coordinatesAndValues.coordinates.get( i - di / 2 ) ));
+
+		}
+
+		return derivative;
 	}
 
 	public static double angleInRadians( final double[] v1, final double[] v2 )
@@ -1045,7 +1061,7 @@ public class Algorithms
 	{
 		RandomAccessibleInterval< BitType > closed = Utils.copyAsArrayImg( mask );
 		Shape closingShape = new HyperSphereShape( closingRadius );
-		Closing.close( Views.extendBorder( mask ), Views.iterable( closed ), closingShape, 1 );
+		Closing.close( Views.extendBorder( mask ), Views.iterable( closed ), closingShape, 4 );
 		return closed;
 	}
 

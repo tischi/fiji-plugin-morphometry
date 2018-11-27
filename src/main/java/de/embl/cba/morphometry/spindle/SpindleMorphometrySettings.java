@@ -47,4 +47,5 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public double interestPointsRadius;
 	public File outputDirectory;
 	public String inputDataSetName;
+	public double derivativeDelta;
 }

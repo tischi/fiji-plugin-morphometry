@@ -21,7 +21,6 @@ public class Ellipsoids
 
 	public static EllipsoidParameters computeParametersFromBinaryImage( RandomAccessibleInterval< BitType > binaryImg )
 	{
-
 		double[] sums = new double[ 3 ];
 		double[] sumSquares = new double[ 6 ];
 
@@ -44,7 +43,6 @@ public class Ellipsoids
 		ellipsoidParameters.eulerAnglesInDegrees = computeLongestAxisAngles( svd.getU() );
 
 		return ellipsoidParameters;
-
 	}
 
 	public static double[] computeMoments( double[] sumSquares, double[] center, long numPixels )
