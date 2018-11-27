@@ -551,6 +551,18 @@ public class Utils
 		return calibration;
 	}
 
+
+	public static double[] getCalibrationWithFixedZ( ImagePlus imp )
+	{
+		double[] calibration = new double[ 3 ];
+
+		calibration[ X ] = imp.getCalibration().pixelWidth;
+		calibration[ Y ] = imp.getCalibration().pixelHeight;
+		calibration[ Z ] = imp.getCalibration().pixelDepth;
+
+		return calibration;
+	}
+
 	public static double[] getCalibration( ImagePlus imp )
 	{
 		double[] calibration = new double[ 3 ];
@@ -1105,8 +1117,7 @@ public class Utils
 		movie = Views.addDimension( movie, 0, 0);
 		movie = Views.addDimension( movie, 0, 0);
 		movie = Views.permute( movie, 2,4 );
-		final ImagePlus wrap = ImageJFunctions.wrap( movie, title );
-		final ImagePlus imp = new Duplicator().run( wrap );
+		final ImagePlus imp = new Duplicator().run( ImageJFunctions.wrap( movie, title ) );
 		imp.setTitle( title );
 		return imp;
 	}

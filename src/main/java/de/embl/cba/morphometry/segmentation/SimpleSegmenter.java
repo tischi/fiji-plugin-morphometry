@@ -37,8 +37,6 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 		 *  Create working image
 		 */
 
-		Utils.log( "Creating working resolution image..." );
-
 		final double[] workingCalibration = Utils.as2dDoubleArray( settings.workingVoxelSize );
 
 		final RandomAccessibleInterval< T > image = Algorithms.createRescaledArrayImg( intensity, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
@@ -56,8 +54,6 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 		/**
 		 *  Compute offset and threshold
 		 */
-
-		Utils.log( "Offset and threshold..." );
 
 		final IntensityHistogram intensityHistogram = new IntensityHistogram( image, settings.maxPossibleValueInDataSet, 2 );
 

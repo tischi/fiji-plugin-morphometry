@@ -388,7 +388,7 @@ public class Algorithms
 				Converters.convert( downscaled, ( i, o )
 						-> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
 
-		return mask;
+		return Utils.copyAsArrayImg( mask );
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
@@ -1058,16 +1058,16 @@ public class Algorithms
 	}
 
 	public static < T extends RealType< T > & NativeType< T > > ArrayList< RandomAccessibleInterval< T > >
-	createMaximumProjectedIntensitiesAssumingImagePlusDimensionOrder(
+	createMaximumIntensityProjectionsAssumingImagePlusDimensionOrder(
 			RandomAccessibleInterval< T > inputImages,
-			long c,
+			long channel,
 			long tMin, long tMax )
 	{
 		ArrayList<  RandomAccessibleInterval< T > > intensities = new ArrayList<>();
 
 		for ( long t = tMin; t <= tMax; ++t )
 		{
-			final IntervalView< T > channelView = Views.hyperSlice( inputImages, 2, c );
+			final IntervalView< T > channelView = Views.hyperSlice( inputImages, 2, channel );
 			final IntervalView< T > timePointView = Views.hyperSlice( channelView, 3, t );
 			final RandomAccessibleInterval maximum = new Projection( timePointView, 2 ).maximum();
 			intensities.add( maximum );
