@@ -4,19 +4,16 @@ import bdv.util.Bdv;
 import bdv.util.BdvFunctions;
 import bdv.util.BdvOptions;
 import de.embl.cba.morphometry.*;
-import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.EllipsoidParameters;
 import de.embl.cba.morphometry.geometry.Ellipsoids;
 import ij.IJ;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
-import net.imglib2.algorithm.morphology.Closing;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
-import net.imglib2.histogram.Histogram1d;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
@@ -27,22 +24,15 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
-import net.imglib2.view.Views;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import static de.embl.cba.morphometry.Algorithms.angleInRadians;
-import static de.embl.cba.morphometry.Constants.*;
 import static de.embl.cba.morphometry.Transforms.getScalingFactors;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
-import static java.lang.Math.toRadians;
 
 
 public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
@@ -68,18 +58,18 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final double[] workingCalibration = Utils.as3dDoubleArray( settings.workingVoxelSize );
 
-		final RandomAccessibleInterval< T > dapi = Algorithms.createRescaledArrayImg( settings.dapi, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
-		final RandomAccessibleInterval< T > tubulin = Algorithms.createRescaledArrayImg( settings.tubulin, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > dapi = Algorithms.createRescaledArrayImg( settings.dapiImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > tubulin = Algorithms.createRescaledArrayImg( settings.tubulinImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
 		if ( settings.showIntermediateResults ) show( dapi, "image isotropic resolution", null, workingCalibration, false );
-		if ( settings.showIntermediateResults ) show( tubulin, "tubulin isotropic resolution", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( tubulin, "tubulinImage isotropic resolution", null, workingCalibration, false );
 
 
 		/**
 		 *  Compute offset and threshold
 		 */
 
-		final RandomAccessibleInterval< T > dapi3um = Algorithms.createRescaledArrayImg( settings.dapi, getScalingFactors( settings.inputCalibration, 3.0 ) );
+		final RandomAccessibleInterval< T > dapi3um = Algorithms.createRescaledArrayImg( settings.dapiImage, getScalingFactors( settings.inputCalibration, 3.0 ) );
 		final double maximumValue = Algorithms.getMaximumValue( dapi3um );
 		double threshold = maximumValue / 2.0;
 
@@ -158,10 +148,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 */
 
 		final CoordinatesAndValues tubulinProfile = Utils.computeMaximumIntensitiesAlongAxis( aligendTubulin, settings.maxShortAxisDist, 2, settings.workingVoxelSize );
-		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfile.values, "distance to center", "tubulin intensity" );
+		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfile.values, "distance to center", "tubulinImage intensity" );
 
 		final ArrayList< Double > tubulinProfileAbsoluteDerivative = Algorithms.computeAbsoluteDerivatives( tubulinProfile.values, ( int ) ( 1.0 / settings.workingVoxelSize ) );
-		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfileAbsoluteDerivative, "distance to center", "tubulin intensity absolute derivative" );
+		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfileAbsoluteDerivative, "distance to center", "tubulinImage intensity absolute derivative" );
 
 		double[] maxLocs = getLeftAndRightMaxLocs( tubulinProfile, tubulinProfileAbsoluteDerivative );
 
@@ -171,7 +161,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, maxLocs[ 0 ] } ));
 		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, maxLocs[ 1 ] } ));
 
-		if ( settings.showIntermediateResults ) show( aligendTubulin, "aligned tubulin", spindleLengthPoints, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( aligendTubulin, "aligned tubulinImage", spindleLengthPoints, workingCalibration, false );
 
 
 		AffineTransform3D rotation = alignmentTransform.copy();
@@ -204,11 +194,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Saving result images..." );
 		saveMaximumProjections( transformedDapiView, "image" );
-		saveMaximumProjections( transformedTubulinView, "tubulin" );
+		saveMaximumProjections( transformedTubulinView, "tubulinImage" );
 		saveMaximumProjections( transformedInterestPointView, "points" );
 
-
-//
 //		if ( settings.showIntermediateResults )  show( transformedView, "side view image", null, workingCalibration, false );
 //
 //		int a = 1;
@@ -291,20 +279,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return maxLocs;
 	}
 
-	public RandomAccessibleInterval< BitType > createClosedImage( RandomAccessibleInterval< BitType > mask )
-	{
-		RandomAccessibleInterval< BitType > closed = Utils.copyAsArrayImg( mask );
-
-		if ( settings.closingRadius > 0 )
-		{
-			Utils.log( "Morphological closing...");
-			Shape closingShape = new HyperSphereShape( ( int ) ( settings.closingRadius / settings.workingVoxelSize ) );
-			Closing.close( Views.extendBorder( mask ), Views.iterable( closed ), closingShape, 1 );
-		}
-
-		return closed;
-	}
-
 	public < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
 	{
@@ -316,187 +290,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		return mask;
 	}
-
-	public < T extends RealType< T > & NativeType< T > > double getThreshold( RandomAccessibleInterval< T > downscaled )
-	{
-
-		double threshold = 0;
-
-		if ( settings.thresholdModality.equals( SpindleMorphometrySettings.HUANG_AUTO_THRESHOLD ) )
-		{
-			final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( downscaled ) );
-
-			double huang = opService.threshold().huang( histogram ).getRealDouble();
-			double yen = opService.threshold().yen( histogram ).getRealDouble();
-
-			threshold = huang;
-		}
-		else
-		{
-			threshold= settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
-		}
-		return threshold;
-	}
-
-	public ImgLabeling< Integer, IntType > createWatershedSeeds( double[] registrationCalibration,
-																 RandomAccessibleInterval< DoubleType > distance,
-																 RandomAccessibleInterval< BitType > mask )
-	{
-		Utils.log( "Seeds for watershed...");
-
-		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.workingVoxelSize, 2 );
-		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.workingVoxelSize, 2 );
-
-		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createWatershedSeeds(
-				distance,
-				new HyperSphereShape( 1 ),
-				globalDistanceThreshold,
-				localMaximaDistanceThreshold );
-
-		final ImgLabeling< Integer, IntType > seedsLabelImg = Utils.asImgLabeling( seeds );
-
-		if ( settings.showIntermediateResults ) show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, registrationCalibration, false );
-		return seedsLabelImg;
-	}
-
-	public AffineTransform3D computeOrientationTransform( RandomAccessibleInterval yawAlignedMask, RandomAccessibleInterval yawAlignedIntensities, double calibration )
-	{
-		final CoordinatesAndValues coordinatesAndValues = Utils.computeAverageIntensitiesAlongAxisWithinMask( yawAlignedIntensities, yawAlignedMask, X, calibration );
-
-		if ( settings.showIntermediateResults ) Plots.plot( coordinatesAndValues.coordinates, coordinatesAndValues.values, "x", "average intensity" );
-
-		double maxLoc = Utils.computeMaxLoc( coordinatesAndValues.coordinates, coordinatesAndValues.values, null );
-
-		AffineTransform3D affineTransform3D = new AffineTransform3D();
-
-		if ( maxLoc < 0 ) affineTransform3D.rotate( Z, toRadians( 180.0D ) );
-
-		return affineTransform3D;
-	}
-
-	public ArrayList< RealPoint > createTransformedCentroidPointList( CentroidsParameters centroidsParameters, AffineTransform3D rollTransform )
-	{
-		final ArrayList< RealPoint > transformedRealPoints = new ArrayList<>();
-
-		for ( RealPoint realPoint : centroidsParameters.centroids )
-		{
-			final RealPoint transformedRealPoint = new RealPoint( 0, 0, 0 );
-			rollTransform.apply( realPoint, transformedRealPoint );
-			transformedRealPoints.add( transformedRealPoint );
-		}
-		return transformedRealPoints;
-	}
-
-	public static AffineTransform3D computeRollTransform( CentroidsParameters centroidsParameters, SpindleMorphometrySettings settings )
-	{
-		final double rollAngle = computeRollAngle( centroidsParameters, settings.rollAngleMinDistanceToAxis, settings.rollAngleMinDistanceToCenter, settings.rollAngleMaxDistanceToCenter );
-
-		Utils.log( "Roll angle " + rollAngle );
-
-		AffineTransform3D rollTransform = new AffineTransform3D();
-
-		rollTransform.rotate( X, - toRadians( rollAngle ) );
-
-		return rollTransform;
-	}
-
-	public static double computeRollAngle( CentroidsParameters centroidsParameters, double minDistanceToAxis, double minDistanceToCenter, double maxDistanceToCenter )
-	{
-		final int n = centroidsParameters.axisCoordinates.size();
-
-		List< Double> offCenterAngles = new ArrayList<>(  );
-
-		for ( int i = 0; i < n; ++i )
-		{
-			if ( ( centroidsParameters.distances.get( i ) > minDistanceToAxis ) &&
-					( Math.abs(  centroidsParameters.axisCoordinates.get( i ) ) > minDistanceToCenter ) &&
-					( Math.abs(  centroidsParameters.axisCoordinates.get( i ) ) < maxDistanceToCenter ))
-			{
-				offCenterAngles.add( centroidsParameters.angles.get( i ) );
-			}
-		}
-
-		Collections.sort( offCenterAngles );
-
-		double medianAngle = Utils.median( offCenterAngles );
-
-		return medianAngle;
-	}
-
-	private AffineTransform3D createFinalTransform( double[] inputCalibration, AffineTransform3D registration, double[] registrationCalibration )
-	{
-		final AffineTransform3D transform =
-				Transforms.getScalingTransform( inputCalibration, settings.workingVoxelSize )
-				.preConcatenate( registration )
-				.preConcatenate( Transforms.getScalingTransform( registrationCalibration, settings.outputResolution ) );
-
-		return transform;
-	}
-
-
-	private double[] getRegistrationCalibration()
-	{
-		double[] registrationCalibration = new double[ 3 ];
-		Arrays.fill( registrationCalibration, settings.workingVoxelSize );
-		return registrationCalibration;
-	}
-
-	//
-	// Useful code snippets
-	//
-
-	/**
-	 *  Distance transformAllChannels
-
-	 Hi Christian
-
-	 yes, it seems that you were doing the right thing (as confirmed by your
-	 visual inspection of the result). One thing to note: You should
-	 probably use a DoubleType image with 1e20 and 0 values, to make sure
-	 that f(q) is larger than any possible distance in your image. If you
-	 choose 255, your distance is effectively bounded at 255. This can be an
-	 issue for big images with sparse foreground objects. With squared
-	 Euclidian distance, 255 is already reached if a background pixels is
-	 further than 15 pixels from a foreground pixel! If you use
-	 Converters.convert to generate your image, the memory consumption
-	 remains the same.
-
-
-	 Phil
-
-	 final RandomAccessibleInterval< UnsignedByteType > binary = Converters.convert(
-	 downscaled, ( i, o ) -> o.set( i.getRealDouble() > settings.thresholdInUnitsOfBackgroundPeakHalfWidth ? 255 : 0 ), new UnsignedByteType() );
-
-	 if ( settings.showIntermediateResults ) show( binary, "binary", null, calibration, false );
-
-
-	 final RandomAccessibleInterval< DoubleType > distance = ArrayImgs.doubles( Intervals.dimensionsAsLongArray( binary ) );
-
-	 DistanceTransform.transformAllChannels( binary, distance, DistanceTransform.DISTANCE_TYPE.EUCLIDIAN );
-
-
-	 final double maxDistance = Algorithms.getMaximumValue( distance );
-
-	 final RandomAccessibleInterval< IntType > invertedDistance = Converters.convert( distance, ( i, o ) -> {
-	 o.set( ( int ) ( maxDistance - i.get() ) );
-	 }, new IntType() );
-
-	 if ( settings.showIntermediateResults ) show( invertedDistance, "distance", null, calibration, false );
-
-	 */
-
-
-	/**
-	 * Convert ImgLabelling to Rai
-
-	 final RandomAccessibleInterval< IntType > labelMask =
-	 Converters.convert( ( RandomAccessibleInterval< LabelingType< Integer > > ) watershedImgLabeling,
-	 ( i, o ) -> {
-	 o.set( i.getIndex().getInteger() );
-	 }, new IntType() );
-
-	 */
-
 
 
 

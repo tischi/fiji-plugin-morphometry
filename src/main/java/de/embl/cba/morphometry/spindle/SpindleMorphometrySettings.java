@@ -18,13 +18,9 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public static double drosophilaLength = 420;
 	public static double drosophilaWidth = 160;
 
-	public int shavenBabyChannelIndexOneBased = 1;
 	public boolean showIntermediateResults = false;
-	public double refractiveIndexScalingCorrectionFactor = 1.6;
 	public double workingVoxelSize = 6.0;
 	public double outputResolution = 2.0;
-	public double backgroundIntensity = 3155; // TODO: determine from image (maybe min value after averaging)
-	public double refractiveIndexIntensityCorrectionDecayLength = 170;
 
 	public double rollAngleMinDistanceToAxis = 0;
 	public double rollAngleMinDistanceToCenter = drosophilaLength / 2.0 * 0.5;
@@ -43,8 +39,8 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 
 
 	public double[] inputCalibration;
-	public RandomAccessibleInterval<T> dapi;
-	public RandomAccessibleInterval<T> tubulin;
+	public RandomAccessibleInterval<T> dapiImage;
+	public RandomAccessibleInterval<T> tubulinImage;
 
 	public double maxPossibleValueInDataSet;
 	public double maxShortAxisDist;

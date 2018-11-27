@@ -47,12 +47,12 @@ public class SpindleMorphometryAutoMicTableTest<T extends RealType<T> & NativeTy
 //			ImagePlus imp = PatternOpenerWithBioformats.openImage( absolutePath );
 //
 //			final RandomAccessibleInterval< T > wrap = ImageJFunctions.wrap( imp );
-//			final RandomAccessibleInterval< T > dapi = Views.hyperSlice( wrap, 2, 1);
-//			final RandomAccessibleInterval< T > tubulin = Views.hyperSlice( wrap, 2, 0);
+//			final RandomAccessibleInterval< T > dapiImage = Views.hyperSlice( wrap, 2, 1);
+//			final RandomAccessibleInterval< T > tubulinImage = Views.hyperSlice( wrap, 2, 0);
 //
 //			SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
-//			settings.dapi = dapi;
-//			settings.tubulin = tubulin;
+//			settings.dapiImage = dapiImage;
+//			settings.tubulinImage = tubulinImage;
 //			settings.showIntermediateResults = false;
 //			settings.inputCalibration = Utils.getCalibration( imp );
 //			settings.inputCalibration[ 2 ] = 1.05; // TODO: UI

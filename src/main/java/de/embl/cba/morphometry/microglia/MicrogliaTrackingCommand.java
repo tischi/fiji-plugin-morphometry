@@ -4,7 +4,6 @@ import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.segmentation.SimpleSegmenter;
-import de.embl.cba.morphometry.skeleton.Skeleton;
 import de.embl.cba.morphometry.splitting.TrackingSplitter;
 import de.embl.cba.morphometry.tracking.MaximalOverlapTracker;
 import ij.IJ;
@@ -14,7 +13,6 @@ import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
-import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -151,8 +149,9 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 	private ArrayList< RandomAccessibleInterval< T > > createBinaryMasks( ArrayList< RandomAccessibleInterval< T > > intensities )
 	{
 		ArrayList<  RandomAccessibleInterval< T > > masks = new ArrayList<>();
-		for ( long t = 0; t <= ( tMax - tMin ) ; ++t )
+		for ( long t = 0; t < intensities.size() ; ++t )
 		{
+			Utils.log("Creating mask for frame " + ( t + 1 ) );
 			final SimpleSegmenter simpleSegmenter = new SimpleSegmenter( intensities.get( ( int ) t ), settings );
 			simpleSegmenter.run();
 			masks.add( simpleSegmenter.getMask() );
@@ -160,13 +159,14 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 		return masks;
 	}
 
+
 	private ArrayList< RandomAccessibleInterval< T > > createMaximumProjection( ImagePlus imagePlus )
 	{
 		ArrayList< RandomAccessibleInterval< T > > intensities =
-				Algorithms.createMaximumProjectedIntensitiesAssumingImagePlusDimensionOrder(
+				Algorithms.createMaximumIntensityProjectionsAssumingImagePlusDimensionOrder(
 						( RandomAccessibleInterval ) ImageJFunctions.wrapReal( imagePlus ),
 						microgliaChannelIndexOneBased - 1,
-						tMin, tMax );
+						settings.tMin, settings.tMax );
 
 
 		return intensities;
@@ -214,9 +214,9 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.opService = opService;
 		settings.microgliaChannelIndexOneBased = microgliaChannelIndexOneBased;
-		settings.tMin = tMin;
+		settings.tMin = tMin - 1;
 		tMax = Math.min( tMax, imagePlus.getNFrames() );
-		settings.tMax = tMax;
+		settings.tMax = tMax - 1;
 	}
 
 

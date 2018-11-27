@@ -1,6 +1,5 @@
 package de.embl.cba.morphometry.splitting;
 
-import com.sun.tools.internal.jxc.ap.Const;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.microglia.Constants;
 import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
