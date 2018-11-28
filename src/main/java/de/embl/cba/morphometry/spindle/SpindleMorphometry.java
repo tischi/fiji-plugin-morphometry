@@ -4,6 +4,7 @@ import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.EllipsoidParameters;
 import de.embl.cba.morphometry.geometry.Ellipsoids;
+import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.ops.OpService;
@@ -29,8 +30,9 @@ import java.io.File;
 import java.util.ArrayList;
 
 import static de.embl.cba.morphometry.Algorithms.angleInRadians;
-import static de.embl.cba.morphometry.Transforms.getScalingFactors;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
+import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
+import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 
 
 public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
@@ -56,8 +58,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final double[] workingCalibration = Utils.as3dDoubleArray( settings.workingVoxelSize );
 
-		final RandomAccessibleInterval< T > dapi = Algorithms.createRescaledArrayImg( settings.dapiImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
-		final RandomAccessibleInterval< T > tubulin = Algorithms.createRescaledArrayImg( settings.tubulinImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > dapi = createRescaledArrayImg( settings.dapiImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > tubulin = createRescaledArrayImg( settings.tubulinImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
 		if ( settings.showIntermediateResults ) show( dapi, "image isotropic resolution", null, workingCalibration, false );
 		if ( settings.showIntermediateResults ) show( tubulin, "tubulin isotropic resolution", null, workingCalibration, false );
@@ -67,7 +69,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 *  Compute offset and threshold
 		 */
 
-		final RandomAccessibleInterval< T > dapiDownscaledToSpindleWidth = Algorithms.createRescaledArrayImg( settings.dapiImage, getScalingFactors( settings.inputCalibration, 3.0 ) );
+		final RandomAccessibleInterval< T > dapiDownscaledToSpindleWidth = createRescaledArrayImg( settings.dapiImage, getScalingFactors( settings.inputCalibration, 3.0 ) );
 		final double maximumValue = Algorithms.getMaximumValue( dapiDownscaledToSpindleWidth );
 		double threshold = maximumValue / 2.0;
 
@@ -89,6 +91,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * if the meta-phase plate is too thick
 		 */
 
+
+		// TODO: maybe only shrink the mask if it is too thick?
+		
 		Utils.log( "Perform morphological filtering on dapi mask..." );
 
 		RandomAccessibleInterval< BitType > closed = Algorithms.erode( mask, (int) Math.ceil( 1.0 / settings.workingVoxelSize )  );

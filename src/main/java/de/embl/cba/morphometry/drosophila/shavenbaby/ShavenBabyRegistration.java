@@ -7,6 +7,7 @@ import de.embl.cba.morphometry.geometry.EllipsoidParameters;
 import de.embl.cba.morphometry.geometry.Ellipsoids;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
+import de.embl.cba.transforms.utils.Transforms;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
@@ -36,9 +37,9 @@ import net.imglib2.view.Views;
 import java.util.*;
 
 import static de.embl.cba.morphometry.Constants.*;
-import static de.embl.cba.morphometry.Transforms.getScalingFactors;
 import static de.embl.cba.morphometry.drosophila.dapi.DapiRegistration.createXAxisRollTransform;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
+import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 import static java.lang.Math.toRadians;
 
 
@@ -357,8 +358,7 @@ public class ShavenBabyRegistration
 		final AffineTransform3D transform =
 				Transforms.getScalingTransform( inputCalibration, settings.registrationResolution )
 						.preConcatenate( transformAtRegistrationResolution.copy() )
-						.preConcatenate( Transforms.getScalingTransform( settings.registrationResolution,
-								outputResolution ) );
+						.preConcatenate( Transforms.getScalingTransform( settings.registrationResolution, outputResolution ) );
 
 		return transform;
 	}

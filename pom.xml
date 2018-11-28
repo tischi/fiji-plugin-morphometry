@@ -9,7 +9,7 @@
 	</parent>
 
 	<artifactId>fiji-plugin-morphometry</artifactId>
-	<version>0.3.44</version>
+	<version>0.3.45</version>
 	<url>https://github.com/tischi/fiji-plugin-morphometry</url>
 
 	<name>Fiji Plugin Morphometry</name>
@@ -139,6 +139,14 @@
 			<groupId>org.scijava</groupId>
 			<artifactId>scijava-table</artifactId>
 		</dependency>
+
+		<dependency>
+			<groupId>org.scijava</groupId>
+			<artifactId>transforms-utils</artifactId>
+			<version>0.1.00-SNAPSHOT</version>
+		</dependency>
+
+
 
 
 	</dependencies>
