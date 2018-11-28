@@ -9,9 +9,8 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
-
-import static de.embl.cba.morphometry.Transforms.getScalingFactors;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
+import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 
 
 public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
