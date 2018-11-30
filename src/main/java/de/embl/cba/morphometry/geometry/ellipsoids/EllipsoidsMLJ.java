@@ -1,25 +1,26 @@
-package de.embl.cba.morphometry.geometry;
+package de.embl.cba.morphometry.geometry.ellipsoids;
 
 import Jama.Matrix;
 import Jama.SingularValueDecomposition;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.realtransform.AffineTransform3D;
-import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
 
 import static de.embl.cba.morphometry.Constants.*;
-import static de.embl.cba.morphometry.geometry.EllipsoidParameters.PHI;
-import static de.embl.cba.morphometry.geometry.EllipsoidParameters.PSI;
-import static de.embl.cba.morphometry.geometry.EllipsoidParameters.THETA;
+import static de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ.PHI;
+import static de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ.PSI;
+import static de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ.THETA;
 import static java.lang.Math.*;
 
-public class Ellipsoids
+public abstract class EllipsoidsMLJ
 {
 
-	public static EllipsoidParameters computeParametersFromBinaryImage( RandomAccessibleInterval< BitType > binaryImg )
+	// Adapted from MorpholibJ
+
+
+	public static EllipsoidMLJ computeParametersFromBinaryImage( RandomAccessibleInterval< BitType > binaryImg )
 	{
 		double[] sums = new double[ 3 ];
 		double[] sumSquares = new double[ 6 ];
@@ -32,7 +33,7 @@ public class Ellipsoids
 
 		final Matrix momentsMatrix = getMomentsMatrix( moments );
 
-		EllipsoidParameters ellipsoidParameters = new EllipsoidParameters();
+		EllipsoidMLJ ellipsoidParameters = new EllipsoidMLJ();
 
 		ellipsoidParameters.center = center;
 
@@ -40,7 +41,7 @@ public class Ellipsoids
 
 		ellipsoidParameters.radii = computeRadii( svd.getS() );
 
-		ellipsoidParameters.eulerAnglesInDegrees = computeLongestAxisAngles( svd.getU() );
+		ellipsoidParameters.eulerAnglesInDegrees = computeEllipsoidAlignmentAngles( svd.getU() );
 
 		return ellipsoidParameters;
 	}
@@ -150,7 +151,7 @@ public class Ellipsoids
 		return radii;
 	}
 
-	private static double[] computeLongestAxisAngles( Matrix sdvU )
+	private static double[] computeEllipsoidAlignmentAngles( Matrix sdvU )
 	{
 
 		double[] angles = new double[ 3 ];
@@ -175,18 +176,16 @@ public class Ellipsoids
 			phi     = 0;
 		}
 
-		angles[ EllipsoidParameters.PHI ] = toDegrees( phi );
-		angles[ EllipsoidParameters.THETA ] = toDegrees( theta );
-		angles[ EllipsoidParameters.PSI ] = toDegrees( psi );
+		angles[ EllipsoidMLJ.PHI ] = toDegrees( phi );
+		angles[ EllipsoidMLJ.THETA ] = toDegrees( theta );
+		angles[ EllipsoidMLJ.PSI ] = toDegrees( psi );
 
 		return angles;
 	}
 
 
-	public static < T extends RealType< T > & NativeType< T > >
-	AffineTransform3D createAlignmentTransform( EllipsoidParameters ellipsoidParameters )
+	public static AffineTransform3D createAlignmentTransform( EllipsoidMLJ ellipsoidParameters )
 	{
-
 		AffineTransform3D translation = new AffineTransform3D();
 		translation.translate( ellipsoidParameters.center  );
 		translation = translation.inverse();
@@ -199,6 +198,5 @@ public class Ellipsoids
 		AffineTransform3D combinedTransform = translation.preConcatenate( rotation );
 
 		return combinedTransform;
-
 	}
 }

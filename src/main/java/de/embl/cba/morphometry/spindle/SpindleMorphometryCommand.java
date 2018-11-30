@@ -46,6 +46,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
 
 	@Parameter
+	double dapiMaskErosion = settings.erosionOfDapiMaskInCalibratedUnits;
+
+	@Parameter
 	public long dapiChannelIndexOneBased = 2;
 
 	@Parameter
@@ -72,6 +75,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.watershedSeedsGlobalDistanceThreshold = 2.0;
 		settings.interestPointsRadius = 0.5;
 		settings.outputDirectory = outputDirectory;
+		settings.erosionOfDapiMaskInCalibratedUnits = dapiMaskErosion;
 	}
 
 	private void processFile( File file )

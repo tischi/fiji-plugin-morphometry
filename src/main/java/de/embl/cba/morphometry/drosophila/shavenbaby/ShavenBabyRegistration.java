@@ -3,8 +3,8 @@ package de.embl.cba.morphometry.drosophila.shavenbaby;
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
-import de.embl.cba.morphometry.geometry.EllipsoidParameters;
-import de.embl.cba.morphometry.geometry.Ellipsoids;
+import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
+import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidsMLJ;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
 import de.embl.cba.transforms.utils.Transforms;
@@ -267,9 +267,9 @@ public class ShavenBabyRegistration
 
 		Utils.log( "Fit ellipsoid..." );
 
-		final EllipsoidParameters ellipsoidParameters = Ellipsoids.computeParametersFromBinaryImage( embryoMask );
+		final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( embryoMask );
 
-		registration.preConcatenate( Ellipsoids.createAlignmentTransform( ellipsoidParameters ) );
+		registration.preConcatenate( EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters ) );
 
 		final RandomAccessibleInterval< BitType > yawAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( embryoMask, registration, new NearestNeighborInterpolatorFactory() ) );
 

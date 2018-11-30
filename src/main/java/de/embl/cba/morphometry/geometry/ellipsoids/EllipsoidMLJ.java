@@ -1,6 +1,6 @@
-package de.embl.cba.morphometry.geometry;
+package de.embl.cba.morphometry.geometry.ellipsoids;
 
-public class EllipsoidParameters
+public class EllipsoidMLJ
 {
 
 	public static final int PHI = 0, THETA = 1, PSI = 2;
