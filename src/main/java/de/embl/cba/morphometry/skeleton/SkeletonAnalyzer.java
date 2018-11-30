@@ -12,6 +12,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
 
 import java.util.ArrayList;
@@ -35,9 +36,10 @@ public class SkeletonAnalyzer< R extends RealType< R > >
 
 		final LabelRegion< Integer > labelRegion = labelRegions.getLabelRegion( label );
 
+//		Intervals.minAsLongArray( skeletons )
 
 
-		this.skeleton = skeleton;
+		this.skeleton = null;
 	}
 
 

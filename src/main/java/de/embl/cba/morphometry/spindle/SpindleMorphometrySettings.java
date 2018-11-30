@@ -48,4 +48,8 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public File outputDirectory;
 	public String inputDataSetName;
 	public double derivativeDelta;
+
+	public double minimalMetaphasePlateVolumeInCalibratedUnits = 5; // um^3
+	public double centralObjectRegionToleranceInCalibratedUnits = 3; // um
+	public double erosionOfDapiMaskInCalibratedUnits = 1.0; // um
 }
