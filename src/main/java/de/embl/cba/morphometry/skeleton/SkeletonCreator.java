@@ -14,7 +14,7 @@ import net.imglib2.view.Views;
 
 import java.util.ArrayList;
 
-public class Skeleton< T extends RealType< T > & NativeType< T > >
+public class SkeletonCreator< T extends RealType< T > & NativeType< T > >
 {
 
 	final ArrayList< RandomAccessibleInterval< BitType > > masks;
@@ -22,26 +22,11 @@ public class Skeleton< T extends RealType< T > & NativeType< T > >
 
 	private ArrayList< RandomAccessibleInterval< BitType > > skeletons;
 
-	public Skeleton( ArrayList< RandomAccessibleInterval< BitType > > masks,
-					 MicrogliaMorphometrySettings settings )
+	public SkeletonCreator( ArrayList< RandomAccessibleInterval< BitType > > masks,
+							MicrogliaMorphometrySettings settings )
 	{
 		this.masks = masks;
 		this.settings = settings;
-	}
-
-	public Skeleton( RandomAccessibleInterval labelMaps,
-					 MicrogliaMorphometrySettings settings )
-	{
-		this.masks = new ArrayList<>(  );
-		this.settings = settings;
-
-		long numTimePoints = labelMaps.dimension( 2 );
-
-		for ( int t = 0; t < numTimePoints; ++t )
-		{
-			final RandomAccessibleInterval< BitType > mask = Utils.asMask( Views.hyperSlice( labelMaps, 2, t ) );
-			masks.add( mask );
-		}
 	}
 
 	public void run()

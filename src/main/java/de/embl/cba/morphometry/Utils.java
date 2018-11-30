@@ -2,6 +2,7 @@ package de.embl.cba.morphometry;
 
 import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
+import de.embl.cba.morphometry.microglia.MicrogliaMorphometrySettings;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
@@ -23,11 +24,9 @@ import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.img.basictypeaccess.array.IntArray;
 import net.imglib2.img.basictypeaccess.array.LongArray;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.loops.LoopBuilder;
-import net.imglib2.ops.parse.token.Int;
 import net.imglib2.outofbounds.OutOfBounds;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.*;
@@ -37,11 +36,9 @@ import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.AbstractIntegerType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.type.numeric.integer.UnsignedIntType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
-import net.imglib2.util.Util;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.scijava.log.LogService;
@@ -741,6 +738,22 @@ public class Utils
 
 		return copy;
 	}
+
+	public static ArrayList< RandomAccessibleInterval< BitType > > labelMapsAsMasks( RandomAccessibleInterval labelMaps )
+	{
+		final ArrayList< RandomAccessibleInterval< BitType > > masks = new ArrayList<>();
+
+		long numTimePoints = labelMaps.dimension( 2 );
+
+		for ( int t = 0; t < numTimePoints; ++t )
+		{
+			final RandomAccessibleInterval< BitType > mask = Utils.asMask( Views.hyperSlice( labelMaps, 2, t ) );
+			masks.add( mask );
+		}
+
+		return masks;
+	}
+
 
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > createEmptyArrayImg( RandomAccessibleInterval< T > rai )
