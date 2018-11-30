@@ -39,6 +39,7 @@ import java.util.*;
 import static de.embl.cba.morphometry.Constants.*;
 import static de.embl.cba.morphometry.drosophila.dapi.DapiRegistration.createXAxisRollTransform;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
+import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 import static java.lang.Math.toRadians;
 
@@ -102,8 +103,8 @@ public class ShavenBabyRegistration
 
 		Utils.log( "Down-sampling to registration resolution..." );
 
-		final RandomAccessibleInterval< T > downscaledSvb = Algorithms.createRescaledArrayImg( svb, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
-		final RandomAccessibleInterval< T > downscaledOther = Algorithms.createRescaledArrayImg( other, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+		final RandomAccessibleInterval< T > downscaledSvb = createRescaledArrayImg( svb, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+		final RandomAccessibleInterval< T > downscaledOther = createRescaledArrayImg( other, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
 
 		double[] registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 

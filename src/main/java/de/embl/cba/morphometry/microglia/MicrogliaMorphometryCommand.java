@@ -4,7 +4,7 @@ import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.MeasurementsUtils;
 import de.embl.cba.morphometry.measurements.Measurements;
-import de.embl.cba.morphometry.skeleton.Skeleton;
+import de.embl.cba.morphometry.skeleton.SkeletonCreator;
 import de.embl.cba.morphometry.table.InteractiveTablePanel;
 import ij.IJ;
 import ij.ImagePlus;
@@ -93,8 +93,6 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 		MeasurementsUtils.saveMeasurements( outputTableFile, measurements );
 
 		showResults( file, measurements );
-
-
 	}
 
 	private void showResults( File file, ArrayList< String > measurements )
@@ -126,18 +124,6 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 		return ImageJFunctions.wrapReal( imagePlus );
 	}
 
-	public static void logMeasurements( ArrayList< String > lines )
-	{
-		Utils.log( " ");
-		Utils.log( "----------- RESULTS (Tab delimited => Copy to Excel) -------------");
-		Utils.log( " ");
-
-		for ( String line : lines )
-		{
-			Utils.log( line );
-		}
-	}
-
 	private void performMeasurements( )
 	{
 		for ( int t = 0; t < labelMaps.dimension( 2 ); ++t )
@@ -151,15 +137,39 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 					imgLabeling,
 					null);
 
+			// Volumes ( = areas )
 			Measurements.measureVolumes(
 					measurements,
-					imgLabeling );
+					imgLabeling);
 
+			// Surfaces ( = perimeters )
+			Measurements.measureSurface(
+					measurements,
+					imgLabeling,
+					opService );
+
+			// TODO: move to skeletonAnalyzer?
 			Measurements.measureSumIntensities(
 					measurements,
 					imgLabeling,
 					skeletons.get( t ),
 					Constants.SKELETON );
+
+			// Form factor could be calculated later, e.g. in R
+
+			// Analyze Skeletons: length, branch-points, branches
+			// avg branch-length = length / branches
+
+			// Measure: distance travelled
+
+			// Also,we are presently using MtrackJ to calculate velocity, distance travelled and displacement.
+			// => I would recommend you do this in Excel as this is downstream analysis.
+			// => What I can work on is a tool to upload your extended table again and view it on top of the objects
+
+			// With the segmented microglia movie generated with your plugin, can we do automatic tracking?
+			// The cells are already tracked.
+
+			//	2-The next  challenge would be to measure phagocytosis of green particles and quantify "black holes" as we discussed last summer.
 
 
 		}
@@ -167,13 +177,10 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 	private void createSkeletons( )
 	{
-		final Skeleton skeleton = new Skeleton( labelMaps, settings );
-		skeleton.run();
-		skeletons = skeleton.getSkeletons();
-
-		//ImagePlus skeletonImagePlus = Utils.createIJ1Movie( skeletons, "Skeletons" );
-		//skeletonImagePlus.show();
-
+		final SkeletonCreator skeletonCreator =
+				new SkeletonCreator( Utils.labelMapsAsMasks( labelMaps ), settings );
+		skeletonCreator.run();
+		skeletons = skeletonCreator.getSkeletons();
 	}
 
 	private void initObjectMeasurements( )

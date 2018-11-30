@@ -1,33 +1,67 @@
 package de.embl.cba.morphometry.measurements;
 
+import de.embl.cba.morphometry.Utils;
+import net.imagej.ops.OpService;
+import net.imagej.ops.Ops;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.roi.geom.real.Polygon2D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegionCursor;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.Views;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 public class Measurements
 {
 
 	public static final String COORDINATE = "Coordinate";
+
 	public static final String VOLUME = "Volume";
+	public static final String AREA = "Area";
+	public static final String LENGTH = "Length";
+
+	public static final String PERIMETER = "Perimeter";
+	public static final String SURFACE = "Surface";
+
 	public static final String PIXEL_UNITS = "Pixels";
 	public static final String SUM_INTENSITY = "SumIntensity";
 	public static final String GOBAL_BACKGROUND_INTENSITY = "GobalBackgroundIntensity";
 	public static final String SEP = "_";
 	public static final String FRAME_UNITS = "Frames";
 	public static final String TIME = "Time";
+
+	public static String getVolumeName( int numDimensions )
+	{
+		if ( numDimensions == 1 ) return LENGTH;
+		if ( numDimensions == 2 ) return AREA;
+		if ( numDimensions == 3 ) return VOLUME;
+
+		return null;
+	}
+
+	public static String getSurfaceName( int numDimensions )
+	{
+		if ( numDimensions == 1 ) return LENGTH;
+		if ( numDimensions == 2 ) return PERIMETER;
+		if ( numDimensions == 3 ) return SURFACE;
+
+		return null;
+	}
+
 
 	public static void measurePositions( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling, double[] calibration )
 	{
@@ -65,9 +99,54 @@ public class Measurements
 		for ( LabelRegion labelRegion : labelRegions )
 		{
 			final int label = ( int ) ( labelRegion.getLabel() );
-			addMeasurement( objectMeasurements, label, VOLUME + SEP + PIXEL_UNITS, labelRegion.size() );
+			addMeasurement( objectMeasurements, label, getVolumeName( labelRegion.numDimensions() ) + SEP + PIXEL_UNITS, labelRegion.size() );
 		}
 	}
+
+	public static void measureSurface( HashMap<Integer, Map<String, Object>> objectMeasurements,
+									   ImgLabeling<Integer, IntType> imgLabeling,
+									   OpService opService )
+	{
+		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+		for ( LabelRegion labelRegion : labelRegions )
+		{
+			final int label = ( int ) ( labelRegion.getLabel() );
+
+			final RandomAccessibleInterval< BitType > mask = Utils.labelRegionAsMask( labelRegion );
+
+//			final RandomAccessibleInterval outline = opService.morphology().outline(
+//					Views.zeroMin( mask ), true );
+
+			final Polygon2D contour = opService.geom().contour( mask, true );
+			final double boundarySize = opService.geom().boundarySize( contour ).getRealDouble();
+
+			addMeasurement( objectMeasurements, label, getSurfaceName( labelRegion.numDimensions() ) + SEP + PIXEL_UNITS, boundarySize );
+		}
+	}
+
+
+	public static void measureSkeletons( HashMap<Integer, Map<String, Object>> objectMeasurements,
+									   ImgLabeling<Integer, IntType> imgLabeling,
+									   RandomAccessibleInterval< BitType > skeletons,
+									   OpService opService )
+	{
+		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+		for ( LabelRegion labelRegion : labelRegions )
+		{
+			final int label = ( int ) ( labelRegion.getLabel() );
+
+			final RandomAccessibleInterval< BitType > mask = Utils.labelRegionAsMask( labelRegion );
+
+//			final RandomAccessibleInterval outline = opService.morphology().outline(
+//					Views.zeroMin( mask ), true );
+
+			final Polygon2D contour = opService.geom().contour( mask, true );
+			final double boundarySize = opService.geom().boundarySize( contour ).getRealDouble();
+
+			addMeasurement( objectMeasurements, label, getSurfaceName( labelRegion.numDimensions() ) + SEP + PIXEL_UNITS, boundarySize );
+		}
+	}
+
 
 	public static void addMeasurement( HashMap< Integer, Map< String, Object > > objectMeasurements, int objectLabel, String name, Object value )
 	{

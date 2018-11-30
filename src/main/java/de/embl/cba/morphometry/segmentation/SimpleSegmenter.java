@@ -10,6 +10,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
+import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 
 
@@ -38,7 +39,7 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 
 		final double[] workingCalibration = Utils.as2dDoubleArray( settings.workingVoxelSize );
 
-		final RandomAccessibleInterval< T > image = Algorithms.createRescaledArrayImg( intensity, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > image = createRescaledArrayImg( intensity, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
 		if ( showIntermediateResults ) show( image, "image isotropic resolution", null, workingCalibration, false );
 
