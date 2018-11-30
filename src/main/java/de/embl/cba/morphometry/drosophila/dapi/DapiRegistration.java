@@ -1,6 +1,7 @@
 package de.embl.cba.morphometry.drosophila.dapi;
 
 import de.embl.cba.morphometry.Algorithms;
+import de.embl.cba.morphometry.Angles;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
 import de.embl.cba.morphometry.Utils;
@@ -123,36 +124,13 @@ public class DapiRegistration
 	public static < T extends RealType< T > & NativeType< T > >
 	AffineTransform3D createXAxisRollTransform( Point maximum )
 	{
-		double angleToZAxisInDegrees = angleToZAxisInDegrees( maximum );
+		double angleToZAxisInDegrees = Angles.angleToZAxisInDegrees( maximum );
 		AffineTransform3D rollTransform = new AffineTransform3D();
 
 		Utils.log( "Roll angle: " + angleToZAxisInDegrees );
 		rollTransform.rotate( X, toRadians( angleToZAxisInDegrees ) );
 
 		return rollTransform;
-	}
-
-
-
-	public static double angleToZAxisInDegrees( Point maximum )
-	{
-		double angleToZAxisInDegrees;
-
-		if ( maximum.getIntPosition( Y ) == 0 )
-		{
-			angleToZAxisInDegrees = Math.signum( maximum.getDoublePosition( X ) ) * 90;
-		}
-		else
-		{
-			angleToZAxisInDegrees = toDegrees( atan( maximum.getDoublePosition( X ) / maximum.getDoublePosition( Y ) ) );
-
-			if ( maximum.getDoublePosition( Y ) < 0 )
-			{
-				angleToZAxisInDegrees += 180;
-			}
-		}
-
-		return angleToZAxisInDegrees;
 	}
 
 

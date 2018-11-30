@@ -123,6 +123,11 @@
 			<artifactId>bigdataviewer-vistools</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>3D_Viewer</artifactId>
+		</dependency>
+
 		<!--<dependency>-->
 			<!--<groupId>fr.inra.ijpb</groupId>-->
 			<!--<artifactId>MorphoLibJ_</artifactId>-->

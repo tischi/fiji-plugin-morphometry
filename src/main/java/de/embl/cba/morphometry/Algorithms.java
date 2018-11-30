@@ -138,40 +138,35 @@ public class Algorithms
 	}
 
 
-	public static int getCentralLabelIndex( ImgLabeling< Integer, IntType > labeling )
+	public static int getCentralLabelIndex( ImgLabeling< Integer, IntType > labeling, long radius )
 	{
-		final RandomAccess< LabelingType< Integer > > labelingRandomAccess = labeling.randomAccess();
-		for ( int d : XYZ ) labelingRandomAccess.setPosition( labeling.dimension( d ) / 2, d );
-		int centralIndex = labelingRandomAccess.get().getIndex().getInteger();
-		return labeling.getMapping().labelsAtIndex( centralIndex ).iterator().next();
-	}
+		long[] centre = new long[ labeling.numDimensions() ];
 
-	public static LabelRegion< Integer > getCentralObjectLabelRegion( ImgLabeling< Integer, IntType > labeling )
-	{
-		int centralLabel = getCentralLabelIndex( labeling );
-
-		final LabelRegions< Integer > labelRegions = new LabelRegions<>( labeling );
-
-		return labelRegions.getLabelRegion( centralLabel );
-	}
-
-	public static LabelRegion< Integer > getLargestObject( ImgLabeling< Integer, IntType > labeling )
-	{
-		final LabelRegions< Integer > labelRegions = new LabelRegions<>( labeling );
-
-		long maxSize = Long.MIN_VALUE;
-		LabelRegion largestRegion = null;
-
-		for ( LabelRegion labelRegion : labelRegions )
+		for ( int d = 0; d < labeling.numDimensions(); ++d )
 		{
-			if ( labelRegion.size() > maxSize)
+			centre[ d ] = labeling.dimension( d ) / 2;
+		}
+
+		final HyperSphereShape sphere = new HyperSphereShape( radius );
+
+		final RandomAccessible< Neighborhood< IntType > > nra = sphere.neighborhoodsRandomAccessible( labeling.getIndexImg() );
+		final RandomAccess< Neighborhood< IntType > > neighborhoodRandomAccess = nra.randomAccess();
+		neighborhoodRandomAccess.setPosition( centre );
+		final Cursor< IntType > cursor = neighborhoodRandomAccess.get().cursor();
+
+		int centralIndex = 0;
+		while( cursor.hasNext() )
+		{
+			if ( cursor.next().get() != 0 )
 			{
-				largestRegion = labelRegion;
-				maxSize = labelRegion.size();
+				centralIndex = cursor.get().getInteger();
+				break; // we found one non-zero index in this region
 			}
 		}
 
-		return largestRegion;
+		final Integer centralLabel = labeling.getMapping().labelsAtIndex( centralIndex ).iterator().next();
+
+		return centralLabel;
 	}
 
 
@@ -192,12 +187,12 @@ public class Algorithms
 
 	public static void removeSmallRegionsInMask(
 			RandomAccessibleInterval< BitType > mask,
-			double size,
+			double sizeInCalibratedUnits,
 			double calibration )
 	{
 		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask );
 
-		long minimalObjectSize = ( long ) ( size / Math.pow( calibration, imgLabeling.numDimensions() ) );
+		long minimalObjectSize = ( long ) ( sizeInCalibratedUnits / Math.pow( calibration, imgLabeling.numDimensions() ) );
 
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
@@ -284,16 +279,6 @@ public class Algorithms
 		}
 
 		return derivative;
-	}
-
-	public static double angleInRadians( final double[] v1, final double[] v2 )
-	{
-		final double dot = LinAlgHelpers.dot( v1, v2 );
-
-		final double angleInRadians = Math.signum( v1[ 0 ] ) * acos( dot / ( LinAlgHelpers.length( v1 ) * LinAlgHelpers.length( v2 ) ) );
-		final double angleInDegrees = angleInRadians * 180.0 / Math.PI;
-
-		return angleInRadians;
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
