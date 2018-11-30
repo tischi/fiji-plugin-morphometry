@@ -16,6 +16,10 @@ import net.imglib2.type.numeric.RealType;
 
 import java.util.ArrayList;
 
+import static de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ.PHI;
+import static de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ.PSI;
+import static de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ.THETA;
+
 public class TestEllipsoidFitting
 {
 	public static < T extends RealType< T > & NativeType< T > > void main( String[] args )
@@ -49,9 +53,9 @@ public class TestEllipsoidFitting
 
 	public static void printAngles( EllipsoidMLJ ellipsoidParameters )
 	{
-		System.out.println( "\nMLJ angles:");
-		System.out.println( ellipsoidParameters.eulerAnglesInDegrees[ 0 ] );
-		System.out.println( ellipsoidParameters.eulerAnglesInDegrees[ 1 ] );
-		System.out.println( ellipsoidParameters.eulerAnglesInDegrees[ 2 ] );
+		System.out.println( "\nMLJ angles (Phi, Theta, Psi):");
+		System.out.println( ellipsoidParameters.eulerAnglesInDegrees[ PHI ] );
+		System.out.println( ellipsoidParameters.eulerAnglesInDegrees[ THETA ] );
+		System.out.println( ellipsoidParameters.eulerAnglesInDegrees[ PSI ] );
 	}
 }
