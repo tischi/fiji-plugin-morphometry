@@ -2,8 +2,8 @@ package de.embl.cba.morphometry.spindle;
 
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
-import de.embl.cba.morphometry.geometry.EllipsoidParameters;
-import de.embl.cba.morphometry.geometry.Ellipsoids;
+import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
+import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidsMLJ;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.viewing.Viewer3D;
 import de.embl.cba.transforms.utils.Transforms;
@@ -116,12 +116,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		RandomAccessibleInterval< BitType > processedMetaPhasePlate = createProcessedMetaPhasePlate( mask, metaphasePlate );
 
-		if ( settings.showIntermediateResults )
-		{
-			show( processedMetaPhasePlate, "processed metaphase plate", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( processedMetaPhasePlate, "processed metaphase plate", null, workingCalibration, false );
 
-			Viewer3D.show3D( processedMetaPhasePlate );
-		}
 
 
 		/**
@@ -130,17 +126,18 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Determining meta-phase plate axes..." );
 
-		final EllipsoidParameters ellipsoidParameters = Ellipsoids.computeParametersFromBinaryImage( processedMetaPhasePlate );
+		final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( processedMetaPhasePlate );
 
 		Utils.log( "Creating aligned images..." );
 
-		final AffineTransform3D alignmentTransform = Ellipsoids.createAlignmentTransform( ellipsoidParameters );
+		final AffineTransform3D alignmentTransform = EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters );
 		final RandomAccessibleInterval aligendTubulin = Utils.copyAsArrayImg( Transforms.createTransformedView( tubulin, alignmentTransform, new NearestNeighborInterpolatorFactory() ) );
 		final RandomAccessibleInterval alignedDapi = Utils.copyAsArrayImg( Transforms.createTransformedView( dapi, alignmentTransform ) );
 		final RandomAccessibleInterval alignedProcessedMetaphasePlate = Utils.copyAsArrayImg( Transforms.createTransformedView( processedMetaPhasePlate, alignmentTransform ) );
 
 		if ( settings.showIntermediateResults ) show( alignedDapi, "aligned dapi", Transforms.origin(), workingCalibration, false );
 		if ( settings.showIntermediateResults ) show( alignedProcessedMetaphasePlate, "aligned processed meta-phase plate", Transforms.origin(), workingCalibration, false );
+		if ( settings.showIntermediateResults ) Viewer3D.show3D( alignedProcessedMetaphasePlate );
 
 		RandomAccessibleInterval< T > interestPoints = Utils.copyAsArrayImg( dapi );
 		Utils.setValues( interestPoints, 0.0 );
@@ -197,11 +194,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		rotation.setTranslation( new double[ 3 ] );
 
 		final double[] zAxis = { 0, 0, 1 };
-
-		// OCS = Orthogonal Coverslip System
-		// Create views that do not tilt the coverslip
-		// This was biologically interesting to see how the axes
-		// are with respect to the coverslip surface
 
 		// compute the spindle axis in the coordinate system of the input data
 		final double[] spindleAxis = new double[ 3 ];

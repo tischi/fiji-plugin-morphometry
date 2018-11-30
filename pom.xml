@@ -152,6 +152,11 @@
 		</dependency>
 
 
+		<dependency>
+			<groupId>com.github.mcib3d</groupId>
+			<artifactId>mcib3d-core</artifactId>
+			<version>master-3.9-gc8beaef-59</version>
+		</dependency>
 
 
 	</dependencies>

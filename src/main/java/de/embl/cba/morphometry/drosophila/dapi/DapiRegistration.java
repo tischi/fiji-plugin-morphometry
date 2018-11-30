@@ -5,8 +5,8 @@ import de.embl.cba.morphometry.Angles;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.geometry.Ellipsoids;
-import de.embl.cba.morphometry.geometry.EllipsoidParameters;
+import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidsMLJ;
+import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
 import de.embl.cba.transforms.utils.Transforms;
 import net.imglib2.Point;
 import net.imglib2.RandomAccessibleInterval;
@@ -67,9 +67,9 @@ public class DapiRegistration
 
 		if ( settings.showIntermediateResults ) show( binaryImage, "binary", null, calibration, false );
 
-		final EllipsoidParameters ellipsoidParameters = Ellipsoids.computeParametersFromBinaryImage( binaryImage );
+		final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( binaryImage );
 
-		registration.preConcatenate( Ellipsoids.createAlignmentTransform( ellipsoidParameters ) );
+		registration.preConcatenate( EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters ) );
 
 		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( binned, registration ), "ellipsoid aligned", null, calibration, false );
 
