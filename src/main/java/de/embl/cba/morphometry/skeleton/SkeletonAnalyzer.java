@@ -4,9 +4,14 @@ import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.microglia.MicrogliaMorphometrySettings;
 import net.imagej.ops.OpService;
+import net.imglib2.Cursor;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.algorithm.morphology.table2d.Branchpoints;
+import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
+import net.imglib2.roi.labeling.LabelRegionCursor;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -21,45 +26,72 @@ public class SkeletonAnalyzer< R extends RealType< R > >
 {
 
 	final RandomAccessibleInterval< BitType > skeleton;
+	final OpService opService;
 
-	public SkeletonAnalyzer( RandomAccessibleInterval< BitType > skeleton )
+	double skeletonLength;
+	long numBranchPoints;
+	private RandomAccessibleInterval< BitType > branchpoints;
+
+	public SkeletonAnalyzer( RandomAccessibleInterval< BitType > skeleton, OpService opService )
 	{
 		this.skeleton = skeleton;
+		this.opService = opService;
+
+		run();
 	}
 
 
-	public SkeletonAnalyzer( ImgLabeling<Integer, IntType> imgLabeling,
-							 int label,
-							 RandomAccessibleInterval< BitType > skeletons )
+	private void run()
 	{
-		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+		measureLength();
 
-		final LabelRegion< Integer > labelRegion = labelRegions.getLabelRegion( label );
+		measureBranchpoints();
 
-//		Intervals.minAsLongArray( skeletons )
-
-
-		this.skeleton = null;
 	}
 
-
-	public void run()
+	private void measureBranchpoints()
 	{
+		branchpoints = ArrayImgs.bits( Intervals.dimensionsAsLongArray( skeleton ) );
 
-//			final RandomAccessibleInterval< BitType > skeletons =
-//					Algorithms.createObjectSkeletons(
-//							imgLabeling,
-//							3, // TODO: Make a parameter
-//							settings.opService
-//					);
+		Branchpoints.branchpoints(
+				Views.extendBorder( Views.zeroMin( skeleton ) ),
+				Views.flatIterable( branchpoints ) );
 
-//			this.skeletons.add( skeletons )
+		numBranchPoints = measureSum( branchpoints );
+	}
 
+	public void measureLength()
+	{
+		skeletonLength = measureSum( skeleton );
 	}
 
 	public long getNumBranchPoints()
 	{
-		return 0;
+		return numBranchPoints;
 	}
+
+	public RandomAccessibleInterval< BitType > getBranchpoints()
+	{
+		return branchpoints;
+	}
+
+
+	public double getSkeletonLength() { return skeletonLength; }
+
+	public static long measureSum( RandomAccessibleInterval< BitType > rai )
+	{
+		final Cursor< BitType > cursor = Views.iterable( rai ).cursor();
+
+		long sum = 0;
+
+		while ( cursor.hasNext() )
+		{
+			sum += cursor.next().getRealDouble();
+		}
+
+		return sum;
+	}
+
+
 
 }

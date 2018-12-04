@@ -1,12 +1,11 @@
 package de.embl.cba.morphometry;
 
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
+import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
-import net.imagej.ImageJ;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
-import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.morphology.Closing;
 import net.imglib2.algorithm.morphology.Dilation;
 import net.imglib2.algorithm.morphology.Erosion;
@@ -17,14 +16,9 @@ import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
-import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.img.basictypeaccess.array.LongArray;
 import net.imglib2.img.display.imagej.ImageJFunctions;
-import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
 import net.imglib2.loops.LoopBuilder;
-import net.imglib2.realtransform.RealViews;
-import net.imglib2.realtransform.Scale;
 import net.imglib2.roi.labeling.*;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -39,10 +33,7 @@ import net.imglib2.view.Views;
 
 import java.util.*;
 
-import static de.embl.cba.morphometry.Constants.XYZ;
-import static de.embl.cba.transforms.utils.Transforms.createTransformedInterval;
 import static java.lang.Math.abs;
-import static java.lang.Math.acos;
 
 public class Algorithms
 {
@@ -536,13 +527,13 @@ public class Algorithms
 
 			if ( overlappingPreviousObjectLabels.size() > 1 )
 			{
-				RandomAccessibleInterval< BitType > currentObjectMask = Utils.labelRegionAsMask( currentRegions.getLabelRegion( currentObjectLabel ) );
+				RandomAccessibleInterval< BitType > currentObjectMask = Regions.labelRegionAsMask( currentRegions.getLabelRegion( currentObjectLabel ) );
 				RandomAccessibleInterval< IntType > previousLabelingCrop =  Views.interval( previousLabeling, currentObjectMask );
 
 				currentObjectMask = Views.zeroMin( currentObjectMask );
 				previousLabelingCrop = Views.zeroMin( previousLabelingCrop );
 
-				final RandomAccessibleInterval< T > maskedAndCroppedIntensities = Views.zeroMin( Utils.getMaskedAndCropped( currentIntensities, currentRegions.getLabelRegion( currentObjectLabel ) ) );
+				final RandomAccessibleInterval< T > maskedAndCroppedIntensities = Views.zeroMin( Regions.getMaskedAndCropped( currentIntensities, currentRegions.getLabelRegion( currentObjectLabel ) ) );
 
 				final RandomAccessibleInterval< IntType > overlapLabeling =
 						createOverlapLabeling(
@@ -663,8 +654,8 @@ public class Algorithms
 			if ( numObjectsPerRegion.get( label ) > 1 )
 			{
 
-				final RandomAccessibleInterval< T > maskedAndCroppedIntensities = Views.zeroMin( Utils.getMaskedAndCropped( intensity, labelRegions.getLabelRegion( label ) ) );
-				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.labelRegionAsMask( labelRegions.getLabelRegion( label ) ) );
+				final RandomAccessibleInterval< T > maskedAndCroppedIntensities = Views.zeroMin( Regions.getMaskedAndCropped( intensity, labelRegions.getLabelRegion( label ) ) );
+				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Regions.labelRegionAsMask( labelRegions.getLabelRegion( label ) ) );
 
 				final ArrayList< PositionAndValue > localMaxima =
 						computeSortedLocalIntensityMaxima(
@@ -753,7 +744,7 @@ public class Algorithms
 
 		for ( LabelRegion< IntType > labelRegion : labelRegions )
 		{
-			RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Utils.labelRegionAsMask( labelRegion ) );
+			RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Regions.labelRegionAsMask( labelRegion ) );
 
 			labelRegionMask = Algorithms.close(  labelRegionMask, closingRadius );
 
@@ -885,7 +876,7 @@ public class Algorithms
 
 			if ( splitObjectLabel == WATERSHED )
 			{
-				final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( Utils.labelRegionAsMask( region ) );
+				final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( Regions.labelRegionAsMask( region ) );
 				final LabelRegions< Integer > splitRegions = new LabelRegions( imgLabeling );
 
 				long maximalLength = 0;

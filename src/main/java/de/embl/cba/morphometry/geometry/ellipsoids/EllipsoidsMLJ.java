@@ -184,7 +184,8 @@ public abstract class EllipsoidsMLJ
 	}
 
 
-	public static AffineTransform3D createAlignmentTransform( EllipsoidMLJ ellipsoidParameters )
+	public static
+	AffineTransform3D createAlignmentTransform( EllipsoidMLJ ellipsoidParameters )
 	{
 		AffineTransform3D translation = new AffineTransform3D();
 		translation.translate( ellipsoidParameters.center  );

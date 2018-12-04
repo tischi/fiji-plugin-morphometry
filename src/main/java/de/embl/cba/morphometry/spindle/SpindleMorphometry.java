@@ -114,7 +114,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		// TODO: maybe only shrink the mask if it is too thick?
 
-		RandomAccessibleInterval< BitType > processedMetaPhasePlate = createProcessedMetaPhasePlate( mask, metaphasePlate );
+		final RandomAccessibleInterval< BitType > processedMetaPhasePlate = createProcessedMetaPhasePlate( mask, metaphasePlate );
 
 		if ( settings.showIntermediateResults ) show( processedMetaPhasePlate, "processed metaphase plate", null, workingCalibration, false );
 
@@ -127,6 +127,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		Utils.log( "Determining meta-phase plate axes..." );
 
 		final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( processedMetaPhasePlate );
+		Utils.log( "Ellipsoid Angles: ");
+		Utils.log( "Phi "+ ellipsoidParameters.eulerAnglesInDegrees[ 0 ] );
+		Utils.log( "Theta "+ ellipsoidParameters.eulerAnglesInDegrees[ 1 ] );
+		Utils.log( "Psi "+ ellipsoidParameters.eulerAnglesInDegrees[ 2 ] );
 
 		Utils.log( "Creating aligned images..." );
 
@@ -223,7 +227,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Saving result images ..." );
 
-		saveImagePlus( Utils.asImagePlus( alignedProcessedMetaphasePlate ) );
+		saveImagePlus( Utils.asImagePlus( processedMetaPhasePlate, "processedMetaPhasePlate" ) );
+		saveImagePlus( Utils.asImagePlus( alignedProcessedMetaphasePlate, "alignedProcessedMetaphasePlate" ) );
 		saveMaximumProjections( transformedDapiView, "dapi" );
 		saveMaximumProjections( transformedTubulinView, "tubulin" );
 		saveMaximumProjections( transformedInterestPointView, "points" );

@@ -1,8 +1,8 @@
 package de.embl.cba.morphometry.measurements;
 
-import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.regions.Regions;
+import de.embl.cba.morphometry.skeleton.SkeletonAnalyzer;
 import net.imagej.ops.OpService;
-import net.imagej.ops.Ops;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
@@ -16,14 +16,10 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.Views;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 
 public class Measurements
 {
@@ -40,6 +36,9 @@ public class Measurements
 	public static final String PIXEL_UNITS = "Pixels";
 	public static final String SUM_INTENSITY = "SumIntensity";
 	public static final String GOBAL_BACKGROUND_INTENSITY = "GobalBackgroundIntensity";
+	public static final String SKELETON_LENGTH = "SkeletonLength";
+	public static final String SKELETON_NUMBER_OF_BRANCHPOINTS = "SkeletonNumBranchPoints";
+
 	public static final String SEP = "_";
 	public static final String FRAME_UNITS = "Frames";
 	public static final String TIME = "Time";
@@ -112,10 +111,9 @@ public class Measurements
 		{
 			final int label = ( int ) ( labelRegion.getLabel() );
 
-			final RandomAccessibleInterval< BitType > mask = Utils.labelRegionAsMask( labelRegion );
+			final RandomAccessibleInterval< BitType > mask = Regions.labelRegionAsMask( labelRegion );
 
-//			final RandomAccessibleInterval outline = opService.morphology().outline(
-//					Views.zeroMin( mask ), true );
+			// See: https://forum.image.sc/t/measure-surface-perimeter-in-imglib2/21213
 
 			final Polygon2D contour = opService.geom().contour( mask, true );
 			final double boundarySize = opService.geom().boundarySize( contour ).getRealDouble();
@@ -126,24 +124,36 @@ public class Measurements
 
 
 	public static void measureSkeletons( HashMap<Integer, Map<String, Object>> objectMeasurements,
-									   ImgLabeling<Integer, IntType> imgLabeling,
-									   RandomAccessibleInterval< BitType > skeletons,
-									   OpService opService )
+										 ImgLabeling<Integer, IntType> imgLabeling,
+										 RandomAccessibleInterval< BitType > skeleton,
+										 OpService opService )
 	{
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+
 		for ( LabelRegion labelRegion : labelRegions )
 		{
+			final RandomAccessibleInterval< BitType > regionSkeleton = Regions.getMaskedAndCropped( skeleton, labelRegion );
+
+			final SkeletonAnalyzer skeletonAnalyzer = new SkeletonAnalyzer( regionSkeleton, opService );
+
 			final int label = ( int ) ( labelRegion.getLabel() );
 
-			final RandomAccessibleInterval< BitType > mask = Utils.labelRegionAsMask( labelRegion );
+			if ( label == 5 )
+			{
+				ImageJFunctions.show( regionSkeleton, "skel" );
+				ImageJFunctions.show( skeletonAnalyzer.getBranchpoints(), "branch" );
+			}
 
-//			final RandomAccessibleInterval outline = opService.morphology().outline(
-//					Views.zeroMin( mask ), true );
+			addMeasurement( objectMeasurements,
+					label,
+					 SKELETON_LENGTH + SEP + PIXEL_UNITS,
+					skeletonAnalyzer.getSkeletonLength() );
 
-			final Polygon2D contour = opService.geom().contour( mask, true );
-			final double boundarySize = opService.geom().boundarySize( contour ).getRealDouble();
+			addMeasurement( objectMeasurements,
+					label,
+					SKELETON_NUMBER_OF_BRANCHPOINTS + SEP + PIXEL_UNITS,
+					skeletonAnalyzer.getNumBranchPoints() );
 
-			addMeasurement( objectMeasurements, label, getSurfaceName( labelRegion.numDimensions() ) + SEP + PIXEL_UNITS, boundarySize );
 		}
 	}
 

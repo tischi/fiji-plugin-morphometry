@@ -952,46 +952,6 @@ public class Utils
 		return Views.interval( Views.extendZero( rai ), interval );
 	}
 
-	public static RandomAccessibleInterval< BitType > labelRegionAsMask( LabelRegion labelRegion )
-	{
-		RandomAccessibleInterval< BitType > rai = ArrayImgs.bits( Intervals.dimensionsAsLongArray( labelRegion ) );
-		rai = Transforms.getWithAdjustedOrigin( labelRegion, rai  );
-		final RandomAccess< BitType > randomAccess = rai.randomAccess();
-
-		final LabelRegionCursor cursor = labelRegion.cursor();
-
-		while ( cursor.hasNext() )
-		{
-			cursor.fwd();
-			randomAccess.setPosition( cursor );
-			randomAccess.get().set( true );
-		}
-
-		return rai;
-
-	}
-
-	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > getMaskedAndCropped( RandomAccessibleInterval<T> image, LabelRegion labelRegion )
-	{
-		ImgFactory< T > imgFactory = new ArrayImgFactory( image.randomAccess().get()  );
-		RandomAccessibleInterval< T > output = Views.translate( imgFactory.create( labelRegion ), Intervals.minAsLongArray( labelRegion )  ) ;
-
-		final RandomAccess< T > imageRandomAccess = image.randomAccess();
-		final RandomAccess< T > outputRandomAccess = output.randomAccess();
-		final LabelRegionCursor cursor = labelRegion.cursor();
-
-		while ( cursor.hasNext() )
-		{
-			cursor.fwd();
-			imageRandomAccess.setPosition( cursor );
-			outputRandomAccess.setPosition( cursor );
-			outputRandomAccess.get().set( imageRandomAccess.get() );
-		}
-
-		return output;
-	}
-
 	public static < T extends RealType< T > & NativeType< T > >
 	void setValues( RandomAccessibleInterval< T > rai, double value )
 	{
@@ -1278,11 +1238,11 @@ public class Utils
 		return unique;
 	}
 
-	public static ImagePlus asImagePlus( RandomAccessibleInterval alignedDapiMask )
+	public static ImagePlus asImagePlus( RandomAccessibleInterval rai, String title )
 	{
 		return ImageJFunctions.wrap(
 				Views.permute(
-						Views.addDimension( alignedDapiMask, 0, 0 ),
-						2, 3), "aligned_dapi_mask" );
+						Views.addDimension( rai, 0, 0 ),
+						2, 3), title );
 	}
 }

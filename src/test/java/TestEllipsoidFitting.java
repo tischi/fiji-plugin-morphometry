@@ -26,29 +26,38 @@ public class TestEllipsoidFitting
 	{
 
 		ArrayList< String > paths = new ArrayList<>(  );
-		paths.add( TestEllipsoidFitting.class.getResource( "3d-ellipsoid-2.zip" ).getPath()  );
-		paths.add( TestEllipsoidFitting.class.getResource( "3d-ellipsoid-3.zip" ).getPath()  );
+//		paths.add( TestEllipsoidFitting.class.getResource( "3d-ellipsoid-2.zip" ).getPath()  );
+//		paths.add( TestEllipsoidFitting.class.getResource( "3d-ellipsoid-3.zip" ).getPath()  );
+		paths.add( TestEllipsoidFitting.class.getResource( "dapi_mask_2.zip" ).getPath()  );
 
 		for ( String path : paths )
 		{
 
 			final ImagePlus imagePlus = IJ.openImage( path );
 			final RandomAccessibleInterval< T > wrap = ImageJFunctions.wrapReal( imagePlus );
-			//BdvFunctions.show( wrap, "input" ).getBdvHandle().getViewerPanel();
+			BdvFunctions.show( wrap, "input" ).getBdvHandle().getViewerPanel();
 
 			// MorpholibJ
 			final RandomAccessibleInterval< BitType > mask = Converters.convert( wrap, ( i, o ) -> o.set( i.getRealDouble() > 1 ? true : false ), new BitType() );
-			final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( mask );
-			printAngles( ellipsoidParameters );
 
-			final AffineTransform3D alignmentTransform = EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters );
-			final RandomAccessibleInterval aligned = Transforms.createTransformedView( mask, alignmentTransform );
-			//BdvFunctions.show( aligned, "MLJ aligned" ).getBdvHandle().getViewerPanel();
+			final RandomAccessibleInterval aligned = createMLJAligned( mask, "MLJ aligned" );
+
+			final RandomAccessibleInterval aligned2 = createMLJAligned( aligned, "MLJ aligned2" );
 
 			// 3D ImageSuite
 			Ellipsoids3DImageSuite.fitEllipsoid( imagePlus );
 		}
 
+	}
+
+	public static RandomAccessibleInterval createMLJAligned( RandomAccessibleInterval< BitType > mask, String s )
+	{
+		final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( mask );
+		printAngles( ellipsoidParameters );
+		final AffineTransform3D alignmentTransform = EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters );
+		final RandomAccessibleInterval aligned = Transforms.createTransformedView( mask, alignmentTransform );
+		BdvFunctions.show( aligned, s ).getBdvHandle().getViewerPanel();
+		return aligned;
 	}
 
 	public static void printAngles( EllipsoidMLJ ellipsoidParameters )
