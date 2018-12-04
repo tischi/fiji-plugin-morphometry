@@ -149,11 +149,11 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 					opService );
 
 			// TODO: move to skeletonAnalyzer?
-			Measurements.measureSumIntensities(
+			Measurements.measureSkeletons(
 					measurements,
 					imgLabeling,
 					skeletons.get( t ),
-					Constants.SKELETON );
+					opService );
 
 			// Form factor could be calculated later, e.g. in R
 
