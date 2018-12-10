@@ -151,28 +151,28 @@ public abstract class EllipsoidsMLJ
 		return radii;
 	}
 
-	private static double[] computeEllipsoidAlignmentAngles( Matrix sdvU )
+	private static double[] computeEllipsoidAlignmentAngles( Matrix mat )
 	{
 
 		double[] angles = new double[ 3 ];
 
 		// extract |cos(theta)|
-		double tmp = hypot( sdvU.get(1, 1), sdvU.get(2, 1) );
+		double tmp = hypot( mat.get(0, 0), mat.get(1, 0) );
 		double phi, theta, psi;
 
 		// avoid dividing by 0
 		if (tmp > 16 * Double.MIN_VALUE)
 		{
 			// normal case: theta <> 0
-			psi     = atan2(  sdvU.get(2, 1), sdvU.get(2, 2) );
-			theta   = atan2( -sdvU.get(2, 0), tmp);
-			phi     = atan2(  sdvU.get(1, 0), sdvU.get(0, 0) );
+			psi     = atan2( mat.get(2, 1), mat.get(2, 2));
+			theta   = atan2(-mat.get(2, 0), tmp);
+			phi     = atan2( mat.get(1, 0), mat.get(0, 0));
 		}
 		else
 		{
 			// theta is around 0
-			psi     = atan2( -sdvU.get(1, 2), sdvU.get(1,1) );
-			theta   = atan2( -sdvU.get(2, 0), tmp );
+			psi     = atan2(-mat.get(1, 2), mat.get(1,1));
+			theta   = atan2(-mat.get(2, 0), tmp);
 			phi     = 0;
 		}
 

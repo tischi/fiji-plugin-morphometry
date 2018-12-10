@@ -9,4 +9,15 @@ public class EllipsoidMLJ
 	public double[] radii = new double[ 3 ];
 	public double[] eulerAnglesInDegrees = new double[ 3 ];
 
+	@Override
+	public String toString()
+	{
+		String s = "";
+		s += "\nMLJ ellipsoid angles (Phi, Theta, Psi):";
+		s += "\nPhi: " + eulerAnglesInDegrees[ PHI ];
+		s += "\nTheta: " + eulerAnglesInDegrees[ THETA ];
+		s += "\nPsi: " + eulerAnglesInDegrees[ PSI ];
+
+		return s;
+	}
 }
