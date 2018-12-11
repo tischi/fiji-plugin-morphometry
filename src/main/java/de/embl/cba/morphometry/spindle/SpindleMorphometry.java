@@ -3,12 +3,16 @@ package de.embl.cba.morphometry.spindle;
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
+import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidVectors;
+import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidsMLJ;
+import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.viewing.Viewer3D;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
+import javafx.scene.transform.Affine;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
@@ -29,6 +33,8 @@ import net.imglib2.util.Intervals;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static de.embl.cba.morphometry.Angles.angleOfSpindleAxisToXaxisInRadians;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
@@ -38,6 +44,12 @@ import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 
 public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 {
+
+	public static final String SPINDLE_LENGTH = "SpindleLength";
+	public static final String SEP = "_";
+	public static final String LENGTH_UNIT = "um";
+	public static final String DNA_VOLUME = "DnaVolume";
+	public static final String VOLUME_UNIT = "um3";
 
 	final SpindleMorphometrySettings settings;
 	final OpService opService;
@@ -50,6 +62,11 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	public void run()
 	{
+		/**
+		 *  Initialise measurements
+		 */
+
+		final HashMap< Integer, Map< String, Object > > objectMeasurements = new HashMap<>();
 
 		/**
 		 *  Make isotropic
@@ -59,10 +76,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final double[] workingCalibration = Utils.as3dDoubleArray( settings.workingVoxelSize );
 
-		final RandomAccessibleInterval< T > dapi = createRescaledArrayImg( settings.dapiImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > dna = createRescaledArrayImg( settings.dapiImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 		final RandomAccessibleInterval< T > tubulin = createRescaledArrayImg( settings.tubulinImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
-		if ( settings.showIntermediateResults ) show( dapi, "dapi isotropic resolution", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( dna, "dapi isotropic resolution", null, workingCalibration, false );
 		if ( settings.showIntermediateResults ) show( tubulin, "tubulin isotropic resolution", null, workingCalibration, false );
 
 
@@ -81,9 +98,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * Create mask
 		 */
 
-		RandomAccessibleInterval< BitType > mask = createMask( dapi, threshold );
+		RandomAccessibleInterval< BitType > dnaMask = createMask( dna, threshold );
 
-		if ( settings.showIntermediateResults ) show( mask, "dapi mask", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( dnaMask, "dapi mask", null, workingCalibration, false );
 
 
 		/**
@@ -92,17 +109,26 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Extracting metaphase plate object..." );
 
-		Algorithms.removeSmallRegionsInMask( mask, settings.minimalMetaphasePlateVolumeInCalibratedUnits, settings.workingVoxelSize );
+		Algorithms.removeSmallRegionsInMask( dnaMask, settings.minimalMetaphasePlateVolumeInCalibratedUnits, settings.workingVoxelSize );
 
-		final ImgLabeling< Integer, IntType > labelImg = Utils.asImgLabeling( mask );
+		final ImgLabeling< Integer, IntType > labelImg = Utils.asImgLabeling( dnaMask );
 
 		final long radius = (long) ( settings.centralObjectRegionToleranceInCalibratedUnits / settings.workingVoxelSize );
-		final LabelRegion< Integer > selectedRegion = Regions.getCentralRegion( labelImg, radius );
+		final LabelRegion< Integer > metaphasePlateRegion = Regions.getCentralRegion( labelImg, radius );
 
-		final Img< BitType > metaphasePlate = Algorithms.createMaskFromLabelRegion( selectedRegion, Intervals.dimensionsAsLongArray( labelImg ) );
+		final Img< BitType > metaphasePlateMask = Algorithms.createMaskFromLabelRegion( metaphasePlateRegion, Intervals.dimensionsAsLongArray( labelImg ) );
 
-		if ( settings.showIntermediateResults ) show( metaphasePlate, "meta-phase object", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( metaphasePlateMask, "meta-phase object", null, workingCalibration, false );
 
+		/**
+		 * Compute metaphase plate volume
+		 */
+
+		Measurements.addMeasurement(
+				objectMeasurements,
+				0,
+				DNA_VOLUME + SEP + VOLUME_UNIT,
+				metaphasePlateRegion.size() * settings.workingVoxelSize );
 
 		/**
 		 * Morphological filtering
@@ -112,9 +138,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 */
 
 
-		// TODO: maybe only shrink the mask if it is too thick?
-
-		final RandomAccessibleInterval< BitType > processedMetaPhasePlate = createProcessedMetaPhasePlate( mask, metaphasePlate );
+		final RandomAccessibleInterval< BitType > processedMetaPhasePlate = createProcessedMetaPhasePlate( dnaMask, metaphasePlateMask );
 
 		if ( settings.showIntermediateResults ) show( processedMetaPhasePlate, "processed metaphase plate", null, workingCalibration, false );
 
@@ -126,24 +150,25 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Determining meta-phase plate axes..." );
 
+		//
 		final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( processedMetaPhasePlate );
-		Utils.log( "Ellipsoid Angles: ");
-		Utils.log( "Phi "+ ellipsoidParameters.eulerAnglesInDegrees[ 0 ] );
-		Utils.log( "Theta "+ ellipsoidParameters.eulerAnglesInDegrees[ 1 ] );
-		Utils.log( "Psi "+ ellipsoidParameters.eulerAnglesInDegrees[ 2 ] );
+
+		final EllipsoidVectors ellipsoidVectors = Ellipsoids3DImageSuite.fitEllipsoid( Utils.asImagePlus( processedMetaPhasePlate, "" ) );
 
 		Utils.log( "Creating aligned images..." );
 
-		final AffineTransform3D alignmentTransform = EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters );
-		final RandomAccessibleInterval aligendTubulin = Utils.copyAsArrayImg( Transforms.createTransformedView( tubulin, alignmentTransform, new NearestNeighborInterpolatorFactory() ) );
-		final RandomAccessibleInterval alignedDapi = Utils.copyAsArrayImg( Transforms.createTransformedView( dapi, alignmentTransform ) );
+		//final AffineTransform3D alignmentTransform = EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters );
+
+		final AffineTransform3D alignmentTransform = Ellipsoids3DImageSuite.createAlignmentTransform( ellipsoidVectors );
+		final RandomAccessibleInterval alignedTubulin = Utils.copyAsArrayImg( Transforms.createTransformedView( tubulin, alignmentTransform, new NearestNeighborInterpolatorFactory() ) );
+		final RandomAccessibleInterval alignedDapi = Utils.copyAsArrayImg( Transforms.createTransformedView( dna, alignmentTransform ) );
 		final RandomAccessibleInterval alignedProcessedMetaphasePlate = Utils.copyAsArrayImg( Transforms.createTransformedView( processedMetaPhasePlate, alignmentTransform ) );
 
 		if ( settings.showIntermediateResults ) show( alignedDapi, "aligned dapi", Transforms.origin(), workingCalibration, false );
 		if ( settings.showIntermediateResults ) show( alignedProcessedMetaphasePlate, "aligned processed meta-phase plate", Transforms.origin(), workingCalibration, false );
 		if ( settings.showIntermediateResults ) Viewer3D.show3D( alignedProcessedMetaphasePlate );
 
-		RandomAccessibleInterval< T > interestPoints = Utils.copyAsArrayImg( dapi );
+		RandomAccessibleInterval< T > interestPoints = Utils.copyAsArrayImg( dna );
 		Utils.setValues( interestPoints, 0.0 );
 
 		final double[] dnaCenter = new double[ 3 ];
@@ -162,11 +187,12 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		// TODO: compute meta-phase width, using FWHM and write to log window
 
+
 		/**
 		 * Compute spindle length
 		 */
 
-		final CoordinatesAndValues tubulinProfile = Utils.computeMaximumIntensitiesAlongAxis( aligendTubulin, settings.maxShortAxisDist, 2, settings.workingVoxelSize );
+		final CoordinatesAndValues tubulinProfile = Utils.computeMaximumIntensitiesAlongAxis( alignedTubulin, settings.maxShortAxisDist, 2, settings.workingVoxelSize );
 		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfile.values, "distance to center", "tubulin maximal intensities" );
 
 		final CoordinatesAndValues tubulinProfileDerivative = Algorithms.computeDerivatives( tubulinProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
@@ -177,6 +203,13 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		Utils.log( "Left spindle pole found at: " + spindlePoles[ 0 ] );
 		Utils.log( "Right spindle pole found at: " + spindlePoles[ 1 ] );
 
+		Measurements.addMeasurement(
+				objectMeasurements,
+				0,
+				SPINDLE_LENGTH + SEP + LENGTH_UNIT,
+				Math.abs( spindlePoles[ 1 ] - spindlePoles[ 0 ] ));
+
+
 		addSpindlePolesAsInterestPoints( alignmentTransform, interestPoints, spindlePoles );
 
 		final ArrayList< RealPoint > spindleLengthPoints = new ArrayList<>(  );
@@ -185,7 +218,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, spindlePoles[ 0 ] } ));
 		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, spindlePoles[ 1 ] } ));
 
-		if ( settings.showIntermediateResults ) show( aligendTubulin, "aligned tubulin", spindleLengthPoints, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( alignedTubulin, "aligned tubulin", spindleLengthPoints, workingCalibration, false );
 
 
 		/**
@@ -216,7 +249,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Rotating input data around z-axis by [degrees]: " + 180 / Math.PI * angleBetweenXAxisAndSpindleWithVector );
 
-		final RandomAccessibleInterval transformedDapiView = Transforms.createTransformedView( dapi, inputDataRotation );
+		final RandomAccessibleInterval transformedDapiView = Transforms.createTransformedView( dna, inputDataRotation );
 		final RandomAccessibleInterval transformedTubulinView = Transforms.createTransformedView( tubulin, inputDataRotation );
 		final RandomAccessibleInterval transformedInterestPointView = Transforms.createTransformedView( interestPoints, inputDataRotation );
 

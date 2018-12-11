@@ -11,19 +11,27 @@ import static java.lang.Math.toDegrees;
 
 public abstract class Angles
 {
-	public static double angleToZAxisInDegrees( Point maximum )
+	public static double angle2DToCoordinateSystemsAxisInDegrees( Point point )
 	{
+		final double[] vector = Vectors.asDoubles( point );
+
+		return angle2DToCoordinateSystemsAxisInDegrees( vector );
+	}
+
+	public static double angle2DToCoordinateSystemsAxisInDegrees( double[] vector )
+	{
+
 		double angleToZAxisInDegrees;
 
-		if ( maximum.getIntPosition( Y ) == 0 )
+		if ( vector[ Y ] == 0 )
 		{
-			angleToZAxisInDegrees = Math.signum( maximum.getDoublePosition( X ) ) * 90;
+			angleToZAxisInDegrees = Math.signum( vector[ X ] ) * 90;
 		}
 		else
 		{
-			angleToZAxisInDegrees = toDegrees( atan( maximum.getDoublePosition( X ) / maximum.getDoublePosition( Y ) ) );
+			angleToZAxisInDegrees = toDegrees( atan( vector[ X ] / vector[ Y ] ) );
 
-			if ( maximum.getDoublePosition( Y ) < 0 )
+			if ( vector[ Y ] < 0 )
 			{
 				angleToZAxisInDegrees += 180;
 			}

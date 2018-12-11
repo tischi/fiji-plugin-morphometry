@@ -62,7 +62,7 @@ public class Measurements
 	}
 
 
-	public static void measurePositions( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling, double[] calibration )
+	public static void measurePositions( HashMap< Integer, Map< String, Object > > objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling, double[] calibration )
 	{
 		String[] XYZ = new String[]{"X","Y","Z"};
 
@@ -78,7 +78,7 @@ public class Measurements
 		{
 			final int label = ( int ) ( labelRegion.getLabel() );
 
-			final double[] position = new double[ labelRegion.numDimensions() ];
+			final double[] position = new double[ 3 ];
 
 			labelRegion.getCenterOfMass().localize( position );
 
@@ -87,7 +87,6 @@ public class Measurements
 				if ( calibration != null ) position[ d ] *= calibration[ d ];
 				addMeasurement( objectMeasurements, label, COORDINATE + SEP + XYZ[ d ] + SEP + unit, position[ d ] );
 			}
-
 		}
 	}
 

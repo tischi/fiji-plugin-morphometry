@@ -141,6 +141,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.github.mcib3d</groupId>
+			<artifactId>mcib3d-core</artifactId>
+			<version>master-3.9-gc8beaef-59</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.scijava</groupId>
 			<artifactId>scijava-table</artifactId>
 		</dependency>
@@ -148,16 +154,14 @@
 		<dependency>
 			<groupId>org.scijava</groupId>
 			<artifactId>transforms-utils</artifactId>
-			<version>0.1.00-SNAPSHOT</version>
+			<version>0.1.01</version>
 		</dependency>
-
 
 		<dependency>
-			<groupId>com.github.mcib3d</groupId>
-			<artifactId>mcib3d-core</artifactId>
-			<version>master-3.9-gc8beaef-59</version>
+			<groupId>org.scijava</groupId>
+			<artifactId>table-utils</artifactId>
+			<version>0.1.01</version>
 		</dependency>
-
 
 	</dependencies>
 
