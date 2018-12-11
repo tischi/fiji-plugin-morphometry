@@ -1,10 +1,13 @@
 package de.embl.cba.morphometry.spindle;
 
 import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.measurements.Measurements;
+import de.embl.cba.tables.InteractiveTablePanel;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
+import net.imagej.table.GenericTable;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
@@ -17,6 +20,8 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @Plugin(type = Command.class, menuPath = "Plugins>Morphometry>Spindle Morphometry" )
@@ -94,6 +99,12 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 		SpindleMorphometry morphometry = new SpindleMorphometry( settings, opService );
 		morphometry.run();
+
+		final HashMap<Integer, Map< String, Object > > objectMeasurements = morphometry.getObjectMeasurements();
+
+		// TODO: get rid of genericTable
+		final GenericTable genericTable = Measurements.createGenericTable( objectMeasurements );
+		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( genericTable );
 
 		Utils.log( "Done!" );
 

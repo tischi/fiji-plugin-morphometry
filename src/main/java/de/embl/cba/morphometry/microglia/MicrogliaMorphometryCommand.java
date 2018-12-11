@@ -2,7 +2,6 @@ package de.embl.cba.morphometry.microglia;
 
 import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.measurements.MeasurementsUtils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.skeleton.SkeletonCreator;
 import de.embl.cba.tables.InteractiveTablePanel;
@@ -89,9 +88,9 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 		performMeasurements( );
 
-		final ArrayList< String > measurements = MeasurementsUtils.asTableRows( measurementsTimepointList );
+		final ArrayList< String > measurements = Measurements.asTableRows( measurementsTimepointList );
 
-		MeasurementsUtils.saveMeasurements( outputTableFile, measurements );
+		Measurements.saveMeasurements( outputTableFile, measurements );
 
 		showResults( file, measurements );
 	}
@@ -101,7 +100,7 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 		final ImagePlus imagePlus = IJ.openImage( file.getAbsolutePath() );
 		imagePlus.show();
 
-		final GenericTable table = MeasurementsUtils.createTable( measurements );
+		final GenericTable table = Measurements.createGenericTableFromTableRows( measurements );
 
 		int[] xyzt = new int[ 4 ];
 		xyzt[ 0 ] = table.getColumnIndex( Measurements.COORDINATE + Measurements.SEP + "X" + Measurements.SEP + Measurements.PIXEL_UNITS );

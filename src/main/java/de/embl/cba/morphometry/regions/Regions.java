@@ -68,6 +68,21 @@ public abstract class Regions
 
 	}
 
+	public static long size( LabelRegion labelRegion )
+	{
+
+		final LabelRegionCursor cursor = labelRegion.cursor();
+
+		long size = 0;
+		while ( cursor.hasNext() )
+		{
+			cursor.fwd();
+			size++;
+		}
+
+		return size;
+	}
+
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > getMaskedAndCropped( RandomAccessibleInterval<T> image, LabelRegion labelRegion )
 	{
