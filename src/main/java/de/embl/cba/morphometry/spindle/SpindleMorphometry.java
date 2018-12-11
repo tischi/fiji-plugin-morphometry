@@ -54,6 +54,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	final SpindleMorphometrySettings settings;
 	final OpService opService;
 
+	private HashMap< Integer, Map< String, Object > > objectMeasurements;
+
 	public SpindleMorphometry( SpindleMorphometrySettings settings, OpService opService )
 	{
 		this.settings = settings;
@@ -66,7 +68,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 *  Initialise measurements
 		 */
 
-		final HashMap< Integer, Map< String, Object > > objectMeasurements = new HashMap<>();
+		objectMeasurements = new HashMap<>();
 
 		/**
 		 *  Make isotropic
@@ -121,14 +123,14 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		if ( settings.showIntermediateResults ) show( metaphasePlateMask, "meta-phase object", null, workingCalibration, false );
 
 		/**
-		 * Compute metaphase plate volume
+		 * Compute meta-phase plate volume
 		 */
 
 		Measurements.addMeasurement(
 				objectMeasurements,
 				0,
 				DNA_VOLUME + SEP + VOLUME_UNIT,
-				metaphasePlateRegion.size() * settings.workingVoxelSize );
+				metaphasePlateRegion.size() * Math.pow( settings.workingVoxelSize, 3 ) );
 
 		/**
 		 * Morphological filtering
@@ -271,6 +273,11 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 //		int a = 1;
 
 
+	}
+
+	public HashMap< Integer, Map< String, Object > > getObjectMeasurements()
+	{
+		return objectMeasurements;
 	}
 
 	public RandomAccessibleInterval< BitType > createProcessedMetaPhasePlate( RandomAccessibleInterval< BitType > mask, Img< BitType > metaphasePlate )

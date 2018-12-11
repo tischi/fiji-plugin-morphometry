@@ -1,8 +1,12 @@
 package de.embl.cba.morphometry.measurements;
 
+import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.skeleton.SkeletonAnalyzer;
 import net.imagej.ops.OpService;
+import net.imagej.table.DefaultGenericTable;
+import net.imagej.table.GenericColumn;
+import net.imagej.table.GenericTable;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
@@ -18,8 +22,13 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.view.Views;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class Measurements
 {
@@ -272,4 +281,103 @@ public class Measurements
 		}
 	}
 
+	public static ArrayList< String > asTableRows( ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimePointList )
+	{
+
+		final Set< Integer > objectLabelsFirstTimePoint = measurementsTimePointList.get( 0 ).keySet();
+		final Set< String > measurementNames = measurementsTimePointList.get( 0 ).get( objectLabelsFirstTimePoint.iterator().next() ).keySet();
+
+		final ArrayList< String > lines = new ArrayList<>();
+
+		String header = "Object_Label";
+
+		header += "\t" + COORDINATE + SEP + TIME + SEP + FRAME_UNITS;
+
+		for ( String measurementName : measurementNames )
+		{
+			header += "\t" + measurementName ;
+		}
+
+		lines.add( header );
+
+		for ( int t = 0; t < measurementsTimePointList.size(); ++t )
+		{
+			final HashMap< Integer, Map< String, Object > > measurements = measurementsTimePointList.get( t );
+
+			final Set< Integer > objectLabels = measurements.keySet();
+
+			for ( int label : objectLabels )
+			{
+				final Map< String, Object > measurementsMap = measurements.get( label );
+
+				String values = String.format( "%05d", label );
+
+				values += "\t" + String.format( "%05d", t + 1 ); // convert to one-based
+
+				for ( String measurementName : measurementNames )
+				{
+					values += "\t" + measurementsMap.get( measurementName );
+				}
+
+				lines.add( values );
+			}
+		}
+
+		return lines;
+	}
+
+	public static void saveMeasurements( File file, ArrayList<String> lines )
+	{
+		try (PrintWriter out = new PrintWriter( file ) )
+		{
+			for ( String line : lines )
+			{
+				out.println( line );
+			}
+
+			Utils.log( "\nSaved table to: " + file );
+		}
+		catch ( FileNotFoundException e )
+		{
+			e.printStackTrace();
+		}
+	}
+
+	public static GenericTable createGenericTable( HashMap< Integer, Map< String, Object > > objectMeasurements )
+	{
+		final ArrayList< HashMap< Integer, Map< String, Object > > > timepoints = new ArrayList<>();
+		timepoints.add( objectMeasurements );
+		return createGenericTableFromTableRows( asTableRows( timepoints ) );
+	}
+
+	public static GenericTable createGenericTable( ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimePointList )
+	{
+		return createGenericTableFromTableRows( asTableRows( measurementsTimePointList ) );
+	}
+
+	public static GenericTable createGenericTableFromTableRows( ArrayList< String > lines  )
+	{
+
+		final DefaultGenericTable table = new DefaultGenericTable();
+
+		// we create columns
+		final String[] headers = lines.get( 0 ).split( "\t" );
+		final int numColumns = headers.length;
+
+		for ( int columnIndex = 0; columnIndex < numColumns; ++columnIndex )
+		{
+			GenericColumn column = new GenericColumn(headers[ columnIndex ] );
+
+			for ( int i = 1; i < lines.size(); ++i )
+			{
+				String measurement = lines.get( i ).split( "\t" )[ columnIndex ];
+				column.add( measurement );
+			}
+
+			table.add( column );
+		}
+
+		return table;
+
+	}
 }
