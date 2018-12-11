@@ -5,7 +5,7 @@ import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.MeasurementsUtils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.skeleton.SkeletonCreator;
-import de.embl.cba.morphometry.table.InteractiveTablePanel;
+import de.embl.cba.tables.InteractiveTablePanel;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
@@ -78,6 +78,7 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 	private void processFile( File file )
 	{
+		// TODO: refactor out of command into separate class
 		final RandomAccessibleInterval inputImage = openInputImage( file );
 
 		labelMaps = Views.dropSingletonDimensions( Views.hyperSlice( inputImage, Constants.CHANNEL, settings.labelMapChannelIndex ) );
@@ -102,12 +103,15 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 		final GenericTable table = MeasurementsUtils.createTable( measurements );
 
+		int[] xyzt = new int[ 4 ];
+		xyzt[ 0 ] = table.getColumnIndex( Measurements.COORDINATE + Measurements.SEP + "X" + Measurements.SEP + Measurements.PIXEL_UNITS );
+		xyzt[ 1 ] = table.getColumnIndex( Measurements.COORDINATE + Measurements.SEP + "Y" + Measurements.SEP + Measurements.PIXEL_UNITS );
+		xyzt[ 2 ] = table.getColumnIndex( Measurements.COORDINATE + Measurements.SEP + "Z" + Measurements.SEP + Measurements.PIXEL_UNITS );
+		xyzt[ 3 ] = table.getColumnIndex( Measurements.COORDINATE + Measurements.SEP + Measurements.TIME + Measurements.SEP +  Measurements.FRAME_UNITS );
+
 		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( table );
-		interactiveTablePanel.setCoordinateColumnX( Measurements.COORDINATE + Measurements.SEP + "X" + Measurements.SEP + Measurements.PIXEL_UNITS );
-		interactiveTablePanel.setCoordinateColumnY( Measurements.COORDINATE + Measurements.SEP + "Y" + Measurements.SEP + Measurements.PIXEL_UNITS );
-		interactiveTablePanel.setCoordinateColumnT( Measurements.COORDINATE + Measurements.SEP + Measurements.TIME + Measurements.SEP + Measurements.FRAME_UNITS );
+		interactiveTablePanel.setCoordinateColumns( xyzt );
 		interactiveTablePanel.setImagePlus( imagePlus );
-		interactiveTablePanel.showTable();
 	}
 
 	private RandomAccessibleInterval openInputImage( File file )

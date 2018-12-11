@@ -122,9 +122,9 @@ public class DapiRegistration
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	AffineTransform3D createXAxisRollTransform( Point maximum )
+	AffineTransform3D createXAxisRollTransform( Point maximum2DinYZPlane )
 	{
-		double angleToZAxisInDegrees = Angles.angleToZAxisInDegrees( maximum );
+		double angleToZAxisInDegrees = Angles.angle2DToCoordinateSystemsAxisInDegrees( maximum2DinYZPlane );
 		AffineTransform3D rollTransform = new AffineTransform3D();
 
 		Utils.log( "Roll angle: " + angleToZAxisInDegrees );
