@@ -156,6 +156,7 @@ public class Utils
 	}
 
 
+
 	public static double sum( List<Double> a ){
 		if (a.size() > 0) {
 			double sum = 0;
@@ -683,6 +684,33 @@ public class Utils
 
 
 	public static < T extends RealType< T > & NativeType< T > >
+	double[] computeMaximumLocation( final RandomAccessibleInterval< T > rai, double maxAxisDist )
+	{
+		final Cursor< T > cursor = Views.iterable( rai ).cursor();
+
+		double max = - Double.MAX_VALUE;
+		double[] position = new double[ rai.numDimensions() ];
+		double[] maxLoc = new double[ rai.numDimensions() ];
+
+		while ( cursor.hasNext() )
+		{
+			cursor.fwd();
+			cursor.localize( position );
+			if ( Utils.vectorLength( position ) <= maxAxisDist)
+			{
+				if( cursor.get().getRealDouble() > max )
+				{
+					max = cursor.get().getRealDouble();
+					cursor.localize( maxLoc );
+				}
+			}
+		}
+
+		return maxLoc;
+	}
+
+
+	public static < T extends RealType< T > & NativeType< T > >
 	double computeAverage( final RandomAccessibleInterval< T > rai, final RandomAccessibleInterval< BitType > mask )
 	{
 		final Cursor< BitType > cursor = Views.iterable( mask ).cursor();
@@ -710,7 +738,7 @@ public class Utils
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	List< RealPoint > computeMaximumLocation( RandomAccessibleInterval< T > blurred, int sigmaForBlurringAverageProjection )
+	List< RealPoint > computeLocalMaxima( RandomAccessibleInterval< T > blurred, int sigmaForBlurringAverageProjection )
 	{
 		Shape shape = new HyperSphereShape( sigmaForBlurringAverageProjection );
 

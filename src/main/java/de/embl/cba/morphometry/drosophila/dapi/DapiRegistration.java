@@ -94,7 +94,7 @@ public class DapiRegistration
 				settings.sigmaForBlurringAverageProjectionInMicrometer,
 				settings.resolutionDuringRegistrationInMicrometer );
 
-		final Point maximum = Algorithms.findMaximumLocation( blurred, new double[]{ calibration[ Y ], calibration[ Z ] });
+		final Point maximum = Algorithms.getMaximumLocation( blurred, new double[]{ calibration[ Y ], calibration[ Z ] });
 		final List< RealPoint > realPoints = Utils.asRealPointList( maximum );
 		realPoints.add( new RealPoint( new double[]{ 0, 0 } ) );
 

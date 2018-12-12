@@ -568,7 +568,7 @@ public class ShavenBabyRegistration
 				blurSigma,
 				settings.registrationResolution );
 
-		final Point maximum = Algorithms.findMaximumLocation( blurred, Utils.as2dDoubleArray( settings.registrationResolution ));
+		final Point maximum = Algorithms.getMaximumLocation( blurred, Utils.as2dDoubleArray( settings.registrationResolution ));
 		final List< RealPoint > realPoints = Utils.asRealPointList( maximum );
 		realPoints.add( new RealPoint( new double[]{ 0, 0 } ) );
 
