@@ -2,6 +2,7 @@ package de.embl.cba.morphometry.spindle;
 
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
+import de.embl.cba.morphometry.geometry.CurveAnalysis;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidVectors;
 import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
@@ -12,7 +13,6 @@ import de.embl.cba.morphometry.viewing.Viewer3D;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
-import javafx.scene.transform.Affine;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
@@ -50,6 +50,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	public static final String LENGTH_UNIT = "um";
 	public static final String DNA_VOLUME = "DnaVolume";
 	public static final String VOLUME_UNIT = "um3";
+	public static final String DNA_SHORTEST_AXIS_FWHM = "DnaShortestAxisFWHM";
 
 	final SpindleMorphometrySettings settings;
 	final OpService opService;
@@ -187,9 +188,13 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final CoordinatesAndValues dapiProfile = Utils.computeAverageIntensitiesAlongAxis( alignedDapi, settings.maxShortAxisDist, 2, settings.workingVoxelSize );
 		if ( settings.showIntermediateResults ) Plots.plot( dapiProfile.coordinates, dapiProfile.values, "distance to center", "dapi intensity along shortest axis" );
 
-		// TODO: compute meta-phase width, using FWHM and write to log window
+		final double fwhm = CurveAnalysis.computeFWHM( dapiProfile );
 
-
+		Measurements.addMeasurement(
+				objectMeasurements,
+				0,
+				DNA_SHORTEST_AXIS_FWHM + SEP + LENGTH_UNIT,
+				fwhm);
 		/**
 		 * Compute spindle length
 		 */
@@ -197,7 +202,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final CoordinatesAndValues tubulinProfile = Utils.computeMaximumIntensitiesAlongAxis( alignedTubulin, settings.maxShortAxisDist, 2, settings.workingVoxelSize );
 		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfile.values, "distance to center", "tubulin maximal intensities" );
 
-		final CoordinatesAndValues tubulinProfileDerivative = Algorithms.computeDerivatives( tubulinProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
+		final CoordinatesAndValues tubulinProfileDerivative = CurveAnalysis.computeDerivatives( tubulinProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
 		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values, "distance to center", "tubulin intensity derivative" );
 
 		double[] spindlePoles = getLeftMaxAndRightMinLoc( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values );
