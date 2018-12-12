@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry.spindle;
 
+import ij.measure.Calibration;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -52,4 +53,5 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public double minimalMetaphasePlateVolumeInCalibratedUnits = 5; // um^3
 	public double centralObjectRegionToleranceInCalibratedUnits = 3; // um
 	public double erosionOfDapiMaskInCalibratedUnits = 1.0; // um
+	public Calibration imagePlusCalibration;
 }

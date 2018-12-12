@@ -1,4 +1,3 @@
-import bdv.util.BdvFunctions;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
@@ -15,10 +14,6 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 
 import java.util.ArrayList;
-
-import static de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ.PHI;
-import static de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ.PSI;
-import static de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ.THETA;
 
 public class TestEllipsoidFitting
 {
@@ -52,13 +47,13 @@ public class TestEllipsoidFitting
 
 			final RandomAccessibleInterval aligned2 = createMLJAligned( aligned );
 
-			Ellipsoids3DImageSuite.fitEllipsoid( Utils.asImagePlus( aligned, "" ) );
+			Ellipsoids3DImageSuite.fitEllipsoid( Utils.asImagePlus( aligned, "", calibration ) );
 
 			System.out.println( "\nDataset (round 3): " + path.toString() );
 
 			final RandomAccessibleInterval aligned3 = createMLJAligned( aligned2 );
 
-			Ellipsoids3DImageSuite.fitEllipsoid( Utils.asImagePlus( aligned2, "" ) );
+			Ellipsoids3DImageSuite.fitEllipsoid( Utils.asImagePlus( aligned2, "", calibration ) );
 
 		}
 
