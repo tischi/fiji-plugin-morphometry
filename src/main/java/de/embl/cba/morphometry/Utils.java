@@ -2,7 +2,7 @@ package de.embl.cba.morphometry;
 
 import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
-import de.embl.cba.morphometry.microglia.MicrogliaMorphometrySettings;
+import de.embl.cba.morphometry.geometry.CurveAnalysis;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
@@ -483,7 +483,7 @@ public class Utils
 
 		final CoordinatesAndValues coordinatesAndValues = computeAverageIntensitiesAlongAxis( rai, longAxisDimension, calibration );
 
-		ArrayList< Double > absoluteDerivatives = Algorithms.computeAbsoluteDerivatives( coordinatesAndValues.values, (int) (derivativeDelta / calibration ));
+		ArrayList< Double > absoluteDerivatives = CurveAnalysis.computeAbsoluteDerivatives( coordinatesAndValues.values, (int) (derivativeDelta / calibration ));
 
 		double maxLoc = computeMaxLoc( coordinatesAndValues.coordinates, absoluteDerivatives, null );
 

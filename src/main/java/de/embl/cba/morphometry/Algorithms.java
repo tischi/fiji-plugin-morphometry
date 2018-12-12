@@ -1,6 +1,5 @@
 package de.embl.cba.morphometry;
 
-import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
 import net.imagej.ops.OpService;
@@ -245,32 +244,6 @@ public class Algorithms
 		return origin;
 	}
 
-	public static ArrayList< Double > computeAbsoluteDerivatives( ArrayList< Double > values, int di )
-	{
-		final ArrayList< Double > derivatives = new ArrayList<>();
-
-		for ( int i = di / 2 + 1; i < values.size() - di / 2 - 1; ++i )
-		{
-			derivatives.add( abs( values.get( i + di / 2 ) - values.get( i - di / 2 ) ) );
-		}
-
-		return derivatives;
-	}
-
-	public static CoordinatesAndValues computeDerivatives( CoordinatesAndValues coordinatesAndValues, int di )
-	{
-		final CoordinatesAndValues derivative = new CoordinatesAndValues();
-
-
-		for ( int i = di / 2 + 1; i < coordinatesAndValues.values.size() - di / 2 - 1; ++i )
-		{
-			derivative.values.add( coordinatesAndValues.values.get( i + di / 2 ) - coordinatesAndValues.values.get( i - di / 2 ) );
-			derivative.coordinates.add( 0.5 * ( coordinatesAndValues.coordinates.get( i + di / 2 ) + coordinatesAndValues.coordinates.get( i - di / 2 ) ));
-
-		}
-
-		return derivative;
-	}
 
 	public static < T extends RealType< T > & NativeType< T > >
 	void copy( RandomAccessibleInterval< T > source, RandomAccessibleInterval< T > target )
