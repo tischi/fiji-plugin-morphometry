@@ -42,7 +42,7 @@ public class Algorithms
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	Point findMaximumLocation( RandomAccessibleInterval< T > rai, double[] calibration )
+	Point getMaximumLocation( RandomAccessibleInterval< T > rai, double[] calibration )
 	{
 		Cursor< T > cursor = Views.iterable( rai ).localizingCursor();
 

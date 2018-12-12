@@ -3,10 +3,8 @@ package de.embl.cba.morphometry.spindle;
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.CurveAnalysis;
-import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidVectors;
 import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
-import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidsMLJ;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.viewing.Viewer3D;
@@ -30,6 +28,7 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.util.Intervals;
+import net.imglib2.view.Views;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -51,6 +50,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	public static final String DNA_VOLUME = "DnaVolume";
 	public static final String VOLUME_UNIT = "um3";
 	public static final String DNA_SHORTEST_AXIS_FWHM = "DnaShortestAxisFWHM";
+	public static final int ALIGNED_DNA_AXIS = 2;
 
 	final SpindleMorphometrySettings settings;
 	final OpService opService;
@@ -140,12 +140,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * if the meta-phase plate is too thick
 		 */
 
-
 		final RandomAccessibleInterval< BitType > processedMetaPhasePlate = createProcessedMetaPhasePlate( dnaMask, metaphasePlateMask );
 
 		if ( settings.showIntermediateResults ) show( processedMetaPhasePlate, "processed metaphase plate", null, workingCalibration, false );
-
-
 
 		/**
 		 * Compute ellipsoid alignment
@@ -153,8 +150,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Determining meta-phase plate axes..." );
 
-		//
-		final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( processedMetaPhasePlate );
+		//final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( processedMetaPhasePlate );
 
 		final EllipsoidVectors ellipsoidVectors = Ellipsoids3DImageSuite.fitEllipsoid( Utils.asImagePlus( processedMetaPhasePlate, "" ) );
 
@@ -171,21 +167,14 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		if ( settings.showIntermediateResults ) show( alignedProcessedMetaphasePlate, "aligned processed meta-phase plate", Transforms.origin(), workingCalibration, false );
 		if ( settings.showIntermediateResults ) Viewer3D.show3D( alignedProcessedMetaphasePlate );
 
-		RandomAccessibleInterval< T > interestPoints = Utils.copyAsArrayImg( dna );
-		Utils.setValues( interestPoints, 0.0 );
-
-		final double[] dnaCenter = new double[ 3 ];
-		alignmentTransform.inverse().apply( new double[]{0,0,0}, dnaCenter );
-		drawPoint( interestPoints, dnaCenter, settings.interestPointsRadius, settings.workingVoxelSize );
-
 
 		/**
 		 * Compute metaphase plate width
 		 */
 
-		Utils.log( "Determining widths..." );
+		Utils.log( "Measuring meta-phase plate morphometry..." );
 
-		final CoordinatesAndValues dapiProfile = Utils.computeAverageIntensitiesAlongAxis( alignedDapi, settings.maxShortAxisDist, 2, settings.workingVoxelSize );
+		final CoordinatesAndValues dapiProfile = Utils.computeAverageIntensitiesAlongAxis( alignedDapi, settings.maxShortAxisDist, ALIGNED_DNA_AXIS, settings.workingVoxelSize );
 		if ( settings.showIntermediateResults ) Plots.plot( dapiProfile.coordinates, dapiProfile.values, "distance to center", "dapi intensity along shortest axis" );
 
 		final double fwhm = CurveAnalysis.computeFWHM( dapiProfile );
@@ -195,46 +184,81 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				0,
 				DNA_SHORTEST_AXIS_FWHM + SEP + LENGTH_UNIT,
 				fwhm);
+
 		/**
-		 * Compute spindle length
+		 * Compute dna shortest axis based spindle length
 		 */
 
-		final CoordinatesAndValues tubulinProfile = Utils.computeMaximumIntensitiesAlongAxis( alignedTubulin, settings.maxShortAxisDist, 2, settings.workingVoxelSize );
+		final CoordinatesAndValues tubulinProfile = Utils.computeMaximumIntensitiesAlongAxis( alignedTubulin, settings.maxShortAxisDist, ALIGNED_DNA_AXIS, settings.workingVoxelSize );
 		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfile.values, "distance to center", "tubulin maximal intensities" );
 
 		final CoordinatesAndValues tubulinProfileDerivative = CurveAnalysis.computeDerivatives( tubulinProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
 		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values, "distance to center", "tubulin intensity derivative" );
 
-		double[] spindlePoles = getLeftMaxAndRightMinLoc( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values );
+		double[] dnaAxisBasedSpindlePoleCoordinates = getLeftMaxAndRightMinLoc( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values );
 
-		Utils.log( "Left spindle pole found at: " + spindlePoles[ 0 ] );
-		Utils.log( "Right spindle pole found at: " + spindlePoles[ 1 ] );
+		Utils.log( "Left spindle pole found at: " + dnaAxisBasedSpindlePoleCoordinates[ 0 ] );
+		Utils.log( "Right spindle pole found at: " + dnaAxisBasedSpindlePoleCoordinates[ 1 ] );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
 				0,
 				SPINDLE_LENGTH + SEP + LENGTH_UNIT,
-				Math.abs( spindlePoles[ 1 ] - spindlePoles[ 0 ] ));
-
-
-		addSpindlePolesAsInterestPoints( alignmentTransform, interestPoints, spindlePoles );
+				Math.abs( dnaAxisBasedSpindlePoleCoordinates[ 1 ] - dnaAxisBasedSpindlePoleCoordinates[ 0 ] ));
 
 		final ArrayList< RealPoint > spindleLengthPoints = new ArrayList<>(  );
 
 		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, 0 } ));
-		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, spindlePoles[ 0 ] } ));
-		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, spindlePoles[ 1 ] } ));
+		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, dnaAxisBasedSpindlePoleCoordinates[ 0 ] } ));
+		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, dnaAxisBasedSpindlePoleCoordinates[ 1 ] } ));
 
 		if ( settings.showIntermediateResults ) show( alignedTubulin, "aligned tubulin", spindleLengthPoints, workingCalibration, false );
+
+
+		/**
+		 * Refine spindle pole locations, by finding off axis maximum
+		 */
+
+		final ArrayList< double[] > spindlePoles = new ArrayList<>();
+
+		for ( int p = 0; p < 2; p++ )
+		{
+			RandomAccessibleInterval< T > tublinIntensitySlice = Views.hyperSlice( alignedTubulin, 2, (long) ( dnaAxisBasedSpindlePoleCoordinates[ p ] / settings.workingVoxelSize ) );
+//			ImageJFunctions.show( tublinIntensitySlice, "tublinIntensitySlice_" + p );
+			final double[] xy = Utils.computeMaximumLocation( tublinIntensitySlice, settings.maxShortAxisDist / settings.workingVoxelSize );
+			spindlePoles.add( new double[]{ xy[ 1 ] * settings.workingVoxelSize, xy[ 0 ] * settings.workingVoxelSize, dnaAxisBasedSpindlePoleCoordinates[ p ] } );
+			// TODO: not 100% sure about above coordinate order
+		}
+
+
+		/**
+		 * Create interest point image in original coordinate system
+		 */
+
+		RandomAccessibleInterval< T > interestPointsImage = Utils.copyAsArrayImg( dna );
+		Utils.setValues( interestPointsImage, 0.0 );
+
+		final double[] origin = { 0, 0, 0 };
+		drawTransformedPoint( alignmentTransform, interestPointsImage, origin, 200 );
+
+		for ( int p = 0; p < 2; p++ )
+		{
+			double[] spindlePole = new double[]{ 0.0, 0.0, dnaAxisBasedSpindlePoleCoordinates[ p ] };
+			drawTransformedPoint( alignmentTransform, interestPointsImage, spindlePole, 200 );
+		}
+
+		for ( int p = 0; p < 2; p++ )
+		{
+			drawTransformedPoint( alignmentTransform, interestPointsImage, spindlePoles.get( p ), 100 );
+		}
+
 
 
 		/**
 		 * Create output images
 		 */
 
-		// "rotation" rotates the data such that the spindle axis is the zAxis
-
-		AffineTransform3D rotation = alignmentTransform.copy();
+		AffineTransform3D rotation = alignmentTransform.copy(); // "rotation" rotates the data such that the spindle axis is the zAxis
 		rotation.setTranslation( new double[ 3 ] );
 
 		final double[] zAxis = { 0, 0, 1 };
@@ -244,7 +268,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		rotation.inverse().apply( zAxis, spindleAxis );
 
 		// set z-component of spindleAxis to zero, because we want to rotate parallel to coverslip
-		spindleAxis[ 2 ] = 0;
+		spindleAxis[ ALIGNED_DNA_AXIS ] = 0;
 
 		// compute rotation vector
 		// note: we do not know in which direction of the spindle the spindleAxis vector points,
@@ -252,32 +276,40 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final double angleBetweenXAxisAndSpindleWithVector = angleOfSpindleAxisToXaxisInRadians( spindleAxis );
 
 		AffineTransform3D inputDataRotation = new AffineTransform3D();
-		inputDataRotation.rotate( 2,  angleBetweenXAxisAndSpindleWithVector );
+		inputDataRotation.rotate( ALIGNED_DNA_AXIS,  angleBetweenXAxisAndSpindleWithVector );
 
 		Utils.log( "Rotating input data around z-axis by [degrees]: " + 180 / Math.PI * angleBetweenXAxisAndSpindleWithVector );
 
 		final RandomAccessibleInterval transformedDapiView = Transforms.createTransformedView( dna, inputDataRotation );
 		final RandomAccessibleInterval transformedTubulinView = Transforms.createTransformedView( tubulin, inputDataRotation );
-		final RandomAccessibleInterval transformedInterestPointView = Transforms.createTransformedView( interestPoints, inputDataRotation );
+		final RandomAccessibleInterval transformedInterestPointView = Transforms.createTransformedView( interestPointsImage, inputDataRotation, new NearestNeighborInterpolatorFactory() );
 
-//		Bdv bdv = null;
-//		if ( settings.showIntermediateResults ) BdvFunctions.show( interestPoints, "" ).getBdvHandle();
-//		if ( settings.showIntermediateResults ) bdv = BdvFunctions.show( transformedDapiView, "" ).getBdvHandle();
-//		if ( settings.showIntermediateResults ) BdvFunctions.show( transformedInterestPointView, "", BdvOptions.options().addTo( bdv ) );
+		//		Bdv bdv = null;
+		//		if ( settings.showIntermediateResults ) BdvFunctions.show( interestPoints, "" ).getBdvHandle();
+		//		if ( settings.showIntermediateResults ) bdv = BdvFunctions.show( transformedDapiView, "" ).getBdvHandle();
+		//		if ( settings.showIntermediateResults ) BdvFunctions.show( transformedInterestPointView, "", BdvOptions.options().addTo( bdv ) );
 
 		Utils.log( "Saving result images ..." );
 
 		saveImagePlus( Utils.asImagePlus( processedMetaPhasePlate, "processedMetaPhasePlate" ) );
 		saveImagePlus( Utils.asImagePlus( alignedProcessedMetaphasePlate, "alignedProcessedMetaphasePlate" ) );
-		saveMaximumProjections( transformedDapiView, "dapi" );
-		saveMaximumProjections( transformedTubulinView, "tubulin" );
-		saveMaximumProjections( transformedInterestPointView, "points" );
+		saveImagePlus( Utils.asImagePlus( transformedDapiView, "dna" ) );
+		saveImagePlus( Utils.asImagePlus( transformedTubulinView, "tubulin" ) );
+		saveImagePlus( Utils.asImagePlus( transformedInterestPointView, "interestPoints" ) );
 
-//		if ( settings.showIntermediateResults )  show( transformedView, "side view image", null, workingCalibration, false );
+//		Utils.asImagePlus( transformedInterestPointView, "interestPoints" ).show();
 //
-//		int a = 1;
+		//		saveMaximumProjections( transformedDapiView, "dapi" );
+		//		saveMaximumProjections( transformedTubulinView, "tubulin" );
+		//		saveMaximumProjections( transformedInterestPointView, "points" );
 
 
+	}
+
+	public void drawTransformedPoint( AffineTransform3D alignmentTransform, RandomAccessibleInterval< T > interestPointsImage, double[] point, int value )
+	{
+		final double[] transformedPoint = transformToOriginalImage( alignmentTransform, point );
+		drawPoint( interestPointsImage, transformedPoint, settings.interestPointsRadius, settings.workingVoxelSize, value );
 	}
 
 	public HashMap< Integer, Map< String, Object > > getObjectMeasurements()
@@ -338,28 +370,23 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 
 
-
-	public void addSpindlePolesAsInterestPoints( AffineTransform3D alignmentTransform, RandomAccessibleInterval< T > interestPoints, double[] maxLocs )
+	public double[] transformToOriginalImage( AffineTransform3D alignmentTransform, double[] point )
 	{
-		double[] spindlePole = new double[ 3 ];
-		spindlePole = new double[]{ 0.0, 0.0, maxLocs[ 0 ] };
-		convertToOriginalImagePixelUnits( alignmentTransform, spindlePole );
-		drawPoint( interestPoints, spindlePole, settings.interestPointsRadius, settings.workingVoxelSize );
+		final double[] transformedPoint = new double[ point.length ];
+		for ( int i = 0; i < point.length; i++ )
+		{
+			transformedPoint[ i ] = point[ i ];
+		}
 
-		spindlePole = new double[]{ 0.0, 0.0, maxLocs[ 1 ] };
-		convertToOriginalImagePixelUnits( alignmentTransform, spindlePole );
-		drawPoint( interestPoints, spindlePole, settings.interestPointsRadius, settings.workingVoxelSize );
+		Utils.divide( transformedPoint, settings.workingVoxelSize );
+		alignmentTransform.inverse().apply( transformedPoint, transformedPoint );
+
+		return transformedPoint;
 	}
 
-	public void convertToOriginalImagePixelUnits( AffineTransform3D alignmentTransform, double[] spindlePole )
+	public void drawPoint( RandomAccessibleInterval< T > rai, double[] position, double calibratedRadius, double calibration, int value )
 	{
-		Utils.divide( spindlePole, settings.workingVoxelSize );
-		alignmentTransform.inverse().apply( spindlePole, spindlePole );
-	}
-
-	public void drawPoint( RandomAccessibleInterval< T > rai, double[] position, double radius, double calibration )
-	{
-		Shape shape = new HyperSphereShape( (int) Math.ceil( radius / calibration ) );
+		Shape shape = new HyperSphereShape( (int) Math.ceil( calibratedRadius / calibration ) );
 		final RandomAccessible< Neighborhood< T > > nra = shape.neighborhoodsRandomAccessible( rai );
 		final RandomAccess< Neighborhood< T > > neighborhoodRandomAccess = nra.randomAccess();
 
@@ -371,7 +398,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		{
 			try
 			{
-				cursor.next().setReal( 200 );
+				cursor.next().setReal( value );
 			}
 			catch ( ArrayIndexOutOfBoundsException e )
 			{
