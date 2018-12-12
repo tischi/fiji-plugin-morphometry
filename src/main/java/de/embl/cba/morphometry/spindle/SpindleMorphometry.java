@@ -291,11 +291,12 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Saving result images ..." );
 
-		saveImagePlus( Utils.asImagePlus( processedMetaPhasePlate, "processedMetaPhasePlate" ) );
-		saveImagePlus( Utils.asImagePlus( alignedProcessedMetaphasePlate, "alignedProcessedMetaphasePlate" ) );
-		saveImagePlus( Utils.asImagePlus( transformedDapiView, "dna" ) );
-		saveImagePlus( Utils.asImagePlus( transformedTubulinView, "tubulin" ) );
-		saveImagePlus( Utils.asImagePlus( transformedInterestPointView, "interestPoints" ) );
+
+		saveImagePlus( Utils.asImagePlus( processedMetaPhasePlate, "processedMetaPhasePlate", settings.imagePlusCalibration  ) );
+		saveImagePlus( Utils.asImagePlus( alignedProcessedMetaphasePlate, "alignedProcessedMetaphasePlate", settings.imagePlusCalibration ) );
+		saveImagePlus( Utils.asImagePlus( transformedDapiView, "dna", settings.imagePlusCalibration ) );
+		saveImagePlus( Utils.asImagePlus( transformedTubulinView, "tubulin", settings.imagePlusCalibration ) );
+		saveImagePlus( Utils.asImagePlus( transformedInterestPointView, "interestPoints", settings.imagePlusCalibration ) );
 
 //		Utils.asImagePlus( transformedInterestPointView, "interestPoints" ).show();
 //

@@ -113,6 +113,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	private void setSettingsFromImagePlus( ImagePlus imagePlus )
 	{
 		settings.inputCalibration = Utils.getCalibration( imagePlus );
+		settings.imagePlusCalibration = imagePlus.getCalibration();
 		settings.maxPossibleValueInDataSet = Math.pow( 2, imagePlus.getBitDepth() ) - 1.0;
 		settings.inputDataSetName = imagePlus.getTitle();
 	}

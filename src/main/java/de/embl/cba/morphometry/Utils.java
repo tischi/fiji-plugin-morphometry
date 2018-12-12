@@ -6,6 +6,7 @@ import de.embl.cba.morphometry.geometry.CurveAnalysis;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.measure.Calibration;
 import ij.plugin.Duplicator;
 import ij.process.LUT;
 import net.imagej.Dataset;
@@ -1268,10 +1269,19 @@ public class Utils
 
 	public static ImagePlus asImagePlus( RandomAccessibleInterval rai, String title )
 	{
-		return ImageJFunctions.wrap(
+		final ImagePlus wrap = ImageJFunctions.wrap(
 				Views.permute(
 						Views.addDimension( rai, 0, 0 ),
-						2, 3), title );
+						2, 3 ), title );
+		return wrap;
+	}
+
+	public static ImagePlus asImagePlus( RandomAccessibleInterval rai, String title, Calibration calibration )
+	{
+		final ImagePlus wrap = asImagePlus( rai, title );
+		wrap.setCalibration( calibration );
+
+		return wrap;
 	}
 
 }
