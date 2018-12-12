@@ -226,7 +226,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			RandomAccessibleInterval< T > tublinIntensitySlice = Views.hyperSlice( alignedTubulin, 2, (long) ( dnaAxisBasedSpindlePoleCoordinates[ p ] / settings.workingVoxelSize ) );
 //			ImageJFunctions.show( tublinIntensitySlice, "tublinIntensitySlice_" + p );
 			final double[] xy = Utils.computeMaximumLocation( tublinIntensitySlice, settings.maxShortAxisDist / settings.workingVoxelSize );
-			spindlePoles.add( new double[]{ xy[ 1 ] * settings.workingVoxelSize, xy[ 0 ] * settings.workingVoxelSize, dnaAxisBasedSpindlePoleCoordinates[ p ] } );
+			spindlePoles.add( new double[]{ xy[ 0 ] * settings.workingVoxelSize, xy[ 1 ] * settings.workingVoxelSize, dnaAxisBasedSpindlePoleCoordinates[ p ] } );
 			// TODO: not 100% sure about above coordinate order
 		}
 
