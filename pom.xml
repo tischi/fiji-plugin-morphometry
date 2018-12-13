@@ -5,11 +5,11 @@
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>23.2.0</version>
+		<version>24.0.0</version>
 	</parent>
 
 	<artifactId>fiji-plugin-morphometry</artifactId>
-	<version>0.3.47</version>
+	<version>0.3.48</version>
 	<url>https://github.com/tischi/fiji-plugin-morphometry</url>
 
 	<name>Fiji Plugin Morphometry</name>
