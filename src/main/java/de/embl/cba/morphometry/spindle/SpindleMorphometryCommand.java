@@ -7,7 +7,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
-import net.imagej.table.GenericTable;
+import org.scijava.table.GenericTable;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
