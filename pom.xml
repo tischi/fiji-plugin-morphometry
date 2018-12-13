@@ -9,7 +9,7 @@
 	</parent>
 
 	<artifactId>fiji-plugin-morphometry</artifactId>
-	<version>0.3.46</version>
+	<version>0.3.47</version>
 	<url>https://github.com/tischi/fiji-plugin-morphometry</url>
 
 	<name>Fiji Plugin Morphometry</name>
@@ -143,7 +143,7 @@
 		<dependency>
 			<groupId>com.github.mcib3d</groupId>
 			<artifactId>mcib3d-core</artifactId>
-			<version>master-3.9-gc8beaef-59</version>
+			<version>3.9</version>
 		</dependency>
 
 		<dependency>
