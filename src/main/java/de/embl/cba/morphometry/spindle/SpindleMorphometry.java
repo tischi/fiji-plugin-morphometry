@@ -11,6 +11,7 @@ import de.embl.cba.morphometry.viewing.Viewer3D;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.measure.Calibration;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
@@ -253,7 +254,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		}
 
 
-
 		/**
 		 * Create output images
 		 */
@@ -275,14 +275,14 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		// but we think it does not matter for alignment to the x-axis
 		final double angleBetweenXAxisAndSpindleWithVector = angleOfSpindleAxisToXaxisInRadians( spindleAxis );
 
-		AffineTransform3D inputDataRotation = new AffineTransform3D();
-		inputDataRotation.rotate( ALIGNED_DNA_AXIS,  angleBetweenXAxisAndSpindleWithVector );
+		AffineTransform3D rotationTransform = new AffineTransform3D();
+		rotationTransform.rotate( ALIGNED_DNA_AXIS,  angleBetweenXAxisAndSpindleWithVector );
 
 		Utils.log( "Rotating input data around z-axis by [degrees]: " + 180 / Math.PI * angleBetweenXAxisAndSpindleWithVector );
 
-		final RandomAccessibleInterval transformedDapiView = Transforms.createTransformedView( dna, inputDataRotation );
-		final RandomAccessibleInterval transformedTubulinView = Transforms.createTransformedView( tubulin, inputDataRotation );
-		final RandomAccessibleInterval transformedInterestPointView = Transforms.createTransformedView( interestPointsImage, inputDataRotation, new NearestNeighborInterpolatorFactory() );
+		final RandomAccessibleInterval transformedDapiView = Transforms.createTransformedView( dna, rotationTransform );
+		final RandomAccessibleInterval transformedTubulinView = Transforms.createTransformedView( tubulin, rotationTransform );
+		final RandomAccessibleInterval transformedInterestPointView = Transforms.createTransformedView( interestPointsImage, rotationTransform, new NearestNeighborInterpolatorFactory() );
 
 		//		Bdv bdv = null;
 		//		if ( settings.showIntermediateResults ) BdvFunctions.show( interestPoints, "" ).getBdvHandle();
@@ -292,11 +292,16 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		Utils.log( "Saving result images ..." );
 
 
-		saveImagePlus( Utils.asImagePlus( processedMetaPhasePlate, "processedMetaPhasePlate", settings.imagePlusCalibration  ) );
-		saveImagePlus( Utils.asImagePlus( alignedProcessedMetaphasePlate, "alignedProcessedMetaphasePlate", settings.imagePlusCalibration ) );
-		saveImagePlus( Utils.asImagePlus( transformedDapiView, "dna", settings.imagePlusCalibration ) );
-		saveImagePlus( Utils.asImagePlus( transformedTubulinView, "tubulin", settings.imagePlusCalibration ) );
-		saveImagePlus( Utils.asImagePlus( transformedInterestPointView, "interestPoints", settings.imagePlusCalibration ) );
+		final Calibration calibration = new Calibration();
+		calibration.pixelHeight = settings.workingVoxelSize;
+		calibration.pixelWidth = settings.workingVoxelSize;
+		calibration.pixelDepth = settings.workingVoxelSize;
+
+		saveImagePlus( Utils.asImagePlus( processedMetaPhasePlate, "processedMetaPhasePlate", calibration ) );
+		saveImagePlus( Utils.asImagePlus( alignedProcessedMetaphasePlate, "alignedProcessedMetaphasePlate", calibration ) );
+		saveImagePlus( Utils.asImagePlus( transformedDapiView, "dna", calibration ) );
+		saveImagePlus( Utils.asImagePlus( transformedTubulinView, "tubulin", calibration ) );
+		saveImagePlus( Utils.asImagePlus( transformedInterestPointView, "interestPoints", calibration ) );
 
 //		Utils.asImagePlus( transformedInterestPointView, "interestPoints" ).show();
 //
