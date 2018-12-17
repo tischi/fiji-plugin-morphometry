@@ -8,6 +8,7 @@ import de.embl.cba.morphometry.splitting.TrackingSplitter;
 import de.embl.cba.morphometry.tracking.MaximalOverlapTracker;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.io.FileSaver;
 import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
@@ -25,7 +26,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 import static de.embl.cba.morphometry.microglia.Constants.INTENSITIES;
-import static de.embl.cba.morphometry.microglia.Constants.SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING;
+import static de.embl.cba.morphometry.microglia.Constants.SEGMENTATION;
 
 
 @Plugin(type = Command.class, menuPath = "Plugins>Tracking>Microglia Tracking" )
@@ -51,17 +52,11 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 
 	MicrogliaTrackingSettings settings = new MicrogliaTrackingSettings();
 
-	public static final String PROCESS_DIRECTORY = "Process all files in directory";
-	public static final String PROCESS_CURRENT_IMAGE = "Current image";
-
-	@Parameter( choices = { PROCESS_DIRECTORY }) // , PROCESS_CURRENT_IMAGE
-	public String inputModality = PROCESS_DIRECTORY;
+	@Parameter
+	public File inputFile;
 
 	@Parameter( style = "directory" )
-	public File inputDirectory;
-
-	@Parameter
-	public String fileNameEndsWith = ".lif";
+	public File outputDirectory;
 
 	@Parameter ( label = "Microglia channel index", min = "1")
 	public long microgliaChannelIndexOneBased = settings.microgliaChannelIndexOneBased;
@@ -78,32 +73,7 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 
 	public void run()
 	{
-		if ( inputModality.equals( PROCESS_CURRENT_IMAGE ) && imagePlus != null )
-		{
-			//
-		}
-		else if ( inputModality.equals( PROCESS_DIRECTORY ) )
-		{
-			processDirectory();
-		}
-
-		Utils.log( "Done!" );
-
-	}
-
-	public void processDirectory()
-	{
-		final File directory = inputDirectory;
-
-		String[] files = directory.list();
-
-		for( String file : files )
-		{
-			if ( Utils.acceptFile( fileNameEndsWith, file ) )
-			{
-				processFile( new File ( directory + File.separator + file ) );
-			}
-		}
+		processFile( inputFile );
 	}
 
 	private void processFile( File file )
@@ -168,28 +138,31 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 						microgliaChannelIndexOneBased - 1,
 						settings.tMin, settings.tMax );
 
-
 		return intensities;
 	}
 
 	private void createOutput( ArrayList< RandomAccessibleInterval< T > > intensities, ArrayList< RandomAccessibleInterval< T > > labelings )
 	{
-		ImagePlus labelImagePlus = Utils.createIJ1Movie( labelings, SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING );
-		labelImagePlus.setLut( Utils.getGoldenAngleLUT() );
-		labelImagePlus.setTitle( SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING );
-		labelImagePlus.show();
-		IJ.run( labelImagePlus, "Enhance Contrast", "saturated=0.35");
-		IJ.wait( 1000 );
+		ImagePlus segmentationImp = Utils.createIJ1Movie( labelings, SEGMENTATION );
+		segmentationImp.setLut( Utils.getGoldenAngleLUT() );
+		segmentationImp.setTitle( SEGMENTATION );
+		segmentationImp.show();
+		IJ.run( segmentationImp, "Enhance Contrast", "saturated=0.35");
+		IJ.wait( 500 );
 		labelings = null; System.gc();
 
+		final String outputPath = outputDirectory + File.separator + inputFile.getName().split( "\\." )[ 0 ] + "-segmentation.tif";
+		new FileSaver( segmentationImp ).saveAsTiff( outputPath );
+		Utils.log( "Saved segmentation: " + outputPath );
+
 		Utils.createIJ1Movie( intensities, INTENSITIES ).show();
-		IJ.wait( 1000 );
+		IJ.wait( 500 );
 		IJ.run("16-bit", "");
 		IJ.run("Enhance Contrast", "saturated=0.35");
 		intensities = null; System.gc();
-
-		IJ.wait( 1000 );
-		IJ.run("Merge Channels...", "c1=intensities c2=[" + SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING + "] create keep");
+//
+//		IJ.wait( 500 );
+//		IJ.run("Merge Channels...", "c1=intensities c2=[" + SEGMENTATION + "] create keep");
 	}
 
 

@@ -137,7 +137,6 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		labelImagePlus.setTitle( "Label mask of frame " + ( t + 1 ) );
 		labelImagePlus.show();
 		IJ.run( labelImagePlus, "Enhance Contrast", "saturated=0.35");
-		IJ.setTool( "freeline" );
 
 		IJ.wait( 100 );
 		final SyncWindowsHack syncWindows = new SyncWindowsHack();

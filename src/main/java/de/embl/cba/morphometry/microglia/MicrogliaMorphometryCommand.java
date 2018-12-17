@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static de.embl.cba.morphometry.microglia.Constants.INTENSITIES;
-import static de.embl.cba.morphometry.microglia.Constants.SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING;
+import static de.embl.cba.morphometry.microglia.Constants.SEGMENTATION;
 
 
 @Plugin(type = Command.class, menuPath = "Plugins>Tracking>Microglia Morphometry" )
@@ -198,9 +198,9 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 	private void createOutput( ArrayList< RandomAccessibleInterval< T > > intensities, ArrayList< RandomAccessibleInterval< T > > labelings )
 	{
-		ImagePlus labelImagePlus = Utils.createIJ1Movie( labelings, SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING );
+		ImagePlus labelImagePlus = Utils.createIJ1Movie( labelings, SEGMENTATION );
 		labelImagePlus.setLut( Utils.getGoldenAngleLUT() );
-		labelImagePlus.setTitle( SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING );
+		labelImagePlus.setTitle( SEGMENTATION );
 		labelImagePlus.show();
 		IJ.run( labelImagePlus, "Enhance Contrast", "saturated=0.35");
 		IJ.wait( 1000 );
@@ -211,7 +211,7 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 		IJ.run("Enhance Contrast", "saturated=0.35");
 
 		IJ.wait( 1000 );
-		IJ.run("Merge Channels...", "c1=intensities c2=[" + SIMPLE_SEGMENTATION_TRACKING_SPLITTING_SIMPLE_TRACKING + "] create keep");
+		IJ.run("Merge Channels...", "c1=intensities c2=[" + SEGMENTATION + "] create keep");
 	}
 
 
