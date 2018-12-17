@@ -1,13 +1,14 @@
 package de.embl.cba.morphometry.splitting;
 
 import de.embl.cba.morphometry.Algorithms;
+import de.embl.cba.morphometry.SyncWindowsHack;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NonBlockingGenericDialog;
-import net.imglib2.Cursor;
+import ij.plugin.frame.SyncWindows;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
@@ -17,15 +18,12 @@ import net.imglib2.roi.labeling.LabelRegionCursor;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.view.Views;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 
 public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 {
@@ -109,7 +107,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 					currentImgLabeling,
 					intensities.get( t ),
 					previousLabeling,
-					( long ) ( settings.minimalObjectSize / Math.pow( settings.workingVoxelSize, splitMask.numDimensions() ) ),
+					( long ) ( settings.minimalTrackingSplittingObjectArea / Math.pow( settings.workingVoxelSize, splitMask.numDimensions() ) ),
 					( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
 					settings.opService,
 					false);
@@ -141,16 +139,23 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		IJ.run( labelImagePlus, "Enhance Contrast", "saturated=0.35");
 		IJ.setTool( "freeline" );
 
+		IJ.wait( 100 );
+		final SyncWindowsHack syncWindows = new SyncWindowsHack();
+		syncWindows.syncAll();
+
 		final NonBlockingGenericDialog gd = new NonBlockingGenericDialog( "Manual correction" );
 		gd.addMessage( "Please correct segmentation of frame " + ( t + 1 )
 				+ " and click [Ok] when you are done.\n"
 				+ "Please click [Cancel] in order to skip manual correction of all proceeding frames." );
 		gd.showDialog();
 
+
 		if ( gd.wasCanceled() )
 		{
 			settings.manualSegmentationCorrectionOfAllFrames = false;
 		}
+
+		syncWindows.close();
 
 		intensitiesImp.close();
 		labelImagePlus.hide();

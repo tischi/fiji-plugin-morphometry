@@ -41,6 +41,7 @@ public class MicrogliaTrackingSettings<T extends RealType<T> & NativeType< T > >
 	public String inputDataSetName;
 	public boolean returnEarly;
 	public double minimalObjectSize;
+	public double minimalTrackingSplittingObjectArea;
 	public boolean splitTouchingObjects = false;
 	public double skeletonMaxLength;
 	public double minimalObjectCenterDistance;

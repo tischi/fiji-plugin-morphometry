@@ -208,6 +208,7 @@ public class MicrogliaTrackingCommand<T extends RealType<T> & NativeType< T > > 
 		settings.returnEarly = true;
 		settings.skeletonMaxLength = 600 * settings.workingVoxelSize;
 		settings.minimalObjectSize = 200;  // um2
+		settings.minimalTrackingSplittingObjectArea = 20; // this can be very small, um2
 		settings.minimalObjectCenterDistance = 6;
 		settings.maximalWatershedLength = 10;
 		settings.closingRadius = 3;
