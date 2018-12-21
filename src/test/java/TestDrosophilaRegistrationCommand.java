@@ -1,7 +1,7 @@
-import de.embl.cba.morphometry.drosophila.shavenbaby.ShavenBabyRegistrationCommand;
+import de.embl.cba.morphometry.drosophila.registration.DrosophilaRegistrationCommand;
 import net.imagej.ImageJ;
 
-public class TestShavenBabyRegistrationCommand
+public class TestDrosophilaRegistrationCommand
 {
 
 	public static void main(final String... args) throws Exception
@@ -15,7 +15,7 @@ public class TestShavenBabyRegistrationCommand
 //		ImagePlus imp = IJ.openImage( path ); imp.show();
 
 		// invoke the plugin
-		ij.command().run( ShavenBabyRegistrationCommand.class, true );
+		ij.command().run( DrosophilaRegistrationCommand.class, true );
 	}
 
 }

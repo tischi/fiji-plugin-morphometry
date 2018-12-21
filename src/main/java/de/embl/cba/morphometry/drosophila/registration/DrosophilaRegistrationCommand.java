@@ -1,4 +1,4 @@
-package de.embl.cba.morphometry.drosophila.shavenbaby;
+package de.embl.cba.morphometry.drosophila.registration;
 
 import bdv.util.*;
 import de.embl.cba.morphometry.Projection;
@@ -33,7 +33,7 @@ import static de.embl.cba.morphometry.ImageIO.openWithBioFormats;
 
 
 @Plugin(type = Command.class, menuPath = "Plugins>Registration>EMBL>Drosophila Shavenbaby" )
-public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< T > > implements Command
+public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T > > implements Command
 {
 	@Parameter
 	public UIService uiService;
@@ -53,7 +53,7 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	@Parameter( required = false )
 	public ImagePlus imagePlus;
 
-	ShavenBabyRegistrationSettings settings = new ShavenBabyRegistrationSettings();
+	DrosophilaRegistrationSettings settings = new DrosophilaRegistrationSettings();
 
 	public static final String FROM_DIRECTORY = "From directory";
 	public static final String CURRENT_IMAGE = "Current image";
@@ -73,11 +73,24 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	@Parameter
 	public boolean showIntermediateResults = settings.showIntermediateResults;
 
+	@Parameter( choices = { DrosophilaRegistrationSettings.PRIMARY_CHANNEL_MOMENTS })
+	public String longAxisAngleAlignmentMethod = DrosophilaRegistrationSettings.PRIMARY_CHANNEL_MOMENTS;
+
+	@Parameter( choices = { DrosophilaRegistrationSettings.PRIMARY_CHANNEL_INTENSITY })
+	public String longAxisFlippingAlignmentMethod = DrosophilaRegistrationSettings.PRIMARY_CHANNEL_INTENSITY;
+
 	@Parameter( choices = {
-			ShavenBabyRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM,
-			ShavenBabyRegistrationSettings.PROJECTION_SHAPE_BASED_ROLL_TRANSFORM,
-			ShavenBabyRegistrationSettings.INTENSITY_BASED_ROLL_TRANSFORM })
-	public String rollAngleComputationMethod = settings.rollAngleComputationMethod;
+			DrosophilaRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM,
+			DrosophilaRegistrationSettings.PROJECTION_SHAPE_BASED_ROLL_TRANSFORM,
+			DrosophilaRegistrationSettings.SECONDARY_CHANNEL_INTENSITY })
+	public String rollAngleAlignmentMethod = DrosophilaRegistrationSettings.SECONDARY_CHANNEL_INTENSITY;
+
+
+	@Parameter
+	public int primaryChannelIndexOneBased = settings.primaryChannelIndexOneBased;
+
+	@Parameter
+	public int secondaryChannelIndexOneBased = settings.secondaryChannelIndexOneBased;
 
 	@Parameter
 	public double registrationResolution = settings.registrationResolution;
@@ -86,41 +99,23 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 	public double outputResolution = settings.outputResolution;
 
 	@Parameter
-	public int svbChannelIndexOneBased = settings.svbChannelIndexOneBased;
-
-	@Parameter
-	public int otherChannelIndexOneBased = settings.otherChannelIndexOneBased;
-
-
-
-//	@Parameter
-//	public double thresholdInUnitsOfBackgroundPeakHalfWidth = settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
-
-//	@Parameter
-//	public double refractiveIndexAxialCalibrationCorrectionFactor = settings.refractiveIndexAxialCalibrationCorrectionFactor;
-
-	@Parameter
 	public double refractiveIndexIntensityCorrectionDecayLength = settings.refractiveIndexIntensityCorrectionDecayLength;
-
-//	@Parameter
-//	public double watershedSeedsGlobalDistanceThreshold = settings.watershedSeedsGlobalDistanceThreshold;
 
 
 	public void run()
 	{
 		setSettingsFromUI();
 
-		final ShavenBabyRegistration registration = new ShavenBabyRegistration( settings, opService );
-
+		final DrosphilaRegistration registration = new DrosphilaRegistration( settings, opService );
 
 		if ( inputModality.equals( CURRENT_IMAGE ) && imagePlus != null )
 		{
-//			RandomAccessibleInterval< T > transformed = alignAndMaskImages( imagePlus, registration );
+//			RandomAccessibleInterval< T > transformed = createAlignedImages( imagePlus, registration );
 //			showWithBdv( transformed, "registered" );
 //			ImageJFunctions.show( Views.permute( transformed, 2, 3 ) );
 		}
 
-
+		// TODO: move the batching out of this and use generic batching?
 		if ( inputModality.equals( FROM_DIRECTORY ) )
 		{
 			String[] files = inputDirectory.list();
@@ -133,7 +128,10 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 
 					Utils.setNewLogFilePath( outputFilePathStump + ".log.txt" );
 
-					// Open
+					/**
+					 * Open the images
+					 */
+
 					final String inputPath = inputDirectory + File.separator + file;
 					Utils.log( " " );
 					Utils.log( "Reading: " + inputPath + "..." );
@@ -145,11 +143,11 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 						continue;
 					}
 
-					RandomAccessibleInterval< T > registeredImages = alignAndMaskImages( inputImagePlus, registration );
+					/**
+					 * Register
+					 */
 
-					// Save watershed
-					RandomAccessibleInterval< T > watershed = (RandomAccessibleInterval) registration.getWatershedLabelImg();
-					new FileSaver( ImageJFunctions.wrap( watershed, "" ) ).saveAsTiff( outputFilePathStump + "-watershed.tif" );
+					RandomAccessibleInterval< T > registeredImages = createAlignedImages( inputImagePlus, registration );
 
 					if ( registeredImages == null )
 					{
@@ -157,28 +155,34 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 						continue;
 					}
 
-					Utils.log( "Creating projections..." );
-					final ArrayList< ImagePlus > projections = createProjections( registeredImages );
+					/**
+					 * Save registered images
+					 */
 
-					Utils.log( "Saving projections..." );
-					saveImages( outputFilePathStump, projections );
+					saveResults( outputFilePathStump, registeredImages );
 
-					// Save full registered stack
-					final RandomAccessibleInterval< T > transformedWithImagePlusDimensionOrder = Utils.copyAsArrayImg( Views.permute( registeredImages, 2, 3 ) );
-					final ImagePlus transformedImagePlus = ImageJFunctions.wrap( transformedWithImagePlusDimensionOrder, "transformed" );
-					final String outputPath = outputFilePathStump + "-registered.tif";
-					Utils.log( "Saving registered image: " + outputPath );
-					new FileSaver( transformedImagePlus ).saveAsTiff( outputPath );
 
-					// Save svb non-registered projection
-					RandomAccessibleInterval< T > shavenbaby = getShavenBabyImage( getImages( inputImagePlus ) );
-					RandomAccessibleInterval shavenbabyMaximum = new Projection( shavenbaby, Z ).maximum();
-					new FileSaver( ImageJFunctions.wrap( shavenbabyMaximum, "" ) ).saveAsTiff( outputFilePathStump + "-projection-ch1-raw.tif" );
+					// other stuff
+					//
+//					RandomAccessibleInterval< T > watershed = (RandomAccessibleInterval) registration.getWatershedLabelImg();
+//					new FileSaver( ImageJFunctions.wrap( watershed, "" ) ).saveAsTiff( outputFilePathStump + "-watershed.tif" );
+//
+//					Utils.log( "Creating projections..." );
+//					final ArrayList< ImagePlus > projections = createProjections( registeredImages );
+//
+//					Utils.log( "Saving projections..." );
+//					saveImages( outputFilePathStump, projections );
+//
 
-					// Save ch2 non-registered projection
-					RandomAccessibleInterval< T > ch2 = getChannel2Image( getImages( inputImagePlus ) );
-					RandomAccessibleInterval ch2Maximum = new Projection( ch2, Z ).maximum();
-					new FileSaver( ImageJFunctions.wrap( ch2Maximum, "" ) ).saveAsTiff( outputFilePathStump + "-projection-ch2-raw.tif" );
+//					// Save ch1 non-registered projection
+//					RandomAccessibleInterval< T > channel1Image = getChannel1Image( getImages( inputImagePlus ) );
+//					RandomAccessibleInterval shavenbabyMaximum = new Projection( channel1Image, Z ).maximum();
+//					new FileSaver( ImageJFunctions.wrap( shavenbabyMaximum, "" ) ).saveAsTiff( outputFilePathStump + "-projection-ch1-raw.tif" );
+//
+//					// Save ch2 non-registered projection
+//					RandomAccessibleInterval< T > channel2Image = getChannel2Image( getImages( inputImagePlus ) );
+//					RandomAccessibleInterval ch2Maximum = new Projection( channel2Image, Z ).maximum();
+//					new FileSaver( ImageJFunctions.wrap( ch2Maximum, "" ) ).saveAsTiff( outputFilePathStump + "-projection-ch2-raw.tif" );
 
 				}
 			}
@@ -187,6 +191,22 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		Utils.log( "Done!" );
 
 
+	}
+
+	public void saveResults( String outputFilePathStump, RandomAccessibleInterval< T > registeredImages )
+	{
+		// 3D image stack
+		//
+		final RandomAccessibleInterval< T > registeredWithImagePlusDimensionOrder = Utils.copyAsArrayImg( Views.permute( registeredImages, 2, 3 ) );
+		final ImagePlus registered = ImageJFunctions.wrap( registeredWithImagePlusDimensionOrder, "transformed" );
+		registered.getCalibration().setUnit( "micrometer" );
+		registered.getCalibration().pixelWidth = settings.outputResolution;
+		registered.getCalibration().pixelHeight = settings.outputResolution;
+		registered.getCalibration().pixelDepth = settings.outputResolution;
+
+		final String outputPath = outputFilePathStump + "-registered.tif";
+		Utils.log( "Saving registered image: " + outputPath );
+		new FileSaver( registered ).saveAsTiff( outputPath );
 	}
 
 	public boolean acceptFile( String fileNameEndsWith, String file )
@@ -264,31 +284,23 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		BdvFunctions.showPoints( points, "origin", BdvOptions.options().addTo( bdv ) );
 	}
 
-	public RandomAccessibleInterval< T > alignAndMaskImages(
+	public RandomAccessibleInterval< T > createAlignedImages(
 			ImagePlus imagePlus,
-			ShavenBabyRegistration registration )
+			DrosphilaRegistration registration )
 	{
 		final double[] inputCalibration = Utils.getCalibration( imagePlus );
 		RandomAccessibleInterval< T > images = getImages( imagePlus );
-		RandomAccessibleInterval< T > shavenbaby = getShavenBabyImage( images );
+		RandomAccessibleInterval< T > channel1 = getChannel1Image( images );
 		RandomAccessibleInterval< T > channel2 = getChannel2Image( images );
 
 		/**
 		 * Compute registration
 		 */
 		Utils.log( "Computing registration...." );
-		registration.run( shavenbaby, channel2, inputCalibration );
+		registration.run( channel1, channel2, inputCalibration );
 
 		/**
-		 * Get transformation for demanded output resolution
-		 */
-		final AffineTransform3D registrationTransform =
-				registration.getRegistrationTransform(
-						registration.getCorrectedCalibration(), settings.outputResolution );
-		if ( registrationTransform == null ) return null;
-
-		/**
-		 * Get transformation for demanded output resolution
+		 * Apply intensity correction
 		 */
 		Utils.log( "Applying intensity correction to all channels...." );
 		final RandomAccessibleInterval< T > intensityCorrectedImages =
@@ -297,6 +309,18 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 						registration.getCorrectedCalibration()[ Z ],
 						registration.getCoverslipPosition()  );
 
+
+		/**
+		 * Create transformation for desired output resolution
+		 */
+		final AffineTransform3D registrationTransform =
+				registration.getRegistrationTransform(
+						registration.getCorrectedCalibration(), settings.outputResolution );
+		if ( registrationTransform == null ) return null;
+
+		/**
+		 * Apply transformation
+		 */
 		Utils.log( "Creating registered and masked images (can take some time)..." );
 		ArrayList< RandomAccessibleInterval< T > > registeredImages =
 				Transforms.transformAllChannels(
@@ -305,7 +329,9 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 						settings.getOutputImageInterval()
 				);
 
-		// apply masking
+		/**
+		 * Apply masking ( in order to remove other, potentially touching, embryos )
+		 */
 		final RandomAccessibleInterval< BitType > alignedMaskAtOutputResolution
 				= registration.createAlignedMask( settings.outputResolution, settings.getOutputImageInterval() );
 		registeredImages = Utils.maskAllChannels( registeredImages, alignedMaskAtOutputResolution, settings.showIntermediateResults );
@@ -345,16 +371,16 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		return images;
 	}
 
-	private RandomAccessibleInterval< T > getShavenBabyImage( RandomAccessibleInterval< T > images )
+	private RandomAccessibleInterval< T > getChannel1Image( RandomAccessibleInterval< T > images )
 	{
-		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.svbChannelIndexOneBased - 1 );
+		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.primaryChannelIndexOneBased - 1 );
 
 		return rai;
 	}
 
 	private RandomAccessibleInterval<T> getChannel2Image( RandomAccessibleInterval<T> images )
 	{
-		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.otherChannelIndexOneBased - 1 );
+		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.secondaryChannelIndexOneBased - 1 );
 
 		return rai;
 	}
@@ -369,9 +395,9 @@ public class ShavenBabyRegistrationCommand <T extends RealType<T> & NativeType< 
 		settings.refractiveIndexIntensityCorrectionDecayLength = refractiveIndexIntensityCorrectionDecayLength;
 		settings.thresholdModality = "";
 		//settings.thresholdInUnitsOfBackgroundPeakHalfWidth = thresholdInUnitsOfBackgroundPeakHalfWidth;
-		settings.rollAngleComputationMethod = rollAngleComputationMethod;
-		settings.otherChannelIndexOneBased = otherChannelIndexOneBased;
-		settings.svbChannelIndexOneBased = svbChannelIndexOneBased;
+		settings.rollAngleComputationMethod = rollAngleAlignmentMethod;
+		settings.secondaryChannelIndexOneBased = secondaryChannelIndexOneBased;
+		settings.primaryChannelIndexOneBased = primaryChannelIndexOneBased;
 	}
 
 

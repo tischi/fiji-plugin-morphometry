@@ -210,7 +210,7 @@ public class Algorithms
 
 	private static void removeRegion( RandomAccessibleInterval< BitType > img, LabelRegion labelRegion )
 	{
-		final Cursor< Void > regionCursor = labelRegion.cursor();
+		final Cursor regionCursor = labelRegion.cursor();
 		final RandomAccess< BitType > access = img.randomAccess();
 		BitType bitTypeFalse = new BitType( false );
 		while ( regionCursor.hasNext() )
@@ -925,11 +925,21 @@ public class Algorithms
 			RandomAccessibleInterval< BitType > mask,
 			int closingRadius )
 	{
-		RandomAccessibleInterval< BitType > closed = Utils.copyAsArrayImg( mask );
-		Shape closingShape = new HyperSphereShape( closingRadius );
-		Closing.close( Views.extendBorder( mask ), Views.iterable( closed ), closingShape, 4 );
-		return closed;
+		// TODO: Bug(?!) in imglib2 Closing.close makes this necessary
+		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai2( mask, closingRadius );
+		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai2( morphed, closingRadius );
+
+		if ( closingRadius > 0 )
+		{
+			Utils.log( "Morphological closing...");
+			Shape closingShape = new HyperSphereShape( closingRadius );
+			Closing.close( Views.extendZero( enlargedMask ), Views.iterable( enlargedMorphed ), closingShape, 1 );
+		}
+
+		return Views.interval( enlargedMorphed, mask );
 	}
+
 
 
 	public static ImgLabeling< Integer, IntType > createEmptyImgLabeling( RandomAccessibleInterval< BitType > mask )

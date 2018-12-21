@@ -1,14 +1,16 @@
-package de.embl.cba.morphometry.drosophila.shavenbaby;
+package de.embl.cba.morphometry.drosophila.registration;
 
 import net.imglib2.FinalInterval;
 
-public class ShavenBabyRegistrationSettings
+public class DrosophilaRegistrationSettings
 {
 	public static final String MANUAL_THRESHOLD = "Manual threshold";
 	public static final String HUANG_AUTO_THRESHOLD = "Huang auto threshold";
 	public static final String CENTROID_SHAPE_BASED_ROLL_TRANSFORM = "Shape - Centroids";
-	public static final String INTENSITY_BASED_ROLL_TRANSFORM = "Intensity - Other Channel";
+	public static final String SECONDARY_CHANNEL_INTENSITY = "Intensity - Secondary Channel";
 	public static final String PROJECTION_SHAPE_BASED_ROLL_TRANSFORM = "Shape - Projection";
+	public static final String PRIMARY_CHANNEL_MOMENTS = "Moments - Primary Channel";
+	public static final String PRIMARY_CHANNEL_INTENSITY =  "Intensity - Primary Channel";
 
 	// all spatial values are in micrometer
 	// morphometry length: 420
@@ -17,8 +19,8 @@ public class ShavenBabyRegistrationSettings
 	public static double drosophilaLength = 420;
 	public static double drosophilaWidth = 160;
 
-	public int svbChannelIndexOneBased = 3;
-	public int otherChannelIndexOneBased = 2;
+	public int primaryChannelIndexOneBased = 3;
+	public int secondaryChannelIndexOneBased = 2;
 
 	public boolean showIntermediateResults = false;
 
@@ -40,9 +42,9 @@ public class ShavenBabyRegistrationSettings
 	public double closingRadius = 10;
 
 	public static double[] outputImageSize =
-			new double[]{ drosophilaLength * 1.3,
-					drosophilaWidth * 1.3,
-					drosophilaWidth * 1.3};
+			new double[]{ drosophilaLength * 1.5,
+					drosophilaWidth * 1.5,
+					drosophilaWidth * 1.5};
 
 	public double minimalObjectSize = drosophilaWidth * drosophilaWidth * drosophilaWidth;
 
@@ -52,6 +54,7 @@ public class ShavenBabyRegistrationSettings
 	public double finalProjectionMinDistanceToCenter = 60;
 	public String rollAngleComputationMethod = CENTROID_SHAPE_BASED_ROLL_TRANSFORM;
 	public double watershedSeedsLocalMaximaSearchRadius = 2 * registrationResolution;
+	public String yawTransformComputationMethod;
 
 	public FinalInterval getOutputImageInterval()
 	{

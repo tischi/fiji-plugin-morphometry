@@ -1,4 +1,4 @@
-package de.embl.cba.morphometry.drosophila.shavenbaby;
+package de.embl.cba.morphometry.drosophila.registration;
 
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CentroidsParameters;
@@ -28,8 +28,6 @@ import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
 import net.imglib2.type.numeric.real.DoubleType;
-import net.imglib2.algorithm.neighborhood.Shape;
-import net.imglib2.algorithm.morphology.Closing;
 
 import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
@@ -44,10 +42,10 @@ import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 import static java.lang.Math.toRadians;
 
 
-public class ShavenBabyRegistration
+public class DrosphilaRegistration
 {
 
-	final ShavenBabyRegistrationSettings settings;
+	final DrosophilaRegistrationSettings settings;
 	final OpService opService;
 	private RandomAccessibleInterval< BitType > embryoMask;
 	private double coverslipPosition;
@@ -55,7 +53,7 @@ public class ShavenBabyRegistration
 	private Img< IntType > watershedLabelImg;
 	private double[] correctedCalibration;
 
-	public ShavenBabyRegistration( ShavenBabyRegistrationSettings settings, OpService opService )
+	public DrosphilaRegistration( DrosophilaRegistrationSettings settings, OpService opService )
 	{
 		this.settings = settings;
 		this.opService = opService;
@@ -103,12 +101,12 @@ public class ShavenBabyRegistration
 
 		Utils.log( "Down-sampling to registration resolution..." );
 
-		final RandomAccessibleInterval< T > downscaledSvb = createRescaledArrayImg( svb, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
-		final RandomAccessibleInterval< T > downscaledOther = createRescaledArrayImg( other, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+		final RandomAccessibleInterval< T > downscaledChannel1 = createRescaledArrayImg( svb, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+		final RandomAccessibleInterval< T > downscaledChannel2 = createRescaledArrayImg( other, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
 
 		double[] registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 
-		if ( settings.showIntermediateResults ) show( downscaledSvb, "isotropic sampled at registration resolution", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( downscaledChannel1, "isotropic sampled at registration resolution", null, registrationCalibration, false );
 
 
 		/**
@@ -117,7 +115,7 @@ public class ShavenBabyRegistration
 
 		Utils.log( "Offset and threshold..." );
 
-		final IntensityHistogram downscaledSvbIntensityHistogram = new IntensityHistogram( downscaledSvb, 65535.0, 5.0 );
+		final IntensityHistogram downscaledSvbIntensityHistogram = new IntensityHistogram( downscaledChannel1, 65535.0, 5.0 );
 
 		CoordinateAndValue intensityHistogramMode = downscaledSvbIntensityHistogram.getMode();
 
@@ -128,12 +126,12 @@ public class ShavenBabyRegistration
 		 *  Compute approximate axial embryo center and coverslip coordinate
 		 */
 
-		final CoordinatesAndValues averageSvbIntensitiesAlongZ = Utils.computeAverageIntensitiesAlongAxis( downscaledSvb, 2, settings.registrationResolution );
+		final CoordinatesAndValues averageSvbIntensitiesAlongZ = Utils.computeAverageIntensitiesAlongAxis( downscaledChannel1, 2, settings.registrationResolution );
 
 		if ( settings.showIntermediateResults ) Plots.plot( averageSvbIntensitiesAlongZ.coordinates, averageSvbIntensitiesAlongZ.values, "z [um]", "average intensities" );
 
 		final double embryoCenterPosition = Utils.computeMaxLoc( averageSvbIntensitiesAlongZ );
-		coverslipPosition = embryoCenterPosition - ShavenBabyRegistrationSettings.drosophilaWidth / 2.0;
+		coverslipPosition = embryoCenterPosition - DrosophilaRegistrationSettings.drosophilaWidth / 2.0;
 
 		Utils.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
 		Utils.log( "Approximate axial embryo center coordinate [um]: " + embryoCenterPosition );
@@ -150,13 +148,13 @@ public class ShavenBabyRegistration
 		correctionSettings.coverslipPositionMicrometer = coverslipPosition;
 		correctionSettings.pixelCalibrationMicrometer = settings.registrationResolution;
 
-		final RandomAccessibleInterval< T > intensityCorrectedSvb = Utils.copyAsArrayImg( downscaledSvb );
-		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedSvb, correctionSettings );
+		final RandomAccessibleInterval< T > intensityCorrectedChannel1 = Utils.copyAsArrayImg( downscaledChannel1 );
+		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedChannel1, correctionSettings );
 
-		final RandomAccessibleInterval< T > intensityCorrectedOther = Utils.copyAsArrayImg( downscaledOther );
-		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedOther, correctionSettings );
+		final RandomAccessibleInterval< T > intensityCorrectedChannel2 = Utils.copyAsArrayImg( downscaledChannel2 );
+		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedChannel2, correctionSettings );
 
-		if ( settings.showIntermediateResults ) show( intensityCorrectedSvb, "intensity corrected svb", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( intensityCorrectedChannel1, "intensity corrected channel 1", null, registrationCalibration, false );
 
 
 		/**
@@ -165,7 +163,7 @@ public class ShavenBabyRegistration
 		 *  - TODO: find some more scientific method to determine threshold...
 		 */
 
-		final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( intensityCorrectedSvb ) );
+		final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( intensityCorrectedChannel1 ) );
 		final double huang = opService.threshold().huang( histogram ).getRealDouble();
 		final double otsu = opService.threshold().otsu( histogram ).getRealDouble();
 		final double yen = opService.threshold().yen( histogram ).getRealDouble();
@@ -179,7 +177,7 @@ public class ShavenBabyRegistration
 		 * Create mask
 		 */
 
-		RandomAccessibleInterval< BitType > mask = createMask( intensityCorrectedSvb, thresholdAfterIntensityCorrection );
+		RandomAccessibleInterval< BitType > mask = createMask( intensityCorrectedChannel1, thresholdAfterIntensityCorrection );
 
 		if ( settings.showIntermediateResults ) show( mask, "binary mask", null, registrationCalibration, false );
 
@@ -244,7 +242,7 @@ public class ShavenBabyRegistration
 
 		if ( centralObjectRegion == null ) return;
 
-		embryoMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaledSvb ) );
+		embryoMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaledChannel1 ) );
 
 		if ( settings.showIntermediateResults ) show( Utils.copyAsArrayImg( embryoMask ), "embryo mask", null, registrationCalibration, false );
 
@@ -253,9 +251,9 @@ public class ShavenBabyRegistration
 		 * - TODO: put the currently hard-coded values into settings
 		 */
 
-		embryoMask = close( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
+		embryoMask = Algorithms.close( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
 
-		embryoMask = Algorithms.open( embryoMask, ( int ) ( 40.0 / settings.registrationResolution ) );
+		// embryoMask = Algorithms.open( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
 
 		if ( settings.showIntermediateResults ) show( embryoMask, "embryo mask - processed", null, registrationCalibration, false );
 
@@ -273,7 +271,7 @@ public class ShavenBabyRegistration
 
 		final RandomAccessibleInterval< BitType > yawAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( embryoMask, registration, new NearestNeighborInterpolatorFactory() ) );
 
-		final RandomAccessibleInterval yawAlignedIntensities = Utils.copyAsArrayImg( Transforms.createTransformedView( downscaledSvb, registration ) );
+		final RandomAccessibleInterval yawAlignedIntensities = Utils.copyAsArrayImg( Transforms.createTransformedView( downscaledChannel1, registration ) );
 
 
 
@@ -296,19 +294,19 @@ public class ShavenBabyRegistration
 		 *  Roll transform
 		 */
 
-		final AffineTransform3D rollTransform = computeRollTransform( registration, registrationCalibration, intensityCorrectedOther, yawAndOrientationAlignedMask, settings.rollAngleComputationMethod );
+		final AffineTransform3D rollTransform = computeRollTransform( registration, registrationCalibration, intensityCorrectedChannel2, yawAndOrientationAlignedMask, settings.rollAngleComputationMethod );
 		rollTransform.rotate( X, Math.PI ); // this changes whether the found structure should be at the top or bottom
 
-		if ( settings.rollAngleComputationMethod != ShavenBabyRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM )
+		if ( settings.rollAngleComputationMethod != DrosophilaRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM )
 		{
 			// Also compute shape-based roll transform to see how well it would have worked
 			// We only do this to see the angle in the log file
-			computeRollTransform( registration, registrationCalibration, intensityCorrectedOther, yawAndOrientationAlignedMask, ShavenBabyRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM );
+			computeRollTransform( registration, registrationCalibration, intensityCorrectedChannel2, yawAndOrientationAlignedMask, DrosophilaRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM );
 		}
 
 		registration = registration.preConcatenate( rollTransform  );
 
-		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedSvb, registration ), "aligned svb at registration resolution", Transforms.origin(), registrationCalibration, false );
+		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedChannel1, registration ), "aligned svb at registration resolution", Transforms.origin(), registrationCalibration, false );
 
 
 		/**
@@ -407,7 +405,7 @@ public class ShavenBabyRegistration
 	{
 		Utils.log( "Computing roll transform, using method: " + rollAngleComputationMethod );
 
-		if ( rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.INTENSITY_BASED_ROLL_TRANSFORM ) )
+		if ( rollAngleComputationMethod.equals( DrosophilaRegistrationSettings.SECONDARY_CHANNEL_INTENSITY ) )
 		{
 			final RandomAccessibleInterval yawAndOrientationAlignedCh2 = Utils.copyAsArrayImg( Transforms.createTransformedView( intensityCorrectedCh2, registration.copy(), new NearestNeighborInterpolatorFactory() ) );
 
@@ -421,7 +419,7 @@ public class ShavenBabyRegistration
 			return intensityBasedRollTransform;
 
 		}
-		else if ( rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM ) )
+		else if ( rollAngleComputationMethod.equals( DrosophilaRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM ) )
 		{
 			final CentroidsParameters centroidsParameters = Utils.computeCentroidsParametersAlongXAxis( yawAndOrientationAlignedMask, settings.registrationResolution, settings.rollAngleMaxDistanceToCenter );
 
@@ -439,7 +437,7 @@ public class ShavenBabyRegistration
 			return rollTransform;
 
 		}
-		else if ( rollAngleComputationMethod.equals( ShavenBabyRegistrationSettings.PROJECTION_SHAPE_BASED_ROLL_TRANSFORM ) )
+		else if ( rollAngleComputationMethod.equals( DrosophilaRegistrationSettings.PROJECTION_SHAPE_BASED_ROLL_TRANSFORM ) )
 		{
 
 			final RandomAccessibleInterval< UnsignedIntType > intMask = Converters.convert( yawAndOrientationAlignedMask, ( i, o ) -> o.set( i.getRealDouble() > 0 ? 1000 : 0 ), new UnsignedIntType() );
@@ -457,32 +455,13 @@ public class ShavenBabyRegistration
 
 	}
 
-	public RandomAccessibleInterval< BitType > close(
-			RandomAccessibleInterval< BitType > mask,
-			int closingRadius )
-	{
-		// TODO: Bug(?!) in imglib2 Closing.close makes this necessary
-		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
-		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai2( mask, closingRadius );
-		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai2( morphed, closingRadius );
-
-		if ( closingRadius > 0 )
-		{
-			Utils.log( "Morphological closing...");
-			Shape closingShape = new HyperSphereShape( closingRadius );
-			Closing.close( Views.extendZero( enlargedMask ), Views.iterable( enlargedMorphed ), closingShape, 1 );
-		}
-
-		return Views.interval( enlargedMorphed, mask );
-	}
-
-
 	public < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
 	{
 		Utils.log( "Creating mask...");
 
-		RandomAccessibleInterval< BitType > mask = Converters.convert( downscaled, ( i, o ) -> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
+		// copy as ArrayImg is necessary, because otherwise the 'converted' mask pixels cannot be altered
+		RandomAccessibleInterval< BitType > mask = Utils.copyAsArrayImg( Converters.convert( downscaled, ( i, o ) -> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() ) );
 
 		return mask;
 	}
@@ -492,7 +471,7 @@ public class ShavenBabyRegistration
 
 		double threshold = 0;
 
-		if ( settings.thresholdModality.equals( ShavenBabyRegistrationSettings.HUANG_AUTO_THRESHOLD ) )
+		if ( settings.thresholdModality.equals( DrosophilaRegistrationSettings.HUANG_AUTO_THRESHOLD ) )
 		{
 			final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( downscaled ) );
 
@@ -539,7 +518,7 @@ public class ShavenBabyRegistration
 
 		AffineTransform3D affineTransform3D = new AffineTransform3D();
 
-		if ( maxLoc < 0 ) affineTransform3D.rotate( Z, toRadians( 180.0D ) );
+		if ( maxLoc > 0 ) affineTransform3D.rotate( Z, toRadians( 180.0D ) );
 
 		return affineTransform3D;
 	}
@@ -592,7 +571,7 @@ public class ShavenBabyRegistration
 		return transformedRealPoints;
 	}
 
-	public static AffineTransform3D computeCentroidBasedRollTransform( CentroidsParameters centroidsParameters, ShavenBabyRegistrationSettings settings )
+	public static AffineTransform3D computeCentroidBasedRollTransform( CentroidsParameters centroidsParameters, DrosophilaRegistrationSettings settings )
 	{
 		final double rollAngle = computeRollAngle( centroidsParameters, settings.rollAngleMinDistanceToAxis, settings.rollAngleMinDistanceToCenter, settings.rollAngleMaxDistanceToCenter );
 

@@ -6,9 +6,8 @@ public abstract class Vectors
 {
 	public static double[] asDoubles( Point point )
 	{
-		final double[] vector = new double[ 3 ];
-
-		for ( int d = 0; d < 3; d++ )
+		final double[] vector = new double[ point.numDimensions() ];
+		for ( int d = 0; d < point.numDimensions() ; d++ )
 		{
 			vector[ d ] = point.getDoublePosition( d );
 		}

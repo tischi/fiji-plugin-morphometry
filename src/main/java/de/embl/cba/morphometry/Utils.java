@@ -53,6 +53,7 @@ import java.util.*;
 import java.util.List;
 
 import static de.embl.cba.morphometry.Constants.*;
+import static de.embl.cba.morphometry.microglia.Constants.SEGMENTATION;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static java.lang.Math.*;
 
@@ -1284,4 +1285,12 @@ public class Utils
 		return wrap;
 	}
 
+	public static < T extends RealType< T > & NativeType< T > > ImagePlus labelingsAsImagePlus( ArrayList< RandomAccessibleInterval< T > > labelings)
+	{
+		ImagePlus segmentationImp = createIJ1Movie( labelings, SEGMENTATION );
+		segmentationImp.setLut( getGoldenAngleLUT() );
+		segmentationImp.setTitle( SEGMENTATION );
+
+		return segmentationImp;
+	}
 }
