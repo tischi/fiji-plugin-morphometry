@@ -19,6 +19,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
+import javax.swing.*;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -103,8 +104,8 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		final HashMap<Integer, Map< String, Object > > objectMeasurements = morphometry.getObjectMeasurements();
 
 		// TODO: get rid of genericTable
-		final GenericTable genericTable = Measurements.createGenericTable( objectMeasurements );
-		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( genericTable );
+		final JTable jTable = Measurements.createJTable( objectMeasurements );
+		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( jTable );
 
 		Utils.log( "Done!" );
 

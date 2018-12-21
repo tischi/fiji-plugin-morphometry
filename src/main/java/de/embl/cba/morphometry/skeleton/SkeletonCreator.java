@@ -4,6 +4,7 @@ import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.microglia.MicrogliaMorphometrySettings;
 import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
+import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
@@ -18,15 +19,15 @@ public class SkeletonCreator< T extends RealType< T > & NativeType< T > >
 {
 
 	final ArrayList< RandomAccessibleInterval< BitType > > masks;
-	final MicrogliaMorphometrySettings settings;
+	private final OpService opService;
 
 	private ArrayList< RandomAccessibleInterval< BitType > > skeletons;
 
 	public SkeletonCreator( ArrayList< RandomAccessibleInterval< BitType > > masks,
-							MicrogliaMorphometrySettings settings )
+							OpService opService )
 	{
 		this.masks = masks;
-		this.settings = settings;
+		this.opService = opService;
 	}
 
 	public void run()
@@ -47,7 +48,7 @@ public class SkeletonCreator< T extends RealType< T > & NativeType< T > >
 					Algorithms.createObjectSkeletons(
 						imgLabeling,
 						3, // TODO: Make a parameter
-						settings.opService
+						opService
 					);
 
 			this.skeletons.add( skeletons );

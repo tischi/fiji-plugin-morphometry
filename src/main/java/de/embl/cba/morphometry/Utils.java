@@ -21,6 +21,7 @@ import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
+import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgFactory;
@@ -769,15 +770,16 @@ public class Utils
 		return copy;
 	}
 
-	public static ArrayList< RandomAccessibleInterval< BitType > > labelMapsAsMasks( RandomAccessibleInterval labelMaps )
+	public static < T extends RealType< T > & NativeType< T > >
+	ArrayList< RandomAccessibleInterval< BitType > > labelMapsAsMasks( ArrayList< RandomAccessibleInterval< T > > labelMaps )
 	{
 		final ArrayList< RandomAccessibleInterval< BitType > > masks = new ArrayList<>();
 
-		long numTimePoints = labelMaps.dimension( 2 );
+		long numTimePoints = labelMaps.size();
 
 		for ( int t = 0; t < numTimePoints; ++t )
 		{
-			final RandomAccessibleInterval< BitType > mask = Utils.asMask( Views.hyperSlice( labelMaps, 2, t ) );
+			final RandomAccessibleInterval< BitType > mask = Utils.asMask( labelMaps.get( t ) );
 			masks.add( mask );
 		}
 
@@ -963,15 +965,17 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > getEnlargedRai2( RandomAccessibleInterval< T > rai, int border )
+	RandomAccessibleInterval< T > getEnlargedRai( RandomAccessibleInterval< T > rai, int border )
 	{
-		long[] min = new long[ 3 ];
-		long[] max = new long[ 3 ];
+		int n = rai.numDimensions();
+
+		long[] min = new long[ n ];
+		long[] max = new long[ n ];
 
 		rai.min( min );
 		rai.max( max );
 
-		for ( int d = 0; d < 3; ++d )
+		for ( int d = 0; d < n; ++d )
 		{
 			min[ d ] -= border;
 			max[ d ] += border;
@@ -1050,14 +1054,14 @@ public class Utils
 		return imgLabeling;
 	}
 
-	public static <T extends IntegerType<T> > ImgLabeling< Integer, IntType > labelMapAsImgLabelingRobert( RandomAccessibleInterval< T > labelMap )
+	public static < T extends RealType< T > > ImgLabeling< Integer, IntType > labelMapAsImgLabelingRobert( RandomAccessibleInterval< T > labelMap )
 	{
 		final RandomAccessibleInterval< IntType > indexImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( labelMap ) );
 		final ImgLabeling< Integer, IntType > imgLabeling = new ImgLabeling<>( indexImg );
 
 		final Cursor< LabelingType< Integer > > labelCursor = Views.flatIterable( imgLabeling ).cursor();
 
-		for ( final IntegerType input : Views.flatIterable( labelMap ) ) {
+		for ( final RealType input : Views.flatIterable( labelMap ) ) {
 
 			final LabelingType< Integer > element = labelCursor.next();
 
@@ -1292,5 +1296,39 @@ public class Utils
 		segmentationImp.setTitle( SEGMENTATION );
 
 		return segmentationImp;
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	ArrayList< RandomAccessibleInterval< T > > get2DImagePlusAsFrameList( ImagePlus imagePlus, long channelOneBased )
+	{
+		if ( imagePlus.getNSlices() != 1 )
+		{
+			System.out.println( "Only ImagePlus with NSlices == 1 are supported.");
+			return null;
+		}
+
+		final Img< T > wrap = ( Img< T > ) ImageJFunctions.wrap( imagePlus );
+
+
+		ArrayList<  RandomAccessibleInterval< T > > frames = new ArrayList<>();
+
+		for ( long t = 0; t < imagePlus.getNFrames() ; ++t )
+		{
+			RandomAccessibleInterval< T > channel;
+
+			if ( imagePlus.getNChannels() != 1 )
+			{
+				channel = Views.hyperSlice( wrap, 2, channelOneBased - 1);
+			}
+			else
+			{
+				channel = wrap;
+			}
+
+			final RandomAccessibleInterval< T > timepoint = Views.hyperSlice( channel, 2, t );
+			frames.add( copyAsArrayImg( timepoint ) );
+		}
+
+		return frames;
 	}
 }

@@ -4,23 +4,13 @@ import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.segmentation.SimpleSegmenter;
 import de.embl.cba.morphometry.splitting.TrackingSplitter;
 import de.embl.cba.morphometry.tracking.MaximalOverlapTracker;
-import ij.IJ;
 import ij.ImagePlus;
-import ij.io.FileSaver;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.Img;
-import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.view.IntervalView;
-import net.imglib2.view.Views;
 
-import java.io.File;
 import java.util.ArrayList;
-
-import static de.embl.cba.morphometry.microglia.Constants.INTENSITIES;
-import static de.embl.cba.morphometry.microglia.Constants.SEGMENTATION;
 
 public class MicrogliaTracking < T extends RealType< T > & NativeType< T > >
 {
@@ -61,7 +51,7 @@ public class MicrogliaTracking < T extends RealType< T > & NativeType< T > >
 		settings.maximalWatershedLength = 10;
 		settings.closingRadius = 3;
 
-		this.intensities = extractIntensities( imagePlus );
+		this.intensities = Utils.get2DImagePlusAsFrameList( imagePlus, settings.microgliaChannelIndexOneBased );
 
 	}
 
@@ -74,22 +64,6 @@ public class MicrogliaTracking < T extends RealType< T > & NativeType< T > >
 
 		labelings = createTrackingBasedLabels( masks );
 
-	}
-
-	private ArrayList< RandomAccessibleInterval< T > > extractIntensities( ImagePlus imagePlus )
-	{
-		final Img< T > wrap = ( Img< T > ) ImageJFunctions.wrap( imagePlus );
-
-		ArrayList<  RandomAccessibleInterval< T > > intensities = new ArrayList<>();
-		for ( long t = 0; t < imagePlus.getNFrames() ; ++t )
-		{
-			// Channel
-			final RandomAccessibleInterval< T > channel = Views.hyperSlice( wrap, 2, settings.microgliaChannelIndexOneBased - 1 );
-			final RandomAccessibleInterval< T > timepoint = Views.hyperSlice( channel, 2, t );
-			intensities.add( Utils.copyAsArrayImg( timepoint ) );
-		}
-
-		return intensities;
 	}
 
 

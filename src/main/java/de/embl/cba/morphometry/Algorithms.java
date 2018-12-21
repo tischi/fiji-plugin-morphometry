@@ -925,10 +925,10 @@ public class Algorithms
 			RandomAccessibleInterval< BitType > mask,
 			int closingRadius )
 	{
-		// TODO: Bug(?!) in imglib2 Closing.close makes this necessary
+		// TODO: Bug(?!) in imglib2 Closing.close makes enlargement necessary, otherwise one gets weird results at boundaries
 		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
-		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai2( mask, closingRadius );
-		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai2( morphed, closingRadius );
+		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai( mask, closingRadius );
+		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai( morphed, closingRadius );
 
 		if ( closingRadius > 0 )
 		{
@@ -984,8 +984,8 @@ public class Algorithms
 	{
 		// TODO: Bug(?!) in imglib2 Closing.close makes this necessary
 		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
-		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai2( mask, 2 * radius );
-		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai2( morphed, 2 * radius );
+		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai( mask, 2 * radius );
+		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai( morphed, 2 * radius );
 
 		if ( radius > 0 )
 		{

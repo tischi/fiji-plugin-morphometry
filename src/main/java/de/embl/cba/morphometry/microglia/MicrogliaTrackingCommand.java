@@ -21,7 +21,7 @@ import java.util.ArrayList;
 
 
 @Plugin(type = Command.class, menuPath = "Plugins>Tracking>Microglia Tracking" )
-public class MicrogliaTrackingCommand <T extends RealType<T> & NativeType< T > > implements Command
+public class MicrogliaTrackingCommand < T extends RealType<T> & NativeType< T > > implements Command
 {
 	@Parameter
 	public UIService uiService;

@@ -26,7 +26,7 @@ public class SpindleMorphometryAutoMicTableTest<T extends RealType<T> & NativeTy
 //		ImageJ imagej = new ImageJ();
 //		imagej.ui().showUI();
 //
-//		//create table model from inputImageFile
+//		//create table model from inputLabelMaskFile
 //		TableModel tbl = new TableModel( new File("/Volumes/almfscreen/kletter/20180904/formattedLog_0906-1_Sorted_Cropped.txt") );
 //
 //		//get number of datasets in the table

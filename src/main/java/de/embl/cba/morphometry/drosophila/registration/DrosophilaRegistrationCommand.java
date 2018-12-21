@@ -139,7 +139,7 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 
 					if ( inputImagePlus == null )
 					{
-						logService.error( "Error opening inputImageFile: " + inputPath );
+						logService.error( "Error opening inputLabelMaskFile: " + inputPath );
 						continue;
 					}
 

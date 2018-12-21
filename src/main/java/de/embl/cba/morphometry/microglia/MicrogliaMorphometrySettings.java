@@ -9,7 +9,6 @@ import java.io.File;
 
 public class MicrogliaMorphometrySettings<T extends RealType<T> & NativeType< T > >
 {
-
 	public OpService opService;
 	public long labelMapChannelIndex = 2;
 

@@ -3,6 +3,7 @@ package de.embl.cba.morphometry.measurements;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.skeleton.SkeletonAnalyzer;
+import de.embl.cba.tables.TableUtils;
 import net.imagej.ops.OpService;
 import org.scijava.table.DefaultGenericTable;
 import org.scijava.table.GenericColumn;
@@ -22,6 +23,7 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.view.Views;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -281,7 +283,38 @@ public class Measurements
 		}
 	}
 
-	public static ArrayList< String > asTableRows( ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimePointList )
+	public static void saveRowsToFile( File file, ArrayList<String> lines )
+	{
+		try ( PrintWriter out = new PrintWriter( file ) )
+		{
+			for ( String line : lines )
+			{
+				out.println( line );
+			}
+
+			Utils.log( "\nSaved table to: " + file );
+		}
+		catch ( FileNotFoundException e )
+		{
+			e.printStackTrace();
+		}
+	}
+
+
+	public static JTable createJTable( HashMap< Integer, Map< String, Object > > objectMeasurements )
+	{
+		final ArrayList< HashMap< Integer, Map< String, Object > > > timepoints = new ArrayList<>();
+		timepoints.add( objectMeasurements );
+		return TableUtils.createJTableFromRows( asTableRows( timepoints, "\t" ), "\t" );
+	}
+
+	public static JTable createJTable( ArrayList< HashMap< Integer, Map< String, Object > > > timepoints )
+	{
+		return TableUtils.createJTableFromRows( asTableRows( timepoints, "\t" ), "\t" );
+	}
+
+	public static ArrayList< String > asTableRows( ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimePointList,
+												   String delim )
 	{
 
 		final Set< Integer > objectLabelsFirstTimePoint = measurementsTimePointList.get( 0 ).keySet();
@@ -291,7 +324,7 @@ public class Measurements
 
 		String header = "Object_Label";
 
-		header += "\t" + COORDINATE + SEP + TIME + SEP + FRAME_UNITS;
+		header += delim + COORDINATE + SEP + TIME + SEP + FRAME_UNITS;
 
 		for ( String measurementName : measurementNames )
 		{
@@ -326,58 +359,4 @@ public class Measurements
 		return lines;
 	}
 
-	public static void saveMeasurements( File file, ArrayList<String> lines )
-	{
-		try (PrintWriter out = new PrintWriter( file ) )
-		{
-			for ( String line : lines )
-			{
-				out.println( line );
-			}
-
-			Utils.log( "\nSaved table to: " + file );
-		}
-		catch ( FileNotFoundException e )
-		{
-			e.printStackTrace();
-		}
-	}
-
-	public static GenericTable createGenericTable( HashMap< Integer, Map< String, Object > > objectMeasurements )
-	{
-		final ArrayList< HashMap< Integer, Map< String, Object > > > timepoints = new ArrayList<>();
-		timepoints.add( objectMeasurements );
-		return createGenericTableFromTableRows( asTableRows( timepoints ) );
-	}
-
-	public static GenericTable createGenericTable( ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimePointList )
-	{
-		return createGenericTableFromTableRows( asTableRows( measurementsTimePointList ) );
-	}
-
-	public static GenericTable createGenericTableFromTableRows( ArrayList< String > lines  )
-	{
-
-		final DefaultGenericTable table = new DefaultGenericTable();
-
-		// we create columns
-		final String[] headers = lines.get( 0 ).split( "\t" );
-		final int numColumns = headers.length;
-
-		for ( int columnIndex = 0; columnIndex < numColumns; ++columnIndex )
-		{
-			GenericColumn column = new GenericColumn(headers[ columnIndex ] );
-
-			for ( int i = 1; i < lines.size(); ++i )
-			{
-				String measurement = lines.get( i ).split( "\t" )[ columnIndex ];
-				column.add( measurement );
-			}
-
-			table.add( column );
-		}
-
-		return table;
-
-	}
 }
