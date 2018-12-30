@@ -9,8 +9,6 @@ public class TestMicrogliaTrackingCommand
 		final ImageJ ij = new ImageJ();
 		ij.ui().showUI();
 
-		// invoke the plugin
-
 		ij.command().run( MicrogliaTrackingCommand.class, true );
 	}
 

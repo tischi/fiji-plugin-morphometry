@@ -17,17 +17,16 @@ import java.util.HashMap;
 public class MaximalOverlapTracker< T extends RealType< T > & NativeType< T > >
 {
 
-	ArrayList< RandomAccessibleInterval< BitType > > masks;
+	ArrayList< RandomAccessibleInterval< T > > masks;
 
 	private int nextId;
 
 	private ArrayList< RandomAccessibleInterval< IntType > > labelings;
 
-	public MaximalOverlapTracker( ArrayList< RandomAccessibleInterval< BitType > > masks )
+	public MaximalOverlapTracker( ArrayList< RandomAccessibleInterval< T > > masks )
 	{
 		this.masks = masks;
 	}
-
 
 	public void run()
 	{
@@ -47,6 +46,7 @@ public class MaximalOverlapTracker< T extends RealType< T > & NativeType< T > >
 		for ( t = tMin + 1; t <= tMax; ++t )
 		{
 			RandomAccessibleInterval< IntType > currentLabeling = Utils.asImgLabeling( masks.get( t ) ).getSource();
+
 			RandomAccessibleInterval< IntType > updatedLabeling = ArrayImgs.ints( Intervals.dimensionsAsLongArray( currentLabeling ) );
 
 			labelRegions = new LabelRegions( Utils.asImgLabeling( currentLabeling ) );
@@ -72,10 +72,10 @@ public class MaximalOverlapTracker< T extends RealType< T > & NativeType< T > >
 	}
 
 
-	public ArrayList< RandomAccessibleInterval< IntType > > initLabelings( RandomAccessibleInterval< BitType > mask )
+	public ArrayList< RandomAccessibleInterval< IntType > > initLabelings( RandomAccessibleInterval< T > mask )
 	{
 		final ArrayList< RandomAccessibleInterval< IntType > > updatedLabelings = new ArrayList<>();
-		updatedLabelings.add( Utils.asImgLabeling( mask ).getSource() );
+		updatedLabelings.add( Utils.asImgLabeling( mask ).getIndexImg() );
 		return updatedLabelings;
 	}
 

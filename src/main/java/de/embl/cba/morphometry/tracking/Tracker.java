@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry.tracking;
 
+import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import net.imglib2.RandomAccess;
@@ -62,17 +63,17 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 				if ( overlaps.size() == 2 )
 				{
 
-					Utils.log( "Overlap with two objects" );
+					Logger.log( "Overlap with two objects" );
 
-					Utils.log( "Time point (one based): " + ( t + 1 ) );
-					Utils.log( "Object label: " + region.getLabel() );
+					Logger.log( "Time point (one based): " + ( t + 1 ) );
+					Logger.log( "Object label: " + region.getLabel() );
 
 					final double currentIntensity = Measurements.measureBgCorrectedSumIntensity(
 							currentLabeling,
 							region.getLabel(),
 							intensities.get( t ) );
 
-					Utils.log( "Object intensity: " + (long) currentIntensity );
+					Logger.log( "Object intensity: " + (long) currentIntensity );
 
 					final HashMap< Integer, Double > previousIntensities = new HashMap<>();
 
@@ -85,13 +86,13 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 
 						previousIntensities.put( label , intensity );
 
-						Utils.log( "Previous object intensity: " + (long) intensity );
-						Utils.log( "Overlap pixel fraction: " + 1.0 * overlaps.get( label ).longValue() / region.size() );
+						Logger.log( "Previous object intensity: " + (long) intensity );
+						Logger.log( "Overlap pixel fraction: " + 1.0 * overlaps.get( label ).longValue() / region.size() );
 					}
 
 					double previousIntensitySum = getPreviousIntensitySum( previousIntensities );
 
-					Utils.log( "Intensity ratio: " +  currentIntensity / previousIntensitySum );
+					Logger.log( "Intensity ratio: " +  currentIntensity / previousIntensitySum );
 
 
 

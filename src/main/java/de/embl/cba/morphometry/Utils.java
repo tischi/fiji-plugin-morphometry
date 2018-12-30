@@ -33,14 +33,16 @@ import net.imglib2.outofbounds.OutOfBounds;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.*;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.Type;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.AbstractIntegerType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.type.numeric.integer.UnsignedIntType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
+import net.imglib2.util.Util;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.scijava.log.LogService;
@@ -69,26 +71,6 @@ public class Utils
 	{
 		logFilePath = aLogFilePath;
 		createLogFile();
-	}
-
-	public static void log( String message )
-	{
-		IJ.log( message );
-
-		if ( logFilePath != null )
-		{
-			File logFile = new File( logFilePath );
-
-			if ( ! logFile.exists() )
-			{
-				createLogFile();
-			}
-			else
-			{
-				writeToLogFile( message + "\n" );
-			}
-		}
-
 	}
 
 	public static void writeToLogFile( String message )
@@ -763,9 +745,12 @@ public class Utils
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > copyAsArrayImg( RandomAccessibleInterval< T > orig )
 	{
-		RandomAccessibleInterval< T > copy = new ArrayImgFactory( orig.randomAccess().get() ).create( orig );
-		copy = Transforms.getWithAdjustedOrigin( orig, copy );
-		LoopBuilder.setImages( copy, orig ).forEachPixel( ( c, o ) -> c.set( o ) );
+		final RandomAccessibleInterval< T > copy =
+				Views.translate(
+					new ArrayImgFactory( Util.getTypeFromInterval( orig ) ).create( orig ),
+						Intervals.minAsLongArray( orig ) );
+
+		LoopBuilder.setImages( copy, orig ).forEachPixel( Type::set );
 
 		return copy;
 	}
@@ -944,7 +929,7 @@ public class Utils
 			}
 			catch ( ArrayIndexOutOfBoundsException e )
 			{
-				log( "[ERROR] Draw points out of bounds..." );
+				Logger.log( "[ERROR] Draw points out of bounds..." );
 				break;
 			}
 		}
@@ -1000,10 +985,11 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T >  >
-	ImgLabeling< Integer, IntType > asImgLabeling( RandomAccessibleInterval< T > rai )
+	ImgLabeling< Integer, IntType > asImgLabeling( RandomAccessibleInterval< T > masks )
 	{
-		RandomAccessibleInterval< IntType > labelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( rai ) );
-		labelImg = Transforms.getWithAdjustedOrigin( rai, labelImg );
+
+		RandomAccessibleInterval< IntType > labelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( masks ) );
+		labelImg = Transforms.getWithAdjustedOrigin( masks, labelImg );
 		final ImgLabeling< Integer, IntType > imgLabeling = new ImgLabeling<>( labelImg );
 
 		final java.util.Iterator< Integer > labelCreator = new java.util.Iterator< Integer >()
@@ -1023,7 +1009,17 @@ public class Utils
 			}
 		};
 
-		ConnectedComponents.labelAllConnectedComponents( ( RandomAccessible ) Views.extendBorder( rai ), imgLabeling, labelCreator, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+		final RandomAccessibleInterval< UnsignedIntType > unsignedIntTypeRandomAccessibleInterval =
+				Converters.convert(
+						masks,
+						( i, o ) -> o.set( i.getRealDouble() > 0 ? 1 : 0 ),
+						new UnsignedIntType() );
+
+		ConnectedComponents.labelAllConnectedComponents(
+				Views.extendBorder( unsignedIntTypeRandomAccessibleInterval ),
+				imgLabeling,
+				labelCreator,
+				ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		return imgLabeling;
 	}
@@ -1116,6 +1112,20 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
+	ArrayList< RandomAccessibleInterval< BitType > > asMasks( ArrayList< RandomAccessibleInterval< T > > images )
+	{
+		final ArrayList< RandomAccessibleInterval< BitType > > masks = new ArrayList<>();
+
+		for ( int t = 0; t < images.size(); t++ )
+		{
+			masks.add( asMask( images.get( t ) ) );
+		}
+
+		return masks;
+	}
+
+
+	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval<BitType> asMask( RandomAccessibleInterval< T > rai )
 	{
 		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( rai ) );
@@ -1137,14 +1147,15 @@ public class Utils
 		return mask;
 	}
 
-	public static int getNumObjects( RandomAccessibleInterval< BitType > mask )
+	public static < T extends RealType< T > & NativeType< T > >
+	int getNumObjects( RandomAccessibleInterval< T > mask )
 	{
 		final LabelRegions labelRegions = new LabelRegions( asImgLabeling( mask )  );
 		return labelRegions.getExistingLabels().size() - 1;
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	ImagePlus createIJ1Movie( ArrayList< RandomAccessibleInterval< T > > labelings, String title )
+	ImagePlus frameListAsImagePlusMovie( ArrayList< RandomAccessibleInterval< T > > labelings, String title )
 	{
 		RandomAccessibleInterval movie = Views.stack( labelings );
 		movie = Views.addDimension( movie, 0, 0);
@@ -1289,17 +1300,21 @@ public class Utils
 		return wrap;
 	}
 
-	public static < T extends RealType< T > & NativeType< T > > ImagePlus labelingsAsImagePlus( ArrayList< RandomAccessibleInterval< T > > labelings)
+	public static < T extends RealType< T > & NativeType< T > >
+	ImagePlus labelingsAsImagePlus( ArrayList< RandomAccessibleInterval< T > > labelings )
 	{
-		ImagePlus segmentationImp = createIJ1Movie( labelings, SEGMENTATION );
+		ImagePlus segmentationImp = frameListAsImagePlusMovie( labelings, SEGMENTATION );
 		segmentationImp.setLut( getGoldenAngleLUT() );
 		segmentationImp.setTitle( SEGMENTATION );
-
 		return segmentationImp;
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	ArrayList< RandomAccessibleInterval< T > > get2DImagePlusAsFrameList( ImagePlus imagePlus, long channelOneBased )
+	ArrayList< RandomAccessibleInterval< T > > get2DImagePlusMovieAsFrameList(
+			ImagePlus imagePlus,
+			long channelOneBased,
+			long tMinOneBased,
+			long tMaxOneBased )
 	{
 		if ( imagePlus.getNSlices() != 1 )
 		{
@@ -1307,28 +1322,74 @@ public class Utils
 			return null;
 		}
 
-		final Img< T > wrap = ( Img< T > ) ImageJFunctions.wrap( imagePlus );
-
+		final Img< T > wrap = ImageJFunctions.wrap( imagePlus );
 
 		ArrayList<  RandomAccessibleInterval< T > > frames = new ArrayList<>();
 
-		for ( long t = 0; t < imagePlus.getNFrames() ; ++t )
+		for ( long t = tMinOneBased - 1; t < tMaxOneBased; ++t )
 		{
-			RandomAccessibleInterval< T > channel;
+			RandomAccessibleInterval< T > channel = extractChannel( imagePlus, channelOneBased, wrap );
 
-			if ( imagePlus.getNChannels() != 1 )
-			{
-				channel = Views.hyperSlice( wrap, 2, channelOneBased - 1);
-			}
-			else
-			{
-				channel = wrap;
-			}
+			RandomAccessibleInterval< T > timepoint = extractTimePoint( imagePlus, t, channel );
 
-			final RandomAccessibleInterval< T > timepoint = Views.hyperSlice( channel, 2, t );
 			frames.add( copyAsArrayImg( timepoint ) );
 		}
 
 		return frames;
 	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	ArrayList< RandomAccessibleInterval< T > > get2DImagePlusMovieAsFrameList(
+			ImagePlus imagePlus,
+			long channelOneBased )
+	{
+		return get2DImagePlusMovieAsFrameList(
+				imagePlus,
+				channelOneBased,
+				1,
+				imagePlus.getNFrames() );
+	}
+
+	public static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< T > extractTimePoint( ImagePlus imagePlus, long t, RandomAccessibleInterval< T > channel )
+	{
+		RandomAccessibleInterval< T > timepoint;
+
+		if ( imagePlus.getNFrames() != 1 )
+		{
+			timepoint = Views.hyperSlice( channel, 2, t );
+		}
+		else
+		{
+			timepoint = channel;
+		}
+
+		return timepoint;
+	}
+
+	public static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< T > extractChannel( ImagePlus imagePlus, long channelOneBased, Img< T > wrap )
+	{
+		RandomAccessibleInterval< T > channel;
+
+		if ( imagePlus.getNChannels() != 1 )
+		{
+			channel = Views.hyperSlice( wrap, 2, channelOneBased - 1);
+		}
+		else
+		{
+			channel = wrap;
+		}
+		return channel;
+	}
+
+	public static void wait( int millis )
+	{
+		try
+		{
+			Thread.sleep( millis );
+		} catch ( InterruptedException e )
+		{
+			e.printStackTrace();
+		}
+	}
+
 }

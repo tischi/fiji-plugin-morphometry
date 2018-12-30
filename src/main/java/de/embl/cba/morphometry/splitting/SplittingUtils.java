@@ -14,7 +14,10 @@ import java.util.Map;
 public class SplittingUtils
 {
 
-	public static HashMap< Integer, Integer > getNumObjectsFromSkeleton( ImgLabeling< Integer, IntType > imgLabeling, RandomAccessibleInterval< BitType > skeleton, MicrogliaTrackingSettings settings )
+	public static HashMap< Integer, Integer > getNumObjectsFromSkeleton(
+			ImgLabeling< Integer, IntType > imgLabeling,
+			RandomAccessibleInterval< BitType > skeleton,
+			MicrogliaTrackingSettings settings )
 	{
 		HashMap< Integer, Map< String, Object > > skeletonMeasurements = new HashMap<>();
 		Measurements.measureSumIntensities( skeletonMeasurements, imgLabeling, skeleton, Constants.SKELETON );

@@ -25,7 +25,7 @@ public class TrackingUtils
 		}
 	}
 
-	public static int computeObjectId( HashMap< Integer, Long > overlaps, int nextId )
+	public static int computeObjectId( HashMap< Integer, Long > overlaps, Integer nextId )
 	{
 		int objectId;
 

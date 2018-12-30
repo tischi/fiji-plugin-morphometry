@@ -1,13 +1,10 @@
 package de.embl.cba.morphometry.measurements;
 
-import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.skeleton.SkeletonAnalyzer;
 import de.embl.cba.tables.TableUtils;
 import net.imagej.ops.OpService;
-import org.scijava.table.DefaultGenericTable;
-import org.scijava.table.GenericColumn;
-import org.scijava.table.GenericTable;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
@@ -292,7 +289,7 @@ public class Measurements
 				out.println( line );
 			}
 
-			Utils.log( "\nSaved table to: " + file );
+			Logger.log( "\nSaved table to: " + file );
 		}
 		catch ( FileNotFoundException e )
 		{
@@ -313,8 +310,10 @@ public class Measurements
 		return TableUtils.createJTableFromRows( asTableRows( timepoints, "\t" ), "\t" );
 	}
 
-	public static ArrayList< String > asTableRows( ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimePointList,
-												   String delim )
+	public static ArrayList< String > asTableRows(
+			ArrayList< HashMap< Integer,
+			Map< String, Object > > > measurementsTimePointList,
+			String delim )
 	{
 
 		final Set< Integer > objectLabelsFirstTimePoint = measurementsTimePointList.get( 0 ).keySet();
@@ -328,7 +327,7 @@ public class Measurements
 
 		for ( String measurementName : measurementNames )
 		{
-			header += "\t" + measurementName ;
+			header += delim + measurementName ;
 		}
 
 		lines.add( header );
@@ -345,11 +344,11 @@ public class Measurements
 
 				String values = String.format( "%05d", label );
 
-				values += "\t" + String.format( "%05d", t + 1 ); // convert to one-based
+				values += delim + String.format( "%05d", t + 1 ); // convert to one-based time points
 
 				for ( String measurementName : measurementNames )
 				{
-					values += "\t" + measurementsMap.get( measurementName );
+					values += delim + measurementsMap.get( measurementName );
 				}
 
 				lines.add( values );

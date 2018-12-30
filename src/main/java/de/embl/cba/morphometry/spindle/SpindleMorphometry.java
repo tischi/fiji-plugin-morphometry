@@ -57,6 +57,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	final OpService opService;
 
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
+	private RandomAccessibleInterval< BitType > mask;
 
 	public SpindleMorphometry( SpindleMorphometrySettings settings, OpService opService )
 	{
@@ -76,7 +77,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 *  Make isotropic
 		 */
 
-		Utils.log( "Create isotropic image..." );
+		Logger.log( "Create isotropic image..." );
 
 		final double[] workingCalibration = Utils.as3dDoubleArray( settings.workingVoxelSize );
 
@@ -95,7 +96,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final double maximumValue = Algorithms.getMaximumValue( dapiDownscaledToSpindleWidth );
 		double threshold = maximumValue / 2.0;
 
-		Utils.log( "Dapi threshold: " + threshold );
+		Logger.log( "Dapi threshold: " + threshold );
 
 
 		/**
@@ -111,9 +112,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * Extract metaphase plate object
 		 */
 
-		Utils.log( "Extracting metaphase plate object..." );
+		Logger.log( "Extracting metaphase plate object..." );
 
-		Algorithms.removeSmallRegionsInMask( dnaMask, settings.minimalMetaphasePlateVolumeInCalibratedUnits, settings.workingVoxelSize );
+		Regions.removeSmallRegionsInMask( dnaMask, settings.minimalMetaphasePlateVolumeInCalibratedUnits, settings.workingVoxelSize );
 
 		final ImgLabeling< Integer, IntType > labelImg = Utils.asImgLabeling( dnaMask );
 
@@ -149,13 +150,13 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * Compute ellipsoid alignment
 		 */
 
-		Utils.log( "Determining meta-phase plate axes..." );
+		Logger.log( "Determining meta-phase plate axes..." );
 
 		//final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( processedMetaPhasePlate );
 
 		final EllipsoidVectors ellipsoidVectors = Ellipsoids3DImageSuite.fitEllipsoid( Utils.asImagePlus( processedMetaPhasePlate, "" ) );
 
-		Utils.log( "Creating aligned images..." );
+		Logger.log( "Creating aligned images..." );
 
 		//final AffineTransform3D alignmentTransform = EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters );
 
@@ -173,7 +174,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * Compute metaphase plate width
 		 */
 
-		Utils.log( "Measuring meta-phase plate morphometry..." );
+		Logger.log( "Measuring meta-phase plate morphometry..." );
 
 		final CoordinatesAndValues dapiProfile = Utils.computeAverageIntensitiesAlongAxis( alignedDapi, settings.maxShortAxisDist, ALIGNED_DNA_AXIS, settings.workingVoxelSize );
 		if ( settings.showIntermediateResults ) Plots.plot( dapiProfile.coordinates, dapiProfile.values, "distance to center", "dapi intensity along shortest axis" );
@@ -198,8 +199,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		double[] dnaAxisBasedSpindlePoleCoordinates = getLeftMaxAndRightMinLoc( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values );
 
-		Utils.log( "Left spindle pole found at: " + dnaAxisBasedSpindlePoleCoordinates[ 0 ] );
-		Utils.log( "Right spindle pole found at: " + dnaAxisBasedSpindlePoleCoordinates[ 1 ] );
+		Logger.log( "Left spindle pole found at: " + dnaAxisBasedSpindlePoleCoordinates[ 0 ] );
+		Logger.log( "Right spindle pole found at: " + dnaAxisBasedSpindlePoleCoordinates[ 1 ] );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
@@ -278,7 +279,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		AffineTransform3D rotationTransform = new AffineTransform3D();
 		rotationTransform.rotate( ALIGNED_DNA_AXIS,  angleBetweenXAxisAndSpindleWithVector );
 
-		Utils.log( "Rotating input data around z-axis by [degrees]: " + 180 / Math.PI * angleBetweenXAxisAndSpindleWithVector );
+		Logger.log( "Rotating input data around z-axis by [degrees]: " + 180 / Math.PI * angleBetweenXAxisAndSpindleWithVector );
 
 		final RandomAccessibleInterval transformedDapiView = Transforms.createTransformedView( dna, rotationTransform );
 		final RandomAccessibleInterval transformedTubulinView = Transforms.createTransformedView( tubulin, rotationTransform );
@@ -289,7 +290,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		//		if ( settings.showIntermediateResults ) bdv = BdvFunctions.show( transformedDapiView, "" ).getBdvHandle();
 		//		if ( settings.showIntermediateResults ) BdvFunctions.show( transformedInterestPointView, "", BdvOptions.options().addTo( bdv ) );
 
-		Utils.log( "Saving result images ..." );
+		Logger.log( "Saving result images ..." );
 
 
 		final Calibration calibration = new Calibration();
@@ -325,7 +326,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	public RandomAccessibleInterval< BitType > createProcessedMetaPhasePlate( RandomAccessibleInterval< BitType > mask, Img< BitType > metaphasePlate )
 	{
-		Utils.log( "Perform morphological filtering on dapi mask..." );
+		Logger.log( "Perform morphological filtering on dapi mask..." );
 
 		RandomAccessibleInterval< BitType > filtered;
 
@@ -369,7 +370,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		new File( path ).getParentFile().mkdirs();
 
-		Utils.log( "Saving: " + path );
+		Logger.log( "Saving: " + path );
 		IJ.saveAsTiff( imagePlus, path );
 
 	}
@@ -408,7 +409,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			}
 			catch ( ArrayIndexOutOfBoundsException e )
 			{
-				Utils.log( "[ERROR] Draw points out of bounds..." );
+				Logger.log( "[ERROR] Draw points out of bounds..." );
 				break;
 			}
 		}
@@ -454,8 +455,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	public < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
 	{
-		Utils.log( "Creating mask...");
-
 		RandomAccessibleInterval< BitType > mask = Converters.convert( downscaled, ( i, o ) -> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
 
 		mask = opService.morphology().fillHoles( mask );

@@ -175,51 +175,6 @@ public class Algorithms
 		return centralObjectImg;
 	}
 
-	public static void removeSmallRegionsInMask(
-			RandomAccessibleInterval< BitType > mask,
-			double sizeInCalibratedUnits,
-			double calibration )
-	{
-		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask );
-
-		long minimalObjectSize = ( long ) ( sizeInCalibratedUnits / Math.pow( calibration, imgLabeling.numDimensions() ) );
-
-		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
-		for ( LabelRegion labelRegion : labelRegions )
-		{
-			if ( labelRegion.size() < minimalObjectSize )
-			{
-				removeRegion( mask, labelRegion );
-			}
-		}
-	}
-
-	private static void drawRegion( RandomAccessibleInterval< BitType > img, LabelRegion labelRegion )
-	{
-		final Cursor< Void > regionCursor = labelRegion.cursor();
-		final RandomAccess< BitType > access = img.randomAccess();
-		BitType bitTypeTrue = new BitType( true );
-		while ( regionCursor.hasNext() )
-		{
-			regionCursor.fwd();
-			access.setPosition( regionCursor );
-			access.get().set( bitTypeTrue );
-		}
-	}
-
-
-	private static void removeRegion( RandomAccessibleInterval< BitType > img, LabelRegion labelRegion )
-	{
-		final Cursor regionCursor = labelRegion.cursor();
-		final RandomAccess< BitType > access = img.randomAccess();
-		BitType bitTypeFalse = new BitType( false );
-		while ( regionCursor.hasNext() )
-		{
-			regionCursor.fwd();
-			access.setPosition( regionCursor );
-			access.get().set( bitTypeFalse );
-		}
-	}
 
 	public static Img< BitType > createMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
 	{
@@ -264,8 +219,6 @@ public class Algorithms
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
 	{
-		Utils.log( "Creating mask...");
-
 		RandomAccessibleInterval< BitType > mask =
 				Converters.convert( downscaled, ( i, o )
 						-> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
@@ -565,7 +518,7 @@ public class Algorithms
 					// a watershed was found
 					drawWatershedIntoMask( outputMask, currentRegions, currentObjectLabel, splitObjects );
 					// sometimes the watershed is weirdly placed such that very small (single pixel) objects can occur
-					removeSmallRegionsInMask( outputMask, minimalObjectSize, 1 );
+					Regions.removeSmallRegionsInMask( outputMask, minimalObjectSize, 1 );
 					if ( showSplits )
 					{
 						ImageJFunctions.show( watershedImgLabeling.getSource(), "" + currentObjectLabel );
@@ -573,7 +526,7 @@ public class Algorithms
 				}
 				else
 				{
-					Utils.log( "\n\nERROR DURING OBJECT SPLITTING\n\n" );
+					Logger.log( "\n\nERROR DURING OBJECT SPLITTING\n\n" );
 					ImageJFunctions.show( overlapLabeling ).setTitle( currentObjectLabel+"overlap" );
 					ImageJFunctions.show( watershedImgLabeling.getIndexImg() ).setTitle( currentObjectLabel+"watershed" );
 					ImageJFunctions.show( previousLabelingCrop ).setTitle( currentObjectLabel+"previousLabeling" );
@@ -638,7 +591,7 @@ public class Algorithms
 
 				if ( localMaxima.size() < numObjectsPerRegion.get( label ) )
 				{
-					Utils.log( "\n\nERROR: Not enough local maxima found for object: " + label + "\n\n");
+					Logger.log( "\n\nERROR: Not enough local maxima found for object: " + label + "\n\n");
 					continue; // TODO: check these cases
 				}
 
@@ -663,7 +616,7 @@ public class Algorithms
 
 				if ( ! splitObjects.getExistingLabels().contains( -1 ) )
 				{
-					Utils.log( "\n\nERROR DURING OBJECT SPLITTING\n\n" );
+					Logger.log( "\n\nERROR DURING OBJECT SPLITTING\n\n" );
 					continue; // TODO: examine these cases
 				}
 
@@ -683,7 +636,7 @@ public class Algorithms
 							maximalWatershedBoundaryLength );
 				}
 
-				Utils.log( "Valid split found: " + isValidSplit );
+				//Utils.log( "Valid split found: " + isValidSplit );
 
 				if ( showSplittingAttempts )
 				{
@@ -694,7 +647,7 @@ public class Algorithms
 				{
 					drawWatershedIntoMask( mask, labelRegions, label, splitObjects );
 					// sometimes the watershed is weirdly placed such that very small (single pixel) objects can occur
-					removeSmallRegionsInMask( mask, minimalObjectSize, 1 );
+					Regions.removeSmallRegionsInMask( mask, minimalObjectSize, 1 );
 				}
 
 			}
@@ -932,7 +885,7 @@ public class Algorithms
 
 		if ( closingRadius > 0 )
 		{
-			Utils.log( "Morphological closing...");
+			Logger.log( "Morphological closing...");
 			Shape closingShape = new HyperSphereShape( closingRadius );
 			Closing.close( Views.extendZero( enlargedMask ), Views.iterable( enlargedMorphed ), closingShape, 1 );
 		}
@@ -989,7 +942,7 @@ public class Algorithms
 
 		if ( radius > 0 )
 		{
-			Utils.log( "Morphological opening...");
+			Logger.log( "Morphological opening...");
 			Shape shape = new HyperSphereShape( radius );
 			Opening.open( Views.extendZero( enlargedMask ), Views.iterable( enlargedMorphed ), shape, 1 );
 		}

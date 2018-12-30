@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry.spindle;
 
+import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.tables.InteractiveTablePanel;
@@ -7,7 +8,6 @@ import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
-import org.scijava.table.GenericTable;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
@@ -107,7 +107,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		final JTable jTable = Measurements.createJTable( objectMeasurements );
 		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( jTable );
 
-		Utils.log( "Done!" );
+		Logger.log( "Done!" );
 
 	}
 

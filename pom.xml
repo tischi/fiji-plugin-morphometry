@@ -159,9 +159,18 @@
 
 		<dependency>
 			<groupId>org.scijava</groupId>
+			<artifactId>bdv-utils</artifactId>
+			<version>0.1.26</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.scijava</groupId>
 			<artifactId>table-utils</artifactId>
 			<version>0.1.03</version>
 		</dependency>
+
+
+
 
 	</dependencies>
 

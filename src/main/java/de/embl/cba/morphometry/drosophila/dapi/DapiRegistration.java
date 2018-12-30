@@ -2,6 +2,7 @@ package de.embl.cba.morphometry.drosophila.dapi;
 
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Angles;
+import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
 import de.embl.cba.morphometry.Utils;
@@ -127,7 +128,7 @@ public class DapiRegistration
 		double angleToZAxisInDegrees = Angles.angle2DToCoordinateSystemsAxisInDegrees( maximum2DinYZPlane );
 		AffineTransform3D rollTransform = new AffineTransform3D();
 
-		Utils.log( "Roll angle: " + angleToZAxisInDegrees );
+		Logger.log( "Roll angle: " + angleToZAxisInDegrees );
 		rollTransform.rotate( X, toRadians( angleToZAxisInDegrees ) );
 
 		return rollTransform;

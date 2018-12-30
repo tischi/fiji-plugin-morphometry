@@ -1,6 +1,7 @@
 package de.embl.cba.morphometry.drosophila.registration;
 
 import bdv.util.*;
+import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Projection;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
@@ -133,8 +134,8 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 					 */
 
 					final String inputPath = inputDirectory + File.separator + file;
-					Utils.log( " " );
-					Utils.log( "Reading: " + inputPath + "..." );
+					Logger.log( " " );
+					Logger.log( "Reading: " + inputPath + "..." );
 					final ImagePlus inputImagePlus = openWithBioFormats( inputPath );
 
 					if ( inputImagePlus == null )
@@ -151,7 +152,7 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 
 					if ( registeredImages == null )
 					{
-						Utils.log( "ERROR: Could not find central embryo" );
+						Logger.log( "ERROR: Could not find central embryo" );
 						continue;
 					}
 
@@ -188,7 +189,7 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 			}
 		}
 
-		Utils.log( "Done!" );
+		Logger.log( "Done!" );
 
 
 	}
@@ -205,7 +206,7 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 		registered.getCalibration().pixelDepth = settings.outputResolution;
 
 		final String outputPath = outputFilePathStump + "-registered.tif";
-		Utils.log( "Saving registered image: " + outputPath );
+		Logger.log( "Saving registered image: " + outputPath );
 		new FileSaver( registered ).saveAsTiff( outputPath );
 	}
 
@@ -296,13 +297,13 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 		/**
 		 * Compute registration
 		 */
-		Utils.log( "Computing registration...." );
+		Logger.log( "Computing registration...." );
 		registration.run( channel1, channel2, inputCalibration );
 
 		/**
 		 * Apply intensity correction
 		 */
-		Utils.log( "Applying intensity correction to all channels...." );
+		Logger.log( "Applying intensity correction to all channels...." );
 		final RandomAccessibleInterval< T > intensityCorrectedImages =
 				createIntensityCorrectedImages(
 						images,
@@ -321,7 +322,7 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 		/**
 		 * Apply transformation
 		 */
-		Utils.log( "Creating registered and masked images (can take some time)..." );
+		Logger.log( "Creating registered and masked images (can take some time)..." );
 		ArrayList< RandomAccessibleInterval< T > > registeredImages =
 				Transforms.transformAllChannels(
 						intensityCorrectedImages,

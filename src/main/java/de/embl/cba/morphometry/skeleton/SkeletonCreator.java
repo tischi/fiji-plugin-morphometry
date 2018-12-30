@@ -1,9 +1,8 @@
 package de.embl.cba.morphometry.skeleton;
 
 import de.embl.cba.morphometry.Algorithms;
+import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.microglia.MicrogliaMorphometrySettings;
-import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.roi.labeling.ImgLabeling;
@@ -11,7 +10,6 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.view.Views;
 
 import java.util.ArrayList;
 
@@ -40,7 +38,7 @@ public class SkeletonCreator< T extends RealType< T > & NativeType< T > >
 
 		for ( int t = tMin; t <= tMax; ++t )
 		{
-			Utils.log( "Computing skeletons for frame " + ( t + 1 ) );
+			Logger.log( "Computing skeletons for frame " + ( t + 1 ) );
 
 			final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( masks.get( t ) );
 

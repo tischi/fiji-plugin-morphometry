@@ -1,10 +1,8 @@
 package de.embl.cba.morphometry.segmentation;
 
-import de.embl.cba.morphometry.Algorithms;
-import de.embl.cba.morphometry.CoordinateAndValue;
-import de.embl.cba.morphometry.IntensityHistogram;
-import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
+import de.embl.cba.morphometry.regions.Regions;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -63,8 +61,8 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 
 		double threshold = ( rightHandHalfMaximum.coordinate - mode.coordinate ) * settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
 		double offset = mode.coordinate;
-		Utils.log( "Intensity offset: " + offset );
-		Utils.log( "Threshold: " + ( threshold + offset ) );
+		Logger.debug( "Intensity offset: " + offset );
+		Logger.debug( "Threshold: " + ( threshold + offset ) );
 
 		/**
 		 * Create mask
@@ -79,7 +77,7 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 		 * Remove small objects from mask
 		 */
 
-		Algorithms.removeSmallRegionsInMask( mask, settings.minimalObjectSize, settings.workingVoxelSize );
+		Regions.removeSmallRegionsInMask( mask, settings.minimalObjectSize, settings.workingVoxelSize );
 
 		if ( showIntermediateResults ) show( mask, "size filtered mask", null, workingCalibration, false );
 

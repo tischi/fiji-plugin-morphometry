@@ -27,17 +27,15 @@ public class TestMicrogliaMorphometry
 
 		final ImagePlus imagePlus = ImageIO.openWithBioFormats( inputFile );
 
-		final ArrayList< RandomAccessibleInterval< T > > labelMasks = Utils.get2DImagePlusAsFrameList( imagePlus, 1 );
+		final ArrayList< RandomAccessibleInterval< T > > labelMasks = Utils.get2DImagePlusMovieAsFrameList( imagePlus, 1 );
 
 		final MicrogliaMorphometry microgliaMorphometry = new MicrogliaMorphometry( labelMasks, ij.op() );
 
 		microgliaMorphometry.run();
 
-		final ArrayList< HashMap< Integer, Map< String, Object > > > timepoints = microgliaMorphometry.getMeasurementsTimepointList();
+		final ArrayList< HashMap< Integer, Map< String, Object > > > measurements = microgliaMorphometry.getMeasurementsTimepointList();
 
-		final JTable jTable = Measurements.createJTable( timepoints );
-
-		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( jTable );
+		final JTable jTable = Measurements.createJTable( measurements );
 
 		TableUtils.saveTable( jTable, new File( "/Users/tischer/Documents/fiji-plugin-morphometry/src/test/resources/microglia/MAX_5C-crop-t1-3-measurements.csv" ) );
 

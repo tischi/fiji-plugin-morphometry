@@ -7,6 +7,7 @@ import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidsMLJ;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
+import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
@@ -84,7 +85,7 @@ public class DrosphilaRegistration
 		 *  - We assume axial compression by factor ~1.6
 		 */
 
-		Utils.log( "Refractive index scaling correction..." );
+		Logger.log( "Refractive index scaling correction..." );
 
 		correctedCalibration = RefractiveIndexMismatchCorrections.getAxiallyCorrectedCalibration( inputCalibration, settings.refractiveIndexAxialCalibrationCorrectionFactor );
 
@@ -99,7 +100,7 @@ public class DrosphilaRegistration
 		 *  - TODO: bug: during down-sampling saturated pixels become zero
 		 */
 
-		Utils.log( "Down-sampling to registration resolution..." );
+		Logger.log( "Down-sampling to registration resolution..." );
 
 		final RandomAccessibleInterval< T > downscaledChannel1 = createRescaledArrayImg( svb, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
 		final RandomAccessibleInterval< T > downscaledChannel2 = createRescaledArrayImg( other, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
@@ -113,13 +114,13 @@ public class DrosphilaRegistration
 		 *  Compute intensity offset (for refractive index mismatch corrections)
 		 */
 
-		Utils.log( "Offset and threshold..." );
+		Logger.log( "Offset and threshold..." );
 
 		final IntensityHistogram downscaledSvbIntensityHistogram = new IntensityHistogram( downscaledChannel1, 65535.0, 5.0 );
 
 		CoordinateAndValue intensityHistogramMode = downscaledSvbIntensityHistogram.getMode();
 
-		Utils.log( "Intensity offset: " + intensityHistogramMode.coordinate );
+		Logger.log( "Intensity offset: " + intensityHistogramMode.coordinate );
 
 
 		/**
@@ -133,14 +134,14 @@ public class DrosphilaRegistration
 		final double embryoCenterPosition = Utils.computeMaxLoc( averageSvbIntensitiesAlongZ );
 		coverslipPosition = embryoCenterPosition - DrosophilaRegistrationSettings.drosophilaWidth / 2.0;
 
-		Utils.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
-		Utils.log( "Approximate axial embryo center coordinate [um]: " + embryoCenterPosition );
+		Logger.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
+		Logger.log( "Approximate axial embryo center coordinate [um]: " + embryoCenterPosition );
 
 		/**
 		 *  Refractive index corrections
 		 */
 		
-		Utils.log( "Refractive index intensity correction..." );
+		Logger.log( "Refractive index intensity correction..." );
 
 		final RefractiveIndexMismatchCorrectionSettings correctionSettings = new RefractiveIndexMismatchCorrectionSettings();
 		correctionSettings.intensityOffset = intensityHistogramMode.coordinate;
@@ -170,7 +171,7 @@ public class DrosphilaRegistration
 
 		double thresholdAfterIntensityCorrection = huang;
 
-		Utils.log( "Threshold (after intensity correction): " + thresholdAfterIntensityCorrection );
+		Logger.log( "Threshold (after intensity correction): " + thresholdAfterIntensityCorrection );
 
 
 		/**
@@ -188,7 +189,7 @@ public class DrosphilaRegistration
 		 * - close holes
 		 */
 
-		Algorithms.removeSmallRegionsInMask( mask, settings.minimalObjectSize, settings.registrationResolution );
+		Regions.removeSmallRegionsInMask( mask, settings.minimalObjectSize, settings.registrationResolution );
 
 		for ( int d = 0; d < 3; ++d )
 		{
@@ -203,7 +204,7 @@ public class DrosphilaRegistration
 		 * - Note: EUCLIDIAN distances are returned as squared distances
 		 */
 
-		Utils.log( "Distance transform..." );
+		Logger.log( "Distance transform..." );
 
 		final RandomAccessibleInterval< DoubleType > distances = Algorithms.computeDistanceTransform( mask );
 
@@ -236,7 +237,7 @@ public class DrosphilaRegistration
 		 * - TODO: replace by largest rather than central
 		 */
 
-		Utils.log( "Extract main embryo..." );
+		Logger.log( "Extract main embryo..." );
 
 		final LabelRegion< Integer > centralObjectRegion = getCentralObjectLabelRegion( watershedLabeling );
 
@@ -263,7 +264,7 @@ public class DrosphilaRegistration
 		 * - https://en.wikipedia.org/wiki/Euler_angles
 		 */
 
-		Utils.log( "Fit ellipsoid..." );
+		Logger.log( "Fit ellipsoid..." );
 
 		final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( embryoMask );
 
@@ -279,7 +280,7 @@ public class DrosphilaRegistration
 		 *  Long axis orientation
 		 */
 
-		Utils.log( "Computing long axis orientation..." );
+		Logger.log( "Computing long axis orientation..." );
 
 		final AffineTransform3D orientationTransform = computeFlippingTransform( yawAlignedMask, yawAlignedIntensities, settings.registrationResolution );
 
@@ -319,7 +320,7 @@ public class DrosphilaRegistration
 
 	public ImgLabeling< Integer, IntType > computeWatershed( RandomAccessibleInterval< BitType > mask, RandomAccessibleInterval< DoubleType > distances, ImgLabeling< Integer, IntType > seedsLabelImg )
 	{
-		Utils.log( "Watershed..." );
+		Logger.log( "Watershed..." );
 
 		// prepare result label image
 		watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
@@ -372,7 +373,7 @@ public class DrosphilaRegistration
 		 * 		   Feels kind of messy...better way?
 		 */
 
-		Utils.log( "Creating aligned mask..." );
+		Logger.log( "Creating aligned mask..." );
 
 		final RandomAccessibleInterval< BitType > dilatedMask = Algorithms.dilate( embryoMask, 2 );
 
@@ -403,7 +404,7 @@ public class DrosphilaRegistration
 			RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask,
 			String rollAngleComputationMethod )
 	{
-		Utils.log( "Computing roll transform, using method: " + rollAngleComputationMethod );
+		Logger.log( "Computing roll transform, using method: " + rollAngleComputationMethod );
 
 		if ( rollAngleComputationMethod.equals( DrosophilaRegistrationSettings.SECONDARY_CHANNEL_INTENSITY ) )
 		{
@@ -458,8 +459,6 @@ public class DrosphilaRegistration
 	public < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
 	{
-		Utils.log( "Creating mask...");
-
 		// copy as ArrayImg is necessary, because otherwise the 'converted' mask pixels cannot be altered
 		RandomAccessibleInterval< BitType > mask = Utils.copyAsArrayImg( Converters.convert( downscaled, ( i, o ) -> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() ) );
 
@@ -489,7 +488,7 @@ public class DrosphilaRegistration
 
 	public ImgLabeling< Integer, IntType > createWatershedSeeds( RandomAccessibleInterval< DoubleType > distance )
 	{
-		Utils.log( "Seeds for watershed...");
+		Logger.log( "Seeds for watershed...");
 
 		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.registrationResolution, 2 );
 		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.registrationResolution, 2 );
@@ -575,7 +574,7 @@ public class DrosphilaRegistration
 	{
 		final double rollAngle = computeRollAngle( centroidsParameters, settings.rollAngleMinDistanceToAxis, settings.rollAngleMinDistanceToCenter, settings.rollAngleMaxDistanceToCenter );
 
-		Utils.log( "Roll angle " + rollAngle );
+		Logger.log( "Roll angle " + rollAngle );
 
 		AffineTransform3D rollTransform = new AffineTransform3D();
 

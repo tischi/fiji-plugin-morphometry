@@ -26,19 +26,7 @@ import java.util.Map;
 public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T > > implements Command
 {
 	@Parameter
-	public UIService uiService;
-
-	@Parameter
-	public DatasetService datasetService;
-
-	@Parameter
-	public LogService logService;
-
-	@Parameter
 	public OpService opService;
-
-	@Parameter
-	public StatusService statusService;
 
 	@Parameter
 	public File inputLabelMaskFile;
@@ -55,7 +43,7 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 		final ImagePlus imagePlus = ImageIO.openWithBioFormats( inputLabelMaskFile.toString() );
 
-		final ArrayList< RandomAccessibleInterval< T > > labelMasks = Utils.get2DImagePlusAsFrameList( imagePlus, 1 );
+		final ArrayList< RandomAccessibleInterval< T > > labelMasks = Utils.get2DImagePlusMovieAsFrameList( imagePlus, 1 );
 
 		final MicrogliaMorphometry microgliaMorphometry = new MicrogliaMorphometry( labelMasks, opService );
 

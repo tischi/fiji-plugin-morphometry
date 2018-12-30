@@ -1,9 +1,9 @@
 package de.embl.cba.morphometry.microglia;
 
+import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.segmentation.SimpleSegmenter;
 import de.embl.cba.morphometry.splitting.TrackingSplitter;
-import de.embl.cba.morphometry.tracking.MaximalOverlapTracker;
 import ij.ImagePlus;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
@@ -22,12 +22,20 @@ public class MicrogliaTracking < T extends RealType< T > & NativeType< T > >
 							   boolean showIntermediateResults,
 							   OpService opService,
 							   long microgliaChannelIndexOneBased,
-							   long tMin,
-							   long tMax )
+							   long tMinOneBased,
+							   long tMaxOneBased )
 	{
+		this.settings = configureMicrogliaTrackingSettings( imagePlus, showIntermediateResults, opService, microgliaChannelIndexOneBased, tMinOneBased, tMaxOneBased );
 
+		this.intensities = Utils.get2DImagePlusMovieAsFrameList( imagePlus, settings.microgliaChannelIndexOneBased, tMinOneBased, tMaxOneBased );
+	}
+
+	public static MicrogliaTrackingSettings configureMicrogliaTrackingSettings( ImagePlus imagePlus, boolean showIntermediateResults, OpService opService, long microgliaChannelIndexOneBased, long tMin, long tMax )
+	{
+		MicrogliaTrackingSettings settings;
 		settings = new MicrogliaTrackingSettings();
 
+		settings.microgliaChannelIndexOneBased = 1;
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.opService = opService;
 		settings.microgliaChannelIndexOneBased = microgliaChannelIndexOneBased;
@@ -51,35 +59,14 @@ public class MicrogliaTracking < T extends RealType< T > & NativeType< T > >
 		settings.maximalWatershedLength = 10;
 		settings.closingRadius = 3;
 
-		this.intensities = Utils.get2DImagePlusAsFrameList( imagePlus, settings.microgliaChannelIndexOneBased );
-
+		return settings;
 	}
 
 	public void run()
 	{
-
 		ArrayList< RandomAccessibleInterval< T > > masks = createBinaryMasks( intensities );
 
-		masks = splitTouchingObjects( intensities, masks );
-
-		labelings = createTrackingBasedLabels( masks );
-
-	}
-
-
-	private ArrayList< RandomAccessibleInterval< T > > createTrackingBasedLabels( ArrayList< RandomAccessibleInterval< T > > masks )
-	{
-		final MaximalOverlapTracker maximalOverlapTracker = new MaximalOverlapTracker( masks );
-		maximalOverlapTracker.run();
-		return (ArrayList< RandomAccessibleInterval< T > > ) maximalOverlapTracker.getLabelings();
-	}
-
-	private ArrayList< RandomAccessibleInterval< T > > splitTouchingObjects( ArrayList< RandomAccessibleInterval< T > > intensities, ArrayList< RandomAccessibleInterval< T > > masks )
-	{
-		final TrackingSplitter splitter = new TrackingSplitter( masks, intensities, settings );
-		splitter.run();
-		masks = splitter.getSplitMasks();
-		return masks;
+		labelings = splitTouchingObjectsAndTrack( intensities, masks );
 	}
 
 	private ArrayList< RandomAccessibleInterval< T > > createBinaryMasks( ArrayList< RandomAccessibleInterval< T > > intensities )
@@ -87,7 +74,7 @@ public class MicrogliaTracking < T extends RealType< T > & NativeType< T > >
 		ArrayList<  RandomAccessibleInterval< T > > masks = new ArrayList<>();
 		for ( long t = 0; t < intensities.size() ; ++t )
 		{
-			Utils.log("Creating mask for frame " + ( t + 1 ) );
+			Logger.log("Creating mask for frame " + ( t + 1 ) );
 			final SimpleSegmenter simpleSegmenter = new SimpleSegmenter( intensities.get( ( int ) t ), settings );
 			simpleSegmenter.run();
 			masks.add( simpleSegmenter.getMask() );
@@ -95,6 +82,12 @@ public class MicrogliaTracking < T extends RealType< T > & NativeType< T > >
 		return masks;
 	}
 
+	private ArrayList< RandomAccessibleInterval< T > > splitTouchingObjectsAndTrack( ArrayList< RandomAccessibleInterval< T > > intensities, ArrayList< RandomAccessibleInterval< T > > masks )
+	{
+		final TrackingSplitter splitter = new TrackingSplitter( masks, intensities, settings );
+		splitter.run();
+		return splitter.getLabelings();
+	}
 
 	public ArrayList< RandomAccessibleInterval< T > > getLabelings( )
 	{

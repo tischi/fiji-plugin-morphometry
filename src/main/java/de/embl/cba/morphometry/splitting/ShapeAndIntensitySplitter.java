@@ -4,6 +4,7 @@ import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -13,7 +14,6 @@ import net.imglib2.type.numeric.integer.IntType;
 import java.util.HashMap;
 
 import static de.embl.cba.morphometry.splitting.SplittingUtils.getNumObjectsFromSkeleton;
-import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 
 
 public class ShapeAndIntensitySplitter< T extends RealType< T > & NativeType< T > >
@@ -48,7 +48,7 @@ public class ShapeAndIntensitySplitter< T extends RealType< T > & NativeType< T 
 
 		// TODO: implement skeleton per object such that one can do closing operations without joining neighboring objects
 
-		RandomAccessibleInterval< BitType > skeleton = settings.opService.morphology().thinGuoHall(  mask );
+		RandomAccessibleInterval< BitType > skeleton = settings.opService.morphology().thinGuoHall( mask );
 
 		HashMap< Integer, Integer > numObjectsPerRegion = getNumObjectsFromSkeleton( imgLabeling, skeleton, settings );
 
