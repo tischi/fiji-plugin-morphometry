@@ -45,6 +45,7 @@ import net.imglib2.util.LinAlgHelpers;
 import net.imglib2.util.Util;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
+import org.apache.commons.logging.Log;
 import org.scijava.log.LogService;
 
 import java.awt.*;
@@ -1181,11 +1182,6 @@ public class Utils
 		return false;
 	}
 
-	public static void error( String s )
-	{
-		IJ.showMessage( s );
-	}
-
 	public static ImagePlus asLabelImagePlus( RandomAccessibleInterval< IntType > indexImg )
 	{
 		final Duplicator duplicator = new Duplicator();
@@ -1318,7 +1314,7 @@ public class Utils
 	{
 		if ( imagePlus.getNSlices() != 1 )
 		{
-			System.out.println( "Only ImagePlus with NSlices == 1 are supported.");
+			Logger.error( "Only 2D images (one z-slice) are supported.");
 			return null;
 		}
 

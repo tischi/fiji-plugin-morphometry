@@ -1,4 +1,4 @@
-import de.embl.cba.morphometry.drosophila.registration.DrosophilaRegistrationCommand;
+import de.embl.cba.morphometry.commands.DrosophilaRegistrationCommand;
 import net.imagej.ImageJ;
 
 public class TestDrosophilaRegistrationCommand

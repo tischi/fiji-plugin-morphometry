@@ -297,20 +297,19 @@ public class Measurements
 		}
 	}
 
-
 	public static JTable createJTable( HashMap< Integer, Map< String, Object > > objectMeasurements )
 	{
 		final ArrayList< HashMap< Integer, Map< String, Object > > > timepoints = new ArrayList<>();
 		timepoints.add( objectMeasurements );
-		return TableUtils.createJTableFromRows( asTableRows( timepoints, "\t" ), "\t" );
+		return TableUtils.createJTableFromStringList( measurementsAsTableRowsStringList( timepoints, "\t" ), "\t" );
 	}
 
 	public static JTable createJTable( ArrayList< HashMap< Integer, Map< String, Object > > > timepoints )
 	{
-		return TableUtils.createJTableFromRows( asTableRows( timepoints, "\t" ), "\t" );
+		return TableUtils.createJTableFromStringList( measurementsAsTableRowsStringList( timepoints, "\t" ), "\t" );
 	}
 
-	public static ArrayList< String > asTableRows(
+	public static ArrayList< String > measurementsAsTableRowsStringList(
 			ArrayList< HashMap< Integer,
 			Map< String, Object > > > measurementsTimePointList,
 			String delim )

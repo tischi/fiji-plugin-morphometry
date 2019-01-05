@@ -2,9 +2,8 @@ package de.embl.cba.morphometry.splitting;
 
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
+import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTrackingSettings;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -19,14 +18,14 @@ import static de.embl.cba.morphometry.splitting.SplittingUtils.getNumObjectsFrom
 public class ShapeAndIntensitySplitter< T extends RealType< T > & NativeType< T > >
 {
 
-	final MicrogliaTrackingSettings settings;
+	final MicrogliaSegmentationAndTrackingSettings settings;
 	final private RandomAccessibleInterval< BitType > mask;
 	final private RandomAccessibleInterval< T > intensity;
 	private RandomAccessibleInterval< BitType > splitMask;
 
 	public ShapeAndIntensitySplitter( RandomAccessibleInterval< BitType > mask,
 									  RandomAccessibleInterval< T > intensity,
-									  MicrogliaTrackingSettings settings )
+									  MicrogliaSegmentationAndTrackingSettings settings )
 	{
 		this.mask = mask;
 		this.intensity = intensity;

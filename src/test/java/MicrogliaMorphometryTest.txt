@@ -4,7 +4,7 @@ import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.segmentation.SimpleSegmenter;
-import de.embl.cba.morphometry.splitting.TrackingSplitter;
+import de.embl.cba.morphometry.tracking.TrackingSplitter;
 import de.embl.cba.morphometry.tracking.MaximalOverlapTracker;
 import ij.IJ;
 import ij.ImagePlus;

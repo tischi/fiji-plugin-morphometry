@@ -1,10 +1,8 @@
 package de.embl.cba.morphometry.microglia;
 
 import de.embl.cba.morphometry.Logger;
-import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.segmentation.SimpleSegmenter;
-import de.embl.cba.morphometry.splitting.TrackingSplitter;
-import ij.ImagePlus;
+import de.embl.cba.morphometry.tracking.TrackingSplitter;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
@@ -12,38 +10,33 @@ import net.imglib2.type.numeric.RealType;
 
 import java.util.ArrayList;
 
-public class MicrogliaTracking < T extends RealType< T > & NativeType< T > >
+public class MicrogliaSegmentationAndTracking< T extends RealType< T > & NativeType< T > >
 {
-	final MicrogliaTrackingSettings settings;
+	final MicrogliaSegmentationAndTrackingSettings settings;
 	final ArrayList< RandomAccessibleInterval< T  > > intensities;
 	private ArrayList< RandomAccessibleInterval< T > > labelings;
 
-	public MicrogliaTracking ( ImagePlus imagePlus,
-							   boolean showIntermediateResults,
-							   OpService opService,
-							   long microgliaChannelIndexOneBased,
-							   long tMinOneBased,
-							   long tMaxOneBased )
+	public MicrogliaSegmentationAndTracking( ArrayList< RandomAccessibleInterval< T  > > intensities,
+											 double[] calibration,
+											 boolean showIntermediateResults,
+											 OpService opService )
 	{
-		this.settings = configureMicrogliaTrackingSettings( imagePlus, showIntermediateResults, opService, microgliaChannelIndexOneBased, tMinOneBased, tMaxOneBased );
-
-		this.intensities = Utils.get2DImagePlusMovieAsFrameList( imagePlus, settings.microgliaChannelIndexOneBased, tMinOneBased, tMaxOneBased );
+		this.intensities = intensities;
+		this.settings = configureSettings( calibration, showIntermediateResults, opService );
 	}
 
-	public static MicrogliaTrackingSettings configureMicrogliaTrackingSettings( ImagePlus imagePlus, boolean showIntermediateResults, OpService opService, long microgliaChannelIndexOneBased, long tMin, long tMax )
+	public static MicrogliaSegmentationAndTrackingSettings configureSettings(
+			double[] calibration,
+			boolean showIntermediateResults,
+			OpService opService )
 	{
-		MicrogliaTrackingSettings settings;
-		settings = new MicrogliaTrackingSettings();
+		MicrogliaSegmentationAndTrackingSettings settings;
+		settings = new MicrogliaSegmentationAndTrackingSettings();
 
-		settings.microgliaChannelIndexOneBased = 1;
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.opService = opService;
-		settings.microgliaChannelIndexOneBased = microgliaChannelIndexOneBased;
-		settings.tMin = tMin;
-		settings.tMax = Math.min( tMax, imagePlus.getNFrames() );
-		settings.inputCalibration = Utils.get2dCalibration( imagePlus ) ;
+		settings.inputCalibration = calibration;
 		settings.workingVoxelSize = settings.inputCalibration[ 0 ];
-		settings.maxPossibleValueInDataSet = Math.pow( 2, imagePlus.getBitDepth() ) - 1.0;
 		settings.maxShortAxisDist = 6;
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 		settings.watershedSeedsLocalMaximaDistanceThreshold = Double.MAX_VALUE;

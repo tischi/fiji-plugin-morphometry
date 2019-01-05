@@ -1,10 +1,8 @@
 import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.microglia.MicrogliaTracking;
-import ij.ImageJ;
+import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTracking;
 import ij.ImagePlus;
 import ij.io.FileSaver;
-import net.imagej.ops.DefaultOpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -21,15 +19,15 @@ public class TestMicrogliaTracking
 
 		ImagePlus imagePlus = ImageIO.openWithBioFormats( inputFile );
 
-		final MicrogliaTracking microgliaTracking = new MicrogliaTracking(
-				imagePlus,
-				false,
-				ij.op(),
-				2, 1, 100000 );
+		final MicrogliaSegmentationAndTracking microgliaSegmentationAndTracking =
+				new MicrogliaSegmentationAndTracking(
+						Utils.get2DImagePlusMovieAsFrameList( imagePlus, 1 ),
+						Utils.getCalibration( imagePlus ),
+				false, ij.op() );
 
-		microgliaTracking.run();
+		microgliaSegmentationAndTracking.run();
 
-		final ArrayList< RandomAccessibleInterval< T > > labelings = microgliaTracking.getLabelings();
+		final ArrayList< RandomAccessibleInterval< T > > labelings = microgliaSegmentationAndTracking.getLabelings();
 
 		final ImagePlus labelMask = Utils.labelingsAsImagePlus( labelings );
 

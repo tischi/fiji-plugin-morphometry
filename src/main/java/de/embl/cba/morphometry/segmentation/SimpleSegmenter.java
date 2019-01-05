@@ -1,7 +1,7 @@
 package de.embl.cba.morphometry.segmentation;
 
 import de.embl.cba.morphometry.*;
-import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
+import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTrackingSettings;
 import de.embl.cba.morphometry.regions.Regions;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
@@ -15,12 +15,12 @@ import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 {
 
-	final MicrogliaTrackingSettings settings;
+	final MicrogliaSegmentationAndTrackingSettings settings;
 	private RandomAccessibleInterval< BitType > mask;
 	final private RandomAccessibleInterval< T > intensity;
 	final private boolean showIntermediateResults;
 
-	public SimpleSegmenter( RandomAccessibleInterval< T > intensity, MicrogliaTrackingSettings settings )
+	public SimpleSegmenter( RandomAccessibleInterval< T > intensity, MicrogliaSegmentationAndTrackingSettings settings )
 	{
 		this.intensity = intensity;
 		this.settings = settings;
@@ -53,7 +53,7 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 		 *  Compute offset and threshold
 		 */
 
-		final IntensityHistogram intensityHistogram = new IntensityHistogram( image, settings.maxPossibleValueInDataSet, 2 );
+		final IntensityHistogram intensityHistogram = new IntensityHistogram( image, 65535, 2 );
 
 		CoordinateAndValue mode = intensityHistogram.getMode();
 

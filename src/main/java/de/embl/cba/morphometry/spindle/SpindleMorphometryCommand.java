@@ -3,7 +3,7 @@ package de.embl.cba.morphometry.spindle;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
-import de.embl.cba.tables.InteractiveTablePanel;
+import de.embl.cba.tables.ObjectTablePanel;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
@@ -105,7 +105,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 		// TODO: get rid of genericTable
 		final JTable jTable = Measurements.createJTable( objectMeasurements );
-		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( jTable );
+		final ObjectTablePanel objectTablePanel = new ObjectTablePanel( jTable );
+		objectTablePanel.showPanel();
+//		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( jTable );
 
 		Logger.log( "Done!" );
 

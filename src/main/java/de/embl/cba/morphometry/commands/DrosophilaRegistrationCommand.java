@@ -1,8 +1,10 @@
-package de.embl.cba.morphometry.drosophila.registration;
+package de.embl.cba.morphometry.commands;
 
 import bdv.util.*;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Projection;
+import de.embl.cba.morphometry.drosophila.registration.DrosophilaRegistrationSettings;
+import de.embl.cba.morphometry.drosophila.registration.DrosphilaRegistration;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
 import de.embl.cba.morphometry.Utils;

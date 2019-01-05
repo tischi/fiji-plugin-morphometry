@@ -166,11 +166,8 @@
 		<dependency>
 			<groupId>org.scijava</groupId>
 			<artifactId>table-utils</artifactId>
-			<version>0.1.03</version>
+			<version>0.1.04</version>
 		</dependency>
-
-
-
 
 	</dependencies>
 

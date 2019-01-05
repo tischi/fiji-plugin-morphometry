@@ -2,7 +2,6 @@ import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.microglia.MicrogliaMorphometry;
-import de.embl.cba.tables.InteractiveTablePanel;
 import de.embl.cba.tables.TableUtils;
 import ij.ImagePlus;
 import net.imglib2.RandomAccessibleInterval;

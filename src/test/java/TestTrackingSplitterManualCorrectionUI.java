@@ -1,5 +1,5 @@
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.splitting.TrackingSplitterManualCorrectionUI;
+import de.embl.cba.morphometry.tracking.TrackingSplitterManualCorrectionUI;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.ImageJ;

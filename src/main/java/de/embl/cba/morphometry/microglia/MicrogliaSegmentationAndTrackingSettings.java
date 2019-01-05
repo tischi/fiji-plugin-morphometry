@@ -7,7 +7,7 @@ import net.imglib2.type.numeric.RealType;
 
 import java.io.File;
 
-public class MicrogliaTrackingSettings<T extends RealType<T> & NativeType< T > >
+public class MicrogliaSegmentationAndTrackingSettings<T extends RealType<T> & NativeType< T > >
 {
 	public static final String MANUAL_THRESHOLD = "Manual threshold";
 	public static final String HUANG_AUTO_THRESHOLD = "Huang auto threshold";
@@ -32,9 +32,7 @@ public class MicrogliaTrackingSettings<T extends RealType<T> & NativeType< T > >
 
 	public double[] inputCalibration;
 	public RandomAccessibleInterval<T> image;
-	public RandomAccessibleInterval<T> tubulin;
 
-	public double maxPossibleValueInDataSet;
 	public double maxShortAxisDist;
 	public double interestPointsRadius;
 	public File outputDirectory;
@@ -49,9 +47,6 @@ public class MicrogliaTrackingSettings<T extends RealType<T> & NativeType< T > >
 	public double minimalOverlapFraction = 0.05;
 	public double minimalSumIntensityRatio = 0.5;
 	public double maximalSumIntensityRatio = 1.5;
-	public long microgliaChannelIndexOneBased = 2;
-	public long tMin;
-	public long tMax;
 	public boolean manualSegmentationCorrectionOfFirstFrame = true;
 	public boolean manualSegmentationCorrectionOfAllFrames = true;
 

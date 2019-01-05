@@ -1,7 +1,9 @@
-package de.embl.cba.morphometry.drosophila.dapi;
+package de.embl.cba.morphometry.commands;
 
 import bdv.util.*;
 import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.drosophila.dapi.DapiRegistration;
+import de.embl.cba.morphometry.drosophila.dapi.DapiRegistrationSettings;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
@@ -26,6 +28,7 @@ import org.scijava.widget.Button;
 import java.util.ArrayList;
 
 
+@Deprecated
 @Plugin(type = InteractiveCommand.class, menuPath = "Plugins>Registration>EMBL>Drosophila Dapi" )
 public class DapiRegistrationCommand<T extends RealType<T> & NativeType< T > > extends InteractiveCommand
 {

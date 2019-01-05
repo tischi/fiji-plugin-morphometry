@@ -30,4 +30,9 @@ public class Logger
 		}
 
 	}
+
+	public static void error( String s )
+	{
+		IJ.showMessage( s );
+	}
 }

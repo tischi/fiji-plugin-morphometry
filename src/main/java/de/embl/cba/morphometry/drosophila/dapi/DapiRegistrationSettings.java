@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry.drosophila.dapi;
 
+@Deprecated
 public class DapiRegistrationSettings
 {
 	public boolean showIntermediateResults = false;

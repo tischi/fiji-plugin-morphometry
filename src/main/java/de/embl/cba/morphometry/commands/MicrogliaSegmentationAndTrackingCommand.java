@@ -1,8 +1,10 @@
-package de.embl.cba.morphometry.microglia;
+package de.embl.cba.morphometry.commands;
 
 import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTracking;
+import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTrackingSettings;
 import ij.ImagePlus;
 import ij.io.FileSaver;
 import net.imagej.ops.OpService;
@@ -18,8 +20,8 @@ import java.io.File;
 import java.util.ArrayList;
 
 
-@Plugin(type = Command.class, menuPath = "Plugins>Tracking>Microglia Tracking" )
-public class MicrogliaTrackingCommand < T extends RealType<T> & NativeType< T > > implements Command
+@Plugin(type = Command.class, menuPath = "Plugins>Tracking>Microglia Segmentation And Tracking" )
+public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & NativeType< T > > implements Command
 {
 	@Parameter
 	public LogService logService;
@@ -27,7 +29,7 @@ public class MicrogliaTrackingCommand < T extends RealType<T> & NativeType< T > 
 	@Parameter
 	public OpService opService;
 
-	MicrogliaTrackingSettings settings = new MicrogliaTrackingSettings();
+	MicrogliaSegmentationAndTrackingSettings settings = new MicrogliaSegmentationAndTrackingSettings();
 
 	@Parameter( label = "Input time series (must be 2D and single channel)")
 	public File inputIntensitiesFile;
@@ -46,7 +48,8 @@ public class MicrogliaTrackingCommand < T extends RealType<T> & NativeType< T > 
 
 	@Parameter
 	public boolean showIntermediateResults = settings.showIntermediateResults;
-
+	private ImagePlus imagePlus;
+	private ArrayList< RandomAccessibleInterval< T > > intensities;
 
 	public void run()
 	{
@@ -55,25 +58,50 @@ public class MicrogliaTrackingCommand < T extends RealType<T> & NativeType< T > 
 
 	private void processFile( File file )
 	{
-		ImagePlus imagePlus = ImageIO.openWithBioFormats( file.getAbsolutePath() );
+		openIntensitiesAsFrameList( file );
+
+		saveLabels( computeLabels( intensities, Utils.get2dCalibration( imagePlus ) ) );
+	}
+
+	private void openIntensitiesAsFrameList( File file )
+	{
+		imagePlus = ImageIO.openWithBioFormats( file.getAbsolutePath() );
 
 		if ( imagePlus == null )
 		{
-			Utils.error( "Could not open image: " + file );
+			Logger.error( "Could not open image: " + file );
 			return;
 		}
 
-		saveLabels( computeLabels( imagePlus ) );
+		if ( imagePlus.getNChannels() > 1 )
+		{
+			Logger.error( "Only single channel files are supported. " +
+					"Please use [ Image > Color > Split Channels ] and [ File > Save as..] to " +
+					"save the channel that you want to segment and track as a single file.");
+			return;
+		}
 
+		intensities = Utils.get2DImagePlusMovieAsFrameList(
+				imagePlus,
+				1,
+				tMinOneBased,
+				Math.min( tMaxOneBased, imagePlus.getNFrames() ) );
 	}
 
-	private ArrayList< RandomAccessibleInterval< T > > computeLabels( ImagePlus imagePlus )
+	private ArrayList< RandomAccessibleInterval< T > > computeLabels(
+			ArrayList< RandomAccessibleInterval< T > > intensities,
+			double[] calibration )
 	{
-		final MicrogliaTracking microgliaTracking = new MicrogliaTracking( imagePlus, showIntermediateResults, opService, 1, tMinOneBased, tMaxOneBased );
+		final MicrogliaSegmentationAndTracking microgliaSegmentationAndTracking =
+				new MicrogliaSegmentationAndTracking(
+						intensities,
+						calibration,
+						showIntermediateResults,
+						opService );
 
-		microgliaTracking.run();
+		microgliaSegmentationAndTracking.run();
 
-		return (ArrayList< RandomAccessibleInterval< T > > ) microgliaTracking.getLabelings();
+		return (ArrayList< RandomAccessibleInterval< T > > ) microgliaSegmentationAndTracking.getLabelings();
 	}
 
 	private void saveLabels( ArrayList< RandomAccessibleInterval< T > > labelings )

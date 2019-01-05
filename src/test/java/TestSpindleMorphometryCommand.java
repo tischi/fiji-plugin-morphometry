@@ -1,4 +1,3 @@
-import de.embl.cba.morphometry.microglia.MicrogliaMorphometryCommand;
 import de.embl.cba.morphometry.spindle.SpindleMorphometryCommand;
 import net.imagej.ImageJ;
 

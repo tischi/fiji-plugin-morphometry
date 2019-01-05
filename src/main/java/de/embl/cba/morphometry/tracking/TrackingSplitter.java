@@ -1,12 +1,12 @@
-package de.embl.cba.morphometry.splitting;
+package de.embl.cba.morphometry.tracking;
 
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.microglia.Constants;
-import de.embl.cba.morphometry.microglia.MicrogliaTrackingSettings;
-import de.embl.cba.morphometry.tracking.TrackingUtils;
+import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTrackingSettings;
+import de.embl.cba.morphometry.splitting.ShapeAndIntensitySplitter;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imglib2.RandomAccess;
@@ -36,14 +36,14 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 	private ArrayList< RandomAccessibleInterval< IntType > > labelings;
 
-	final MicrogliaTrackingSettings settings;
+	final MicrogliaSegmentationAndTrackingSettings settings;
 	private final ImagePlus intensitiesImp;
 	private long minimalObjectSizeInPixels;
 	private static Point intensitiesImpLocation;
 
 	public TrackingSplitter( ArrayList< RandomAccessibleInterval< BitType > > masks,
 							 ArrayList< RandomAccessibleInterval< T > > intensities,
-							 MicrogliaTrackingSettings settings )
+							 MicrogliaSegmentationAndTrackingSettings settings )
 	{
 		this.masks = masks;
 		this.intensities = intensities;
@@ -68,8 +68,6 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		/**
 		 * Process first time-point
 		 */
-
-		Logger.log( "Running ShapeAndIntensitySplitter on frame " + settings.tMin );
 
 		final ShapeAndIntensitySplitter splitter = new ShapeAndIntensitySplitter( masks.get( t ), intensities.get( t ), settings );
 		splitter.run();

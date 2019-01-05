@@ -1,5 +1,4 @@
-import de.embl.cba.morphometry.microglia.MicrogliaMorphometryCommand;
-import de.embl.cba.morphometry.microglia.MicrogliaTrackingCommand;
+import de.embl.cba.morphometry.commands.MicrogliaMorphometryCommand;
 import net.imagej.ImageJ;
 
 public class TestMicrogliaMorphometryCommand

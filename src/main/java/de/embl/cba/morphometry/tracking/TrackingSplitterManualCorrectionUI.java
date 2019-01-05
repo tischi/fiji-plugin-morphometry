@@ -1,4 +1,4 @@
-package de.embl.cba.morphometry.splitting;
+package de.embl.cba.morphometry.tracking;
 
 import de.embl.cba.morphometry.SyncWindowsHack;
 import de.embl.cba.morphometry.Utils;

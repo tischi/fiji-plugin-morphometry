@@ -26,6 +26,7 @@ import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static java.lang.Math.*;
 
+@Deprecated
 public class DapiRegistration
 {
 	final DapiRegistrationSettings settings;
