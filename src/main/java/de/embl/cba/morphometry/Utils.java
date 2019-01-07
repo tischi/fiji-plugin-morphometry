@@ -774,7 +774,8 @@ public class Utils
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > createEmptyArrayImg( RandomAccessibleInterval< T > rai )
 	{
-		RandomAccessibleInterval< T > newImage = new ArrayImgFactory( rai.randomAccess().get() ).create( rai );
+		RandomAccessibleInterval< T > newImage = new ArrayImgFactory(
+				rai.randomAccess().get() ).create( rai );
 		newImage = Transforms.getWithAdjustedOrigin( rai, newImage );
 		return newImage;
 	}
@@ -1388,4 +1389,23 @@ public class Utils
 		}
 	}
 
+	public static < T extends RealType< T > & NativeType< T > >
+	void drawMaskIntoImage(
+			RandomAccessibleInterval< T > mask,
+			RandomAccessibleInterval< T > image,
+			double value )
+	{
+
+		final Cursor< T > cursor = Views.iterable( mask ).cursor();
+		final RandomAccess< T > access = image.randomAccess();
+
+		while ( cursor.hasNext() )
+		{
+			if ( cursor.next().getRealDouble() > 0.0 )
+			{
+				access.setPosition( cursor );
+				access.get().setReal( value );
+			}
+		}
+	}
 }

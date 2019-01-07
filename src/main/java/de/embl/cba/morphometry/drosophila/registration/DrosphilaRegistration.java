@@ -205,7 +205,7 @@ public class DrosphilaRegistration
 
 		Logger.log( "Distance transform..." );
 
-		final RandomAccessibleInterval< DoubleType > distances = Algorithms.computeDistanceTransform( mask );
+		final RandomAccessibleInterval< DoubleType > distances = Algorithms.computeSquaredDistances( mask );
 
 		if ( settings.showIntermediateResults ) show( distances, "squared distances", null, registrationCalibration, false );
 

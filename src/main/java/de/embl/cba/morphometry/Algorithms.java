@@ -2,6 +2,7 @@ package de.embl.cba.morphometry;
 
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
+import javafx.scene.transform.Transform;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
@@ -27,6 +28,7 @@ import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
+import net.imglib2.util.Util;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
@@ -880,12 +882,12 @@ public class Algorithms
 	{
 		// TODO: Bug(?!) in imglib2 Closing.close makes enlargement necessary, otherwise one gets weird results at boundaries
 		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+		morphed = Views.translate( morphed, Intervals.minAsLongArray( mask ) );
 		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai( mask, closingRadius );
 		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai( morphed, closingRadius );
 
 		if ( closingRadius > 0 )
 		{
-			Logger.log( "Morphological closing...");
 			Shape closingShape = new HyperSphereShape( closingRadius );
 			Closing.close( Views.extendZero( enlargedMask ), Views.iterable( enlargedMorphed ), closingShape, 1 );
 		}
@@ -921,11 +923,13 @@ public class Algorithms
 		return intensities;
 	}
 
-	public static RandomAccessibleInterval< DoubleType > computeDistanceTransform( RandomAccessibleInterval< BitType > mask )
+	public static RandomAccessibleInterval< DoubleType > computeSquaredDistances( RandomAccessibleInterval< BitType > mask )
 	{
-		final RandomAccessibleInterval< DoubleType > doubleBinary = Converters.convert( mask, ( i, o ) -> o.set( i.get() ? Double.MAX_VALUE : 0 ), new DoubleType() );
+		final RandomAccessibleInterval< DoubleType > doubleBinary =
+				Converters.convert( mask, ( i, o ) -> o.set( i.get() ? Double.MAX_VALUE : 0 ), new DoubleType() );
 
-		final RandomAccessibleInterval< DoubleType > distance = ArrayImgs.doubles( Intervals.dimensionsAsLongArray( doubleBinary ) );
+		RandomAccessibleInterval< DoubleType > distance = ArrayImgs.doubles( Intervals.dimensionsAsLongArray( doubleBinary ) );
+		distance = Views.translate( distance, Intervals.minAsLongArray( mask ) );
 
 		DistanceTransform.transform( doubleBinary, distance, DistanceTransform.DISTANCE_TYPE.EUCLIDIAN, 1.0D );
 		return distance;
