@@ -1,6 +1,7 @@
 package de.embl.cba.morphometry.translocation;
 
 import de.embl.cba.morphometry.Algorithms;
+import de.embl.cba.morphometry.CoordinateAndValue;
 import de.embl.cba.morphometry.segmentation.SignalOverBackgroundSegmenter;
 import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
@@ -21,8 +22,6 @@ import net.imglib2.util.Util;
 import net.imglib2.view.Views;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 
 public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 {
@@ -31,6 +30,7 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 	private double signalToNoise;
 	private int closingRadius;
 	private int maxDistanceOfMembraneToOutside;
+	private int resolutionBlurWidthInPixel;
 
 	public ArrayList< TranslocationResult > getResults()
 	{
@@ -54,7 +54,8 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 		minimalObjectSize = 50;
 		signalToNoise = 25.0;
 		closingRadius = 5;
-		maxDistanceOfMembraneToOutside = 6;
+		resolutionBlurWidthInPixel = 3;
+		maxDistanceOfMembraneToOutside = Integer.MAX_VALUE; // TODO: how to cope with the ruffling? maybe find cell boundary with a gradient
 
 		results = new ArrayList<TranslocationResult>();
 
@@ -81,7 +82,14 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 			double outside = ( double ) result.outsideIntensities.get( t );
 			double inside = ( double ) result.insideIntensities.get( t );
 
-			result.translocation.add( ( membrane - outside ) / ( inside - outside ) );
+			final double translocation = ( membrane - outside ) / ( inside - outside );
+
+			if ( translocation < 0 )
+			{
+				int b = 1;
+			}
+
+			result.translocation.add( translocation );
 		}
 
 		results.add( result );
@@ -100,27 +108,49 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 				0,
 				0 ) );
 
-		result.membraneIntensities.add( computeMembraneIntensity( image, distances ) );
+		final CoordinateAndValue membraneDistanceAndIntensity =
+				computeMembraneIntensity( image, distances );
+
+		result.membraneIntensities.add( membraneDistanceAndIntensity.value );
 
 		result.insideIntensities.add( computeMeanIntensityWithinDistanceRange(
 				image,
 				distances,
-				maxDistanceOfMembraneToOutside,
+				(int) membraneDistanceAndIntensity.coordinate + resolutionBlurWidthInPixel,
 				Integer.MAX_VALUE ) );
 	}
 
-	private Double computeMembraneIntensity( RandomAccessibleInterval< T > image, RandomAccessibleInterval< IntType > distances )
+	private CoordinateAndValue computeMembraneIntensity(
+			RandomAccessibleInterval< T > image,
+			RandomAccessibleInterval< IntType > distances )
 	{
-		final HashMap< Integer, Double > distanceIntensityMap = new HashMap<>();
+		double maximalGradient = 0;
+		double membraneIntensity = 0;
+		double distanceAtMaximalGradient = 0;
 
-		for ( int d = 1; d < maxDistanceOfMembraneToOutside; d++ )
+		ArrayList< Double > intensities = new ArrayList<>(  );
+
+		final double dMax = Algorithms.getMaximumValue( distances );
+		for ( int d = 0; d <= dMax; d++ )
 		{
-			double mean = computeMeanIntensityWithinDistanceRange( image, distances, d, d );
+			double intensity = computeMeanIntensityWithinDistanceRange( image, distances, d, d );
 
-			distanceIntensityMap.put( d, mean );
+			intensities.add( intensity );
+
+			int previousDistance = d > resolutionBlurWidthInPixel ? d - resolutionBlurWidthInPixel : 0;
+
+			double gradient = intensity - intensities.get( previousDistance );
+
+			if ( gradient > maximalGradient )
+			{
+				maximalGradient = gradient;
+				distanceAtMaximalGradient = d;
+				membraneIntensity = intensity;
+			}
+
 		}
 
-		return Collections.max( distanceIntensityMap.values() );
+		return new CoordinateAndValue( distanceAtMaximalGradient, membraneIntensity );
 	}
 
 	private RandomAccessibleInterval< IntType > computeDistanceMap( RandomAccessibleInterval< BitType > mask )
@@ -134,10 +164,10 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 	}
 
 	private double computeMeanIntensityWithinDistanceRange(
-			RandomAccessibleInterval< T > image,
-			RandomAccessibleInterval< IntType > distances,
-			int dMin,
-			int dMax )
+			final RandomAccessibleInterval< T > image,
+			final RandomAccessibleInterval< IntType > distances,
+			final int dMin,
+			final int dMax )
 	{
 		final Cursor< IntType > cursor = Views.iterable( distances ).cursor();
 		final RandomAccess< T > access = image.randomAccess();
@@ -147,7 +177,8 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 
 		while ( cursor.hasNext() )
 		{
-			if ( cursor.next().getInteger() >= dMin && cursor.next().getInteger() <= dMax )
+			cursor.fwd();
+			if ( cursor.get().getInteger() >= dMin && cursor.get().getInteger() <= dMax )
 			{
 				access.setPosition( cursor );
 				sum += access.get().getRealDouble();
@@ -155,8 +186,8 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 			}
 		}
 
-		if ( n > 0 ) return sum / n;
-		else return -1;
+		return sum / n;
+
 	}
 
 	private RandomAccessibleInterval< BitType > createCellMask( RandomAccessibleInterval< T > image )
