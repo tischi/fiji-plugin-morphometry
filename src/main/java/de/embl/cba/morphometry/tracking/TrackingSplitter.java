@@ -53,7 +53,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 		this.labelings = new ArrayList();
 
-		this.intensitiesImp = Utils.frameListAsImagePlusMovie( intensities, Constants.INTENSITIES );
+		this.intensitiesImp = Utils.listOf2DImagesAsImagePlusMovie( intensities, Constants.INTENSITIES );
 	}
 
 

@@ -36,7 +36,6 @@ import net.imglib2.view.Views;
 import java.util.*;
 
 import static de.embl.cba.morphometry.Constants.*;
-import static de.embl.cba.morphometry.drosophila.dapi.DapiRegistration.createXAxisRollTransform;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
@@ -178,7 +177,7 @@ public class DrosphilaRegistration
 		 * Create mask
 		 */
 
-		RandomAccessibleInterval< BitType > mask = createMask( intensityCorrectedChannel1, thresholdAfterIntensityCorrection );
+		RandomAccessibleInterval< BitType > mask = Algorithms.createMask( intensityCorrectedChannel1, thresholdAfterIntensityCorrection );
 
 		if ( settings.showIntermediateResults ) show( mask, "binary mask", null, registrationCalibration, false );
 
@@ -456,15 +455,6 @@ public class DrosphilaRegistration
 
 	}
 
-	public < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
-	{
-		// copy as ArrayImg is necessary, because otherwise the 'converted' mask pixels cannot be altered
-		RandomAccessibleInterval< BitType > mask = Utils.copyAsArrayImg( Converters.convert( downscaled, ( i, o ) -> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() ) );
-
-		return mask;
-	}
-
 	public < T extends RealType< T > & NativeType< T > > double getThreshold( RandomAccessibleInterval< T > downscaled )
 	{
 
@@ -666,6 +656,18 @@ public class DrosphilaRegistration
 		{
 			return -1;
 		}
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	AffineTransform3D createXAxisRollTransform( Point maximum2DinYZPlane )
+	{
+		double angleToZAxisInDegrees = Angles.angle2DToCoordinateSystemsAxisInDegrees( maximum2DinYZPlane );
+		AffineTransform3D rollTransform = new AffineTransform3D();
+
+		Logger.log( "Roll angle: " + angleToZAxisInDegrees );
+		rollTransform.rotate( X, toRadians( angleToZAxisInDegrees ) );
+
+		return rollTransform;
 	}
 
 	//

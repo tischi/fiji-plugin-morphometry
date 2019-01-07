@@ -39,7 +39,7 @@ public class TestTrackingSplitter
 		final TrackingSplitter splitter = new TrackingSplitter( Utils.asMasks( masks ), intensities, settings );
 		splitter.run();
 		final ArrayList labelings = splitter.getLabelings();
-		Utils.frameListAsImagePlusMovie( labelings, "Labels" ).show();
+		Utils.listOf2DImagesAsImagePlusMovie( labelings, "Labels" ).show();
 	}
 
 
@@ -54,7 +54,7 @@ public class TestTrackingSplitter
 	public static MasksAndIntensities openLargeData()
 	{
 		final MasksAndIntensities masksAndIntensities = new MasksAndIntensities();
-		masksAndIntensities.masks = IJ.openImage( "/Users/tischer/Documents/valerie-blanche-petegnief-CORBEL-microglia-quantification--data/5C/MAX_5C-masks.tif" );
+		masksAndIntensities.masks = IJ.openImage( "/Users/tischer/Documents/valerie-blanche-petegnief-CORBEL-microglia-quantification--data/5C/MAX_5C-cellMasks.tif" );
 		masksAndIntensities.intensities = IJ.openImage( "/Users/tischer/Documents/valerie-blanche-petegnief-CORBEL-microglia-quantification--data/5C/MAX_5C-intensities.tif" );
 		return masksAndIntensities;
 	}

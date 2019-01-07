@@ -4,7 +4,6 @@ import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.CurveAnalysis;
 import de.embl.cba.transforms.utils.Transforms;
-import ij.IJ;
 import ij.ImagePlus;
 import ij.measure.Calibration;
 import ij.plugin.Duplicator;
@@ -45,7 +44,6 @@ import net.imglib2.util.LinAlgHelpers;
 import net.imglib2.util.Util;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
-import org.apache.commons.logging.Log;
 import org.scijava.log.LogService;
 
 import java.awt.*;
@@ -1156,9 +1154,11 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	ImagePlus frameListAsImagePlusMovie( ArrayList< RandomAccessibleInterval< T > > labelings, String title )
+	ImagePlus listOf2DImagesAsImagePlusMovie(
+			ArrayList< RandomAccessibleInterval< T > > rais,
+			String title )
 	{
-		RandomAccessibleInterval movie = Views.stack( labelings );
+		RandomAccessibleInterval movie = Views.stack( rais );
 		movie = Views.addDimension( movie, 0, 0);
 		movie = Views.addDimension( movie, 0, 0);
 		movie = Views.permute( movie, 2,4 );
@@ -1299,7 +1299,7 @@ public class Utils
 	public static < T extends RealType< T > & NativeType< T > >
 	ImagePlus labelingsAsImagePlus( ArrayList< RandomAccessibleInterval< T > > labelings )
 	{
-		ImagePlus segmentationImp = frameListAsImagePlusMovie( labelings, SEGMENTATION );
+		ImagePlus segmentationImp = listOf2DImagesAsImagePlusMovie( labelings, SEGMENTATION );
 		segmentationImp.setLut( getGoldenAngleLUT() );
 		segmentationImp.setTitle( SEGMENTATION );
 		return segmentationImp;
