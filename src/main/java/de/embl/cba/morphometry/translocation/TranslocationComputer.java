@@ -1,11 +1,9 @@
 package de.embl.cba.morphometry.translocation;
 
-import de.embl.cba.morphometry.Algorithms;
-import de.embl.cba.morphometry.regions.Regions;
+import de.embl.cba.morphometry.segmentation.SignalOverBackgroundSegmenter;
 import net.imagej.ops.OpService;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.histogram.Histogram1d;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.loops.LoopBuilder;
 import net.imglib2.type.NativeType;
@@ -14,7 +12,6 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.Util;
-import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import java.util.ArrayList;
@@ -23,6 +20,7 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 {
 	final ArrayList< RandomAccessibleInterval< T > > movie;
 	final ArrayList<FinalInterval> intervals;
+	private double signalToNoise;
 
 	public ArrayList< TranslocationResult > getResults()
 	{
@@ -43,7 +41,8 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 		this.intervals = intervals;
 		this.opService = opService;
 
-		minimalObjectSize = 5;
+		minimalObjectSize = 50;
+		signalToNoise = 20.0;
 
 		results = new ArrayList<TranslocationResult>();
 
@@ -64,17 +63,10 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 
 		for ( int t = 0; t < movie.size(); t++ )
 		{
-			computeTranslocation( getCroppedImageAtTimePoint( interval, t ), result );
+			computeTranslocation( Views.interval( movie.get( t ), interval ), result );
 		}
 
 		results.add( result );
-	}
-
-	private IntervalView< T > getCroppedImageAtTimePoint( FinalInterval interval, int t )
-	{
-		return Views.interval(
-			Views.dropSingletonDimensions( movie.get( t ) ),
-				interval );
 	}
 
 	private void computeTranslocation( RandomAccessibleInterval< T > image, TranslocationResult result )
@@ -85,12 +77,9 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 
 	private RandomAccessibleInterval< BitType > createCellMask( RandomAccessibleInterval< T > image )
 	{
-		final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( image ) );
-		double huang = opService.threshold().huang( histogram ).getRealDouble();
-		//double yen = opService.threshold().yen( histogram ).getRealDouble();
-		final RandomAccessibleInterval< BitType > mask = Algorithms.createMask( image, huang );
-		Regions.removeSmallRegionsInMask( mask, minimalObjectSize );
-		opService.morphology().fillHoles( mask );
+		final SignalOverBackgroundSegmenter< T > segmenter =
+				new SignalOverBackgroundSegmenter<>( image, signalToNoise, minimalObjectSize );
+		final RandomAccessibleInterval< BitType > mask = segmenter.createMask();
 		return mask;
 	}
 

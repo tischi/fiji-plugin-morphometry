@@ -1,7 +1,7 @@
 package de.embl.cba.morphometry.microglia;
 
 import de.embl.cba.morphometry.Logger;
-import de.embl.cba.morphometry.segmentation.SimpleSegmenter;
+import de.embl.cba.morphometry.segmentation.SimpleSegmenterMicroglia;
 import de.embl.cba.morphometry.tracking.TrackingSplitter;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
@@ -68,9 +68,9 @@ public class MicrogliaSegmentationAndTracking< T extends RealType< T > & NativeT
 		for ( long t = 0; t < intensities.size() ; ++t )
 		{
 			Logger.log("Creating mask for frame " + ( t + 1 ) );
-			final SimpleSegmenter simpleSegmenter = new SimpleSegmenter( intensities.get( ( int ) t ), settings );
-			simpleSegmenter.run();
-			masks.add( simpleSegmenter.getMask() );
+			final SimpleSegmenterMicroglia simpleSegmenterMicroglia = new SimpleSegmenterMicroglia( intensities.get( ( int ) t ), settings );
+			simpleSegmenterMicroglia.run();
+			masks.add( simpleSegmenterMicroglia.getMask() );
 		}
 		return masks;
 	}

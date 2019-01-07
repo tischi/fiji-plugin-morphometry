@@ -12,6 +12,6 @@ public class TranslocationResult < T extends RealType< T > & NativeType< T > >
 
 	public TranslocationResult( )
 	{
-		this.cellMasks = cellMasks;
+		this.cellMasks = new ArrayList<>(  );
 	}
 }

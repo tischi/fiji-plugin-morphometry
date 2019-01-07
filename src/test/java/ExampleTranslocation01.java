@@ -32,9 +32,11 @@ public class ExampleTranslocation01
 		for ( int i = 0; i < results.size(); i++ )
 		{
 			Utils.listOf2DImagesAsImagePlusMovie(
-					results.get( 0 ).cellMasks,
+					results.get( i ).cellMasks,
 					"cell masks 0" ).show();
 		}
+
+		imagePlus.show();
 
 	}
 

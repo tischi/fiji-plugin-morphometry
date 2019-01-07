@@ -12,7 +12,7 @@ import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 
 
-public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
+public class SimpleSegmenterMicroglia< T extends RealType< T > & NativeType< T > >
 {
 
 	final MicrogliaSegmentationAndTrackingSettings settings;
@@ -20,7 +20,9 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 	final private RandomAccessibleInterval< T > intensity;
 	final private boolean showIntermediateResults;
 
-	public SimpleSegmenter( RandomAccessibleInterval< T > intensity, MicrogliaSegmentationAndTrackingSettings settings )
+	public SimpleSegmenterMicroglia(
+			RandomAccessibleInterval< T > intensity,
+			MicrogliaSegmentationAndTrackingSettings settings )
 	{
 		this.intensity = intensity;
 		this.settings = settings;
@@ -37,7 +39,9 @@ public class SimpleSegmenter< T extends RealType< T > & NativeType< T > >
 
 		final double[] workingCalibration = Utils.as2dDoubleArray( settings.workingVoxelSize );
 
-		final RandomAccessibleInterval< T > image = createRescaledArrayImg( intensity, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > image =
+				createRescaledArrayImg( intensity,
+				getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
 		if ( showIntermediateResults ) show( image, "image isotropic resolution", null, workingCalibration, false );
 
