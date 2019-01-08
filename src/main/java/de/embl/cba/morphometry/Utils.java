@@ -781,7 +781,7 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	long[] getCenterLocation( RandomAccessibleInterval< T > rai )
+	long[] getCenterLocation( Interval rai )
 	{
 		int numDimensions = rai.numDimensions();
 

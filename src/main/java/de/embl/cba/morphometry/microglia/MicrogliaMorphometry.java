@@ -10,7 +10,6 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.view.Views;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,7 +35,7 @@ public class MicrogliaMorphometry < T extends RealType<T> & NativeType< T > >
 	{
 		createSkeletons( );
 
-		initMeasurements( );
+		measurementsTimepointList = Measurements.initMeasurements( labelMaps.size() );
 
 		performMeasurements( );
 	}
@@ -101,17 +100,6 @@ public class MicrogliaMorphometry < T extends RealType<T> & NativeType< T > >
 		skeletonCreator.run();
 
 		skeletons = skeletonCreator.getSkeletons();
-	}
-
-	private void initMeasurements( )
-	{
-		measurementsTimepointList = new ArrayList<>();
-
-		for ( int t = 0; t < labelMaps.size(); ++t )
-		{
-			final HashMap< Integer, Map< String, Object > > objectMeasurements = new HashMap<>();
-			measurementsTimepointList.add( objectMeasurements );
-		}
 	}
 
 	public ArrayList< HashMap< Integer, Map< String, Object > > > getMeasurementsTimepointList()

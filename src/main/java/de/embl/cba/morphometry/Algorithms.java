@@ -262,6 +262,7 @@ public class Algorithms
 			double localThreshold )
 	{
 
+
 		RandomAccessibleInterval< BitType > seeds = ArrayImgs.bits( Intervals.dimensionsAsLongArray( distance ) );
 		seeds = Transforms.getWithAdjustedOrigin( distance, seeds );
 
@@ -304,6 +305,82 @@ public class Algorithms
 
 		return seeds;
 	}
+
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< BitType > createLocalMaximaMask(
+			RandomAccessibleInterval< T > input,
+			Shape shape,
+			double minimumValue )
+	{
+
+		RandomAccessibleInterval< BitType > localMaxima = ArrayImgs.bits( Intervals.dimensionsAsLongArray( input ) );
+		localMaxima = Transforms.getWithAdjustedOrigin( input, localMaxima );
+
+		RandomAccessible< Neighborhood< T > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendPeriodic( input ) );
+		RandomAccessibleInterval< Neighborhood< T > > neighborhoodsInterval = Views.interval( neighborhoods, input );
+
+		final Cursor< Neighborhood< T > > neighborhoodCursor = Views.iterable( neighborhoodsInterval ).cursor();
+		final RandomAccess< T > inputAccess = input.randomAccess();
+		final RandomAccess< BitType > maximaAccess = localMaxima.randomAccess();
+
+		while ( neighborhoodCursor.hasNext() )
+		{
+			final Neighborhood< T > neighborhood = neighborhoodCursor.next();
+			maximaAccess.setPosition( neighborhood );
+			inputAccess.setPosition( neighborhood );
+
+			T centerValue = inputAccess.get();
+
+			if ( isCenterLargestOrEqual( centerValue, neighborhood ) )
+			{
+				if ( centerValue.getRealDouble() > minimumValue )
+				{
+					maximaAccess.get().set( true );
+				}
+			}
+			else
+			{
+				maximaAccess.get().set( false );
+			}
+
+		}
+
+		return localMaxima;
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > computeGradient(
+			RandomAccessibleInterval< T > input,
+			Shape shape )
+	{
+
+		RandomAccessible< Neighborhood< T > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendBorder( input ) );
+		RandomAccessibleInterval< Neighborhood< T > > neighborhoodsInterval = Views.interval( neighborhoods, input );
+
+		final Cursor< Neighborhood< T > > neighborhoodCursor = Views.iterable( neighborhoodsInterval ).cursor();
+		final RandomAccess< T > inputAccess = input.randomAccess();
+
+		final RandomAccessibleInterval< T > gradient = Utils.copyAsArrayImg( input );
+		final RandomAccess< T > gradientAccess = gradient.randomAccess();
+
+		while ( neighborhoodCursor.hasNext() )
+		{
+			final Neighborhood< T > neighborhood = neighborhoodCursor.next();
+
+			inputAccess.setPosition( neighborhood );
+			gradientAccess.setPosition( neighborhood );
+
+			double centerValue = inputAccess.get().getRealDouble();
+			final double minimum = computeMinimum( neighborhood );
+
+			gradientAccess.get().setReal( centerValue - minimum );
+		}
+
+		return gradient;
+	}
+
+
 
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< BitType > createCenterAndBoundarySeeds( RandomAccessibleInterval< T > distance, Shape shape, double globalThreshold, double localThreshold )
@@ -430,6 +507,21 @@ public class Algorithms
 			}
 		}
 		return true;
+	}
+
+	private static < T extends RealType< T > & NativeType< T > >
+	double computeMinimum(Neighborhood< T > neighborhood )
+	{
+		double minimum = Double.MAX_VALUE;
+
+		for( T neighbor : neighborhood )
+		{
+			if( neighbor.getRealDouble() < minimum )
+			{
+				minimum = neighbor.getRealDouble();
+			}
+		}
+		return minimum;
 	}
 
 

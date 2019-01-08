@@ -2,14 +2,17 @@ package de.embl.cba.morphometry.translocation;
 
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.CoordinateAndValue;
+import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.segmentation.SignalOverBackgroundSegmenter;
 import net.imagej.ops.OpService;
-import net.imglib2.Cursor;
-import net.imglib2.FinalInterval;
-import net.imglib2.RandomAccess;
-import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.*;
+import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.converter.Converters;
+import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgFactory;
+import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.basictypeaccess.array.LongArray;
 import net.imglib2.loops.LoopBuilder;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.Type;
@@ -31,6 +34,7 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 	private int closingRadius;
 	private int maxDistanceOfMembraneToOutside;
 	private int resolutionBlurWidthInPixel;
+	private int minimumGradient;
 
 	public ArrayList< TranslocationResult > getResults()
 	{
@@ -40,7 +44,7 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 	final ArrayList<TranslocationResult> results;
 
 	final OpService opService;
-	private int minimalObjectSize;
+	private int minimalRegionSize;
 
 	public TranslocationComputer(
 			ArrayList< RandomAccessibleInterval< T > > movie,
@@ -51,10 +55,12 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 		this.intervals = intervals;
 		this.opService = opService;
 
-		minimalObjectSize = 50;
+		minimalRegionSize = 50;
 		signalToNoise = 25.0;
 		closingRadius = 5;
-		resolutionBlurWidthInPixel = 3;
+		minimumGradient = 20;
+
+		resolutionBlurWidthInPixel = 2;
 		maxDistanceOfMembraneToOutside = Integer.MAX_VALUE; // TODO: how to cope with the ruffling? maybe find cell boundary with a gradient
 
 		results = new ArrayList<TranslocationResult>();
@@ -62,7 +68,7 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 		computeTranslocations();
 	}
 
-	public void computeTranslocations()
+	private void computeTranslocations()
 	{
 		for ( FinalInterval interval : intervals )
 		{
@@ -74,13 +80,25 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 	{
 		final TranslocationResult result = new TranslocationResult();
 
+		result.regionCenterX = Utils.getCenterLocation( interval )[ 0 ];
+		result.regionCenterY = Utils.getCenterLocation( interval )[ 1 ];
+
 		for ( int t = 0; t < movie.size(); t++ )
 		{
+
+			createMembraneMask( interval, result, t );
+
+//			Algorithms.createLocalMaximaMask(
+//						(RandomAccessibleInterval< T >) result.gradients.get( t ),
+//						shape,
+//						minimumGradient ) );
+
 			computeIntensities( Views.interval( movie.get( t ), interval ), result );
 
 			double membrane = ( double ) result.membraneIntensities.get( t );
 			double outside = ( double ) result.outsideIntensities.get( t );
 			double inside = ( double ) result.insideIntensities.get( t );
+
 
 			final double translocation = ( membrane - outside ) / ( inside - outside );
 
@@ -89,10 +107,31 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 				int b = 1;
 			}
 
-			result.translocation.add( translocation );
+			result.translocations.add( translocation );
+
 		}
 
 		results.add( result );
+	}
+
+	private void createMembraneMask( FinalInterval interval, TranslocationResult result, int t )
+	{
+		final RandomAccessibleInterval< T > gauss = (RandomAccessibleInterval) opService.filter().gauss( Views.interval( movie.get( t ), interval ), 1 );
+
+		final HyperSphereShape shape = new HyperSphereShape( resolutionBlurWidthInPixel );
+
+		result.gradients.add( Algorithms.computeGradient( gauss, shape ) );
+
+		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( interval ) );
+		mask = Views.translate( mask, Intervals.minAsLongArray( interval ) );
+
+		opService.threshold().isoData(
+				Views.iterable( mask ),
+				Views.iterable( ( RandomAccessibleInterval< T > ) result.gradients.get( t ) ) );
+
+		Regions.removeSmallRegionsInMask( mask, minimalRegionSize );
+
+		result.membraneMasks.add( mask );
 	}
 
 	private void computeIntensities( RandomAccessibleInterval< T > image, TranslocationResult result )
@@ -186,6 +225,12 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 			}
 		}
 
+		if ( n == 0 )
+		{
+			final double maximumValue = Algorithms.getMaximumValue( distances );
+			int a = 1;
+		}
+
 		return sum / n;
 
 	}
@@ -196,7 +241,7 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 				new SignalOverBackgroundSegmenter<>(
 						image,
 						signalToNoise,
-						minimalObjectSize );
+						minimalRegionSize );
 
 		RandomAccessibleInterval< BitType > mask = segmenter.createMask();
 

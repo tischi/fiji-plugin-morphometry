@@ -357,4 +357,16 @@ public class Measurements
 		return lines;
 	}
 
+	public static ArrayList< HashMap< Integer, Map< String, Object > > >  initMeasurements( int numTimepoints )
+	{
+		ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimepointList = new ArrayList<>();
+
+		for ( int t = 0; t < numTimepoints; ++t )
+		{
+			final HashMap< Integer, Map< String, Object > > objectMeasurements = new HashMap<>();
+			measurementsTimepointList.add( objectMeasurements );
+		}
+
+		return measurementsTimepointList;
+	}
 }

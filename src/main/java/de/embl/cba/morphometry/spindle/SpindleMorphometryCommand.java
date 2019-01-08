@@ -3,7 +3,7 @@ package de.embl.cba.morphometry.spindle;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
-import de.embl.cba.tables.ObjectTablePanel;
+import de.embl.cba.tables.objects.ObjectTablePanel;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
