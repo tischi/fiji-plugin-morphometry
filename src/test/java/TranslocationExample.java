@@ -27,12 +27,12 @@ public class TranslocationExample
 
 		final ImagePlus imagePlus = IJ.openImage(
 				TranslocationExample.class.getResource(
-						"translocation/test01.zip" ).getFile() );
+						"translocation/test03.zip" ).getFile() );
 
 		final RoiManager rm = new RoiManager();
 		rm.runCommand( "open",
 				TranslocationExample.class.getResource(
-						"translocation/test01-rois.zip" ).getFile() );
+						"translocation/test03.roi" ).getFile() );
 		final ArrayList< FinalInterval > intervals = Rois.asIntervals( rm.getRoisAsArray() );
 
 		ArrayList< RandomAccessibleInterval< T > > intensities = Utils.get2DImagePlusMovieAsFrameList( imagePlus, 1 );
@@ -44,11 +44,11 @@ public class TranslocationExample
 
 		final ArrayList< TranslocationResult > results = computer.getResults();
 
-//		for ( int r = 0; r < results.size(); r++ )
-//		{
-//			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).gradients, "gradients" ).show();
-//			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).membraneMasks, "membraneMasks" ).show();
-//		}
+		for ( int r = 0; r < results.size(); r++ )
+		{
+			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).gradients, "gradients" ).show();
+			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).membraneMasks, "membraneMasks" ).show();
+		}
 
 		final JTable table = TranslocationResult.resultsAsTable( results );
 

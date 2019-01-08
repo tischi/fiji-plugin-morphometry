@@ -49,7 +49,7 @@ public class TranslocationCommand<T extends RealType<T> & NativeType< T > > impl
 	{
 		ArrayList< RandomAccessibleInterval< T > > intensities = getIntensitiesFromImagePlus();
 
-		final ArrayList< FinalInterval > intervals = getIntervalsFromRoiManager();
+		final ArrayList< FinalInterval > intervals = getIntervalsFromRoiManagerAndSaveRois();
 
 		final MembraneTranslocationComputer computer =
 				new MembraneTranslocationComputer(
@@ -107,7 +107,7 @@ public class TranslocationCommand<T extends RealType<T> & NativeType< T > > impl
 				1 );
 	}
 
-	public ArrayList< FinalInterval > getIntervalsFromRoiManager()
+	public ArrayList< FinalInterval > getIntervalsFromRoiManagerAndSaveRois()
 	{
 		final RoiManager rm = RoiManager.getInstance();
 
@@ -116,6 +116,13 @@ public class TranslocationCommand<T extends RealType<T> & NativeType< T > > impl
 			Logger.error( "This plugin requires rectangular ROIs added to the ROIManager." );
 			return null;
 		}
+
+		// select all
+		for ( int i = 0; i < rm.getCount(); i++ )
+		{
+			rm.select( i );
+		}
+		rm.runCommand( "save", outputDirectory + File.separator + imagePlus.getTitle() + "-rois.zip"  );
 
 		return Rois.asIntervals( rm.getRoisAsArray() );
 	}
@@ -142,17 +149,17 @@ public class TranslocationCommand<T extends RealType<T> & NativeType< T > > impl
 	{
 		final RandomAccessibleInterval< T > labelMask = Utils.createEmptyArrayImg( movie.get( 0 ) );
 
-		for ( int r = 0; r < results.size(); r++ )
+		for ( int region = 0; region < results.size(); region++ )
 		{
 			Utils.drawMaskIntoImage(
-					(RandomAccessibleInterval) results.get( r ).membraneMasks.get( t ),
+					(RandomAccessibleInterval) results.get( region ).membraneMasks.get( t ),
 					labelMask,
-					150 );
+					region + 1 );
 
 			Utils.drawMaskIntoImage(
-					(RandomAccessibleInterval) results.get( r ).insideOutsideMasks.get( t ),
+					(RandomAccessibleInterval) results.get( region ).insideOutsideMasks.get( t ),
 					labelMask,
-					50 );
+					region + 1 );
 		}
 
 		return labelMask;

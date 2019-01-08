@@ -3,11 +3,10 @@ package de.embl.cba.morphometry.translocation;
 import de.embl.cba.tables.models.ColumnClassAwareTableModel;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
-import sun.jvm.hotspot.debugger.cdbg.BitType;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.util.ArrayList;
 
 public class TranslocationResult < T extends RealType< T > & NativeType< T > >

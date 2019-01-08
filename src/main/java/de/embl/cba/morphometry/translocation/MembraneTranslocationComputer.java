@@ -118,11 +118,11 @@ public class MembraneTranslocationComputer< T extends RealType< T > & NativeType
 
 	private void createMembraneMaskAndMeasureIntensity( FinalInterval interval, TranslocationResult result, int t )
 	{
-		final RandomAccessibleInterval< T > gauss = (RandomAccessibleInterval) opService.filter().gauss( Views.interval( movie.get( t ), interval ), 1 );
+		final RandomAccessibleInterval< T > gauss = (RandomAccessibleInterval) opService.filter().gauss(
+				Views.interval( movie.get( t ), interval ),
+				2 * resolutionBlurWidthInPixel );
 
-		final HyperSphereShape shape = new HyperSphereShape( resolutionBlurWidthInPixel );
-
-		result.gradients.add( Algorithms.computeGradient( gauss, shape ) );
+		result.gradients.add( Algorithms.computeGradient( gauss, new HyperSphereShape( 3 * resolutionBlurWidthInPixel ) ) );
 
 		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( interval ) );
 		mask = Views.translate( mask, Intervals.minAsLongArray( interval ) );
