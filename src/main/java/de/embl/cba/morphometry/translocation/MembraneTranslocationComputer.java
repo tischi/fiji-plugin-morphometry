@@ -6,14 +6,17 @@ import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.segmentation.SignalOverBackgroundSegmenter;
 import net.imagej.ops.OpService;
+import net.imagej.ops.Ops;
 import net.imglib2.*;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.converter.Converters;
-import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.img.basictypeaccess.array.LongArray;
 import net.imglib2.loops.LoopBuilder;
+import net.imglib2.roi.labeling.ImgLabeling;
+import net.imglib2.roi.labeling.LabelRegion;
+import net.imglib2.roi.labeling.LabelRegionCursor;
+import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.Type;
 import net.imglib2.type.logic.BitType;
@@ -25,8 +28,10 @@ import net.imglib2.util.Util;
 import net.imglib2.view.Views;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
-public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
+public class MembraneTranslocationComputer< T extends RealType< T > & NativeType< T > >
 {
 	final ArrayList< RandomAccessibleInterval< T > > movie;
 	final ArrayList<FinalInterval> intervals;
@@ -46,7 +51,7 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 	final OpService opService;
 	private int minimalRegionSize;
 
-	public TranslocationComputer(
+	public MembraneTranslocationComputer(
 			ArrayList< RandomAccessibleInterval< T > > movie,
 			ArrayList< FinalInterval > intervals,
 			OpService opService )
@@ -55,7 +60,7 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 		this.intervals = intervals;
 		this.opService = opService;
 
-		minimalRegionSize = 50;
+		minimalRegionSize = 10;
 		signalToNoise = 25.0;
 		closingRadius = 5;
 		minimumGradient = 20;
@@ -85,36 +90,33 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 
 		for ( int t = 0; t < movie.size(); t++ )
 		{
+			createMembraneMaskAndMeasureIntensity( interval, result, t );
 
-			createMembraneMask( interval, result, t );
+			createInsideOutsideMasksAndMeasureIntensities( result, t );
 
-//			Algorithms.createLocalMaximaMask(
-//						(RandomAccessibleInterval< T >) result.gradients.get( t ),
-//						shape,
-//						minimumGradient ) );
-
-			computeIntensities( Views.interval( movie.get( t ), interval ), result );
-
-			double membrane = ( double ) result.membraneIntensities.get( t );
-			double outside = ( double ) result.outsideIntensities.get( t );
-			double inside = ( double ) result.insideIntensities.get( t );
-
-
-			final double translocation = ( membrane - outside ) / ( inside - outside );
-
-			if ( translocation < 0 )
-			{
-				int b = 1;
-			}
-
-			result.translocations.add( translocation );
-
+			computeTranslocation( result, t );
 		}
 
 		results.add( result );
 	}
 
-	private void createMembraneMask( FinalInterval interval, TranslocationResult result, int t )
+	private void computeTranslocation( TranslocationResult result, int t )
+	{
+		double membrane = ( double ) result.membraneIntensities.get( t );
+		double outside = ( double ) result.outsideIntensities.get( t );
+		double inside = ( double ) result.insideIntensities.get( t );
+
+		final double translocation = ( membrane - outside ) / ( inside - outside );
+
+		if ( translocation < 0 )
+		{
+			int b = 1;
+		}
+
+		result.translocations.add( translocation );
+	}
+
+	private void createMembraneMaskAndMeasureIntensity( FinalInterval interval, TranslocationResult result, int t )
 	{
 		final RandomAccessibleInterval< T > gauss = (RandomAccessibleInterval) opService.filter().gauss( Views.interval( movie.get( t ), interval ), 1 );
 
@@ -131,7 +133,118 @@ public class TranslocationComputer< T extends RealType< T > & NativeType< T > >
 
 		Regions.removeSmallRegionsInMask( mask, minimalRegionSize );
 
-		result.membraneMasks.add( mask );
+		final RandomAccessibleInterval< BitType > thin = Utils.createEmptyArrayImg( mask );
+		opService.morphology().thinGuoHall( thin, mask );
+
+		measureMembraneIntensity( result, t, thin );
+
+		result.membraneMasks.add( thin );
+	}
+
+	private void measureMembraneIntensity( TranslocationResult result, int t, RandomAccessibleInterval< BitType > thin )
+	{
+		final Cursor< BitType > cursor = Views.iterable( thin ).cursor();
+		final RandomAccess< T > access = movie.get( t ).randomAccess();
+
+		double sum = 0.0;
+		int n = 0;
+		while ( cursor.hasNext() )
+		{
+			if ( cursor.next().get() )
+			{
+				access.setPosition( cursor );
+				sum += access.get().getRealDouble();
+				n++;
+			}
+		}
+
+		result.membraneIntensities.add( sum / n );
+	}
+
+	class RegionAndSize implements Comparable< RegionAndSize >
+	{
+		LabelRegion region;
+		Long size;
+
+		public RegionAndSize( LabelRegion region, Long size )
+		{
+			this.region = region;
+			this.size = size;
+		}
+
+		public int compareTo( RegionAndSize r )
+		{
+			return ( (int) ( r.size - this.size ) );
+		}
+	}
+
+	private void createInsideOutsideMasksAndMeasureIntensities( TranslocationResult result, int t )
+	{
+
+		final RandomAccessibleInterval< BitType > membraneMask = ( RandomAccessibleInterval< BitType > ) result.membraneMasks.get( t );
+
+		final RandomAccessibleInterval< BitType > invertedMembraneMask = Converters.convert(
+				Algorithms.dilate( membraneMask, 2 ),
+				( i, o ) -> o.set( !i.get() ),
+				new BitType() );
+
+		final ArrayList< RegionAndSize > sortedRegions = getSizeSortedRegions( invertedMembraneMask );
+
+		final RandomAccessibleInterval< BitType > insideOutsideMask = Utils.createEmptyArrayImg( membraneMask );
+
+		final RandomAccess< T > intensityAccess = movie.get( t ).randomAccess();
+
+		final ArrayList< Double > intensities = new ArrayList<>();
+
+		for ( int region = 0; region < 2; region++ )
+		{
+			intensities.add( getMean( sortedRegions, intensityAccess, region ) );
+			Regions.drawRegionInMask( sortedRegions.get( region ).region, insideOutsideMask );
+		}
+
+		Collections.sort( intensities );
+
+		result.outsideIntensities.add( intensities.get( 0 ) ); // the smaller one
+		result.insideIntensities.add( intensities.get( 1 ) ); // the larger one
+
+		result.insideOutsideMasks.add( insideOutsideMask );
+
+	}
+
+	private ArrayList< RegionAndSize > getSizeSortedRegions( RandomAccessibleInterval< BitType > invertedMembraneMask )
+	{
+		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( invertedMembraneMask );
+
+		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+
+		final ArrayList< RegionAndSize > regionsAndSizes = new ArrayList<>();
+
+		for ( LabelRegion labelRegion : labelRegions )
+		{
+			regionsAndSizes.add( new RegionAndSize( labelRegion, labelRegion.size() ) );
+		}
+
+		Collections.sort( regionsAndSizes );
+
+		return regionsAndSizes;
+	}
+
+	private double getMean( ArrayList< RegionAndSize > regionsAndSizes, RandomAccess< T > access, int i )
+	{
+		final LabelRegionCursor cursor = regionsAndSizes.get( i ).region.cursor();
+
+		double sum = 0.0;
+		int n = 0;
+
+		while ( cursor.hasNext() )
+		{
+			cursor.fwd();
+			access.setPosition( cursor );
+			sum += access.get().getRealDouble();
+			n++;
+		}
+
+		return sum / n;
 	}
 
 	private void computeIntensities( RandomAccessibleInterval< T > image, TranslocationResult result )

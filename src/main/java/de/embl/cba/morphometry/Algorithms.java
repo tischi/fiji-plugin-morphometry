@@ -1051,6 +1051,7 @@ public class Algorithms
 			int radius )
 	{
 		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+		morphed = Views.translate( morphed, Intervals.minAsLongArray( mask ) );
 
 		if ( radius > 0 )
 		{
@@ -1066,6 +1067,7 @@ public class Algorithms
 			int radius )
 	{
 		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+		morphed = Views.translate( morphed, Intervals.minAsLongArray( mask ) );
 
 		if ( radius > 0 )
 		{

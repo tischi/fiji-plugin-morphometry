@@ -20,6 +20,7 @@ public class TranslocationResult < T extends RealType< T > & NativeType< T > >
 	final public ArrayList< RandomAccessibleInterval< T > > cellMasks;
 	final public ArrayList< RandomAccessibleInterval< T > > gradients;
 	final public ArrayList< RandomAccessibleInterval< BitType > > membraneMasks;
+	final public ArrayList< RandomAccessibleInterval< BitType > > insideOutsideMasks;
 
 	final public ArrayList< Double > outsideIntensities;
 	final public ArrayList< Double > membraneIntensities;
@@ -37,6 +38,7 @@ public class TranslocationResult < T extends RealType< T > & NativeType< T > >
 		translocations = new ArrayList<Double>();
 		gradients = new ArrayList<RandomAccessibleInterval<T>>();
 		membraneMasks = new ArrayList<RandomAccessibleInterval<BitType>>();
+		insideOutsideMasks = new ArrayList<RandomAccessibleInterval<BitType>>();
 	}
 
 	public static JTable resultsAsTable( ArrayList< TranslocationResult > results )

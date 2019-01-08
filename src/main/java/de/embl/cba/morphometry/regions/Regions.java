@@ -3,6 +3,7 @@ package de.embl.cba.morphometry.regions;
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.transforms.utils.Transforms;
+import net.imagej.ops.Ops;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
@@ -69,7 +70,22 @@ public abstract class Regions
 		}
 
 		return rai;
+	}
 
+	public static void drawRegionInMask(
+			LabelRegion labelRegion,
+			RandomAccessibleInterval< BitType > mask )
+	{
+		final RandomAccess< BitType > maskAccess = mask.randomAccess();
+
+		final LabelRegionCursor cursor = labelRegion.cursor();
+
+		while ( cursor.hasNext() )
+		{
+			cursor.fwd();
+			maskAccess.setPosition( cursor );
+			maskAccess.get().set( true );
+		}
 	}
 
 	public static long size( LabelRegion labelRegion )

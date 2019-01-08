@@ -3,7 +3,7 @@ package de.embl.cba.morphometry.commands;
 import bdv.util.*;
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
-import de.embl.cba.morphometry.translocation.TranslocationComputer;
+import de.embl.cba.morphometry.translocation.MembraneTranslocationComputer;
 import de.embl.cba.morphometry.translocation.TranslocationResult;
 import de.embl.cba.tables.TableUtils;
 import de.embl.cba.tables.objects.ObjectTablePanel;
@@ -51,8 +51,8 @@ public class TranslocationCommand<T extends RealType<T> & NativeType< T > > impl
 
 		final ArrayList< FinalInterval > intervals = getIntervalsFromRoiManager();
 
-		final TranslocationComputer computer =
-				new TranslocationComputer(
+		final MembraneTranslocationComputer computer =
+				new MembraneTranslocationComputer(
 					intensities,
 					intervals,
 					opService );
@@ -144,8 +144,15 @@ public class TranslocationCommand<T extends RealType<T> & NativeType< T > > impl
 
 		for ( int r = 0; r < results.size(); r++ )
 		{
-			RandomAccessibleInterval< T > mask = (RandomAccessibleInterval) results.get( r ).membraneMasks.get( t );
-			Utils.drawMaskIntoImage( mask, labelMask, r + 1 );
+			Utils.drawMaskIntoImage(
+					(RandomAccessibleInterval) results.get( r ).membraneMasks.get( t ),
+					labelMask,
+					150 );
+
+			Utils.drawMaskIntoImage(
+					(RandomAccessibleInterval) results.get( r ).insideOutsideMasks.get( t ),
+					labelMask,
+					50 );
 		}
 
 		return labelMask;
