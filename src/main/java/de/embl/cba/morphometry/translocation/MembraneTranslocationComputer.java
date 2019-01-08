@@ -184,7 +184,7 @@ public class MembraneTranslocationComputer< T extends RealType< T > & NativeType
 		final RandomAccessibleInterval< BitType > membraneMask = ( RandomAccessibleInterval< BitType > ) result.membraneMasks.get( t );
 
 		final RandomAccessibleInterval< BitType > invertedMembraneMask = Converters.convert(
-				Algorithms.dilate( membraneMask, 2 ),
+				Algorithms.dilate( membraneMask, 2 * resolutionBlurWidthInPixel ), // dilate to exclude membrane blur from inside or outside
 				( i, o ) -> o.set( !i.get() ),
 				new BitType() );
 
