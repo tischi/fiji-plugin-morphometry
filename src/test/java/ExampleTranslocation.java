@@ -16,7 +16,7 @@ import net.imglib2.type.numeric.RealType;
 import javax.swing.*;
 import java.util.ArrayList;
 
-public class TranslocationExample
+public class ExampleTranslocation
 {
 	public static  < T extends RealType< T > & NativeType< T > >
 	void main( String[] args )
@@ -26,13 +26,13 @@ public class TranslocationExample
 		ij.ui().showUI();
 
 		final ImagePlus imagePlus = IJ.openImage(
-				TranslocationExample.class.getResource(
-						"translocation/test03.zip" ).getFile() );
+				ExampleTranslocation.class.getResource(
+						"translocation/test01.zip" ).getFile() );
 
 		final RoiManager rm = new RoiManager();
 		rm.runCommand( "open",
-				TranslocationExample.class.getResource(
-						"translocation/test03.roi" ).getFile() );
+				ExampleTranslocation.class.getResource(
+						"translocation/test01-rois.zip" ).getFile() );
 		final ArrayList< FinalInterval > intervals = Rois.asIntervals( rm.getRoisAsArray() );
 
 		ArrayList< RandomAccessibleInterval< T > > intensities = Utils.get2DImagePlusMovieAsFrameList( imagePlus, 1 );
@@ -59,7 +59,7 @@ public class TranslocationExample
 		final ArrayList< RandomAccessibleInterval< T > > labelMasks =
 				TranslocationCommand.createLabelMasks( intensities, results );
 
-		TranslocationCommand.showLabelMasksAndIntensities( intensities, labelMasks );
+		TranslocationCommand.showLabelMasksAndIntensities( intensities, labelMasks, imagePlus.getTitle() );
 
 		TranslocationCommand.plotTranslocations( results );
 

@@ -12,13 +12,13 @@ public class RunTranslocationCommand
 
 		// stage image
 		//
-		IJ.open( TranslocationExample.class.getResource(
+		IJ.open( ExampleTranslocation.class.getResource(
 						"translocation/test01.zip" ).getFile() );
 
 		// stage roimanager
 		//
 		final RoiManager rm = new RoiManager();
-		rm.runCommand( "open", TranslocationExample.class.getResource( "translocation/test01-rois.zip" ).getFile() );
+		rm.runCommand( "open", ExampleTranslocation.class.getResource( "translocation/test01-rois.zip" ).getFile() );
 
 		// invoke the plugin
 		ij.command().run( TranslocationCommand.class, true );

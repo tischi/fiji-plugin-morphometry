@@ -2,6 +2,7 @@ package de.embl.cba.morphometry.translocation;
 
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.CoordinateAndValue;
+import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.segmentation.SignalOverBackgroundSegmenter;
@@ -12,6 +13,7 @@ import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.loops.LoopBuilder;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
@@ -106,24 +108,31 @@ public class MembraneTranslocationComputer< T extends RealType< T > & NativeType
 		double outside = ( double ) result.outsideIntensities.get( t );
 		double inside = ( double ) result.insideIntensities.get( t );
 
-		final double translocation = ( membrane - outside ) / ( inside - outside );
-
-		if ( translocation < 0 )
+		if ( inside > 0 || outside > 0 )
 		{
-			int b = 1;
+			final double translocation = ( membrane - outside ) / ( inside - outside );
+			result.translocations.add( translocation );
 		}
-
-		result.translocations.add( translocation );
+		else
+		{
+			// something went wrong
+			result.translocations.add( -1.0 );
+		}
 	}
 
 	private void createMembraneMaskAndMeasureIntensity( FinalInterval interval, TranslocationResult result, int t )
 	{
-		final RandomAccessibleInterval< T > gauss = (RandomAccessibleInterval) opService.filter().gauss(
-				Views.interval( movie.get( t ), interval ),
-				2 * resolutionBlurWidthInPixel );
+		final RandomAccessibleInterval< T > gauss =
+				(RandomAccessibleInterval) opService.filter().gauss(
+					Views.interval( movie.get( t ), interval ),
+					2 * resolutionBlurWidthInPixel );
 
 		result.gradients.add( Algorithms.computeGradient( gauss, new HyperSphereShape( 3 * resolutionBlurWidthInPixel ) ) );
 
+		if( t == 0)
+		{
+			ImageJFunctions.show( (RandomAccessibleInterval) result.gradients.get( 0 ) );
+		}
 		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( interval ) );
 		mask = Views.translate( mask, Intervals.minAsLongArray( interval ) );
 
@@ -196,17 +205,27 @@ public class MembraneTranslocationComputer< T extends RealType< T > & NativeType
 
 		final ArrayList< Double > intensities = new ArrayList<>();
 
-		for ( int region = 0; region < 2; region++ )
+		if ( sortedRegions.size() < 2 )
 		{
-			intensities.add( getMean( sortedRegions, intensityAccess, region ) );
-			Regions.drawRegionInMask( sortedRegions.get( region ).region, insideOutsideMask );
+			// Something went wrong
+			Logger.log( "Could not detect membrane in region " + ( results.size() + 1 ) + ", frame " + ( t + 1) );
+//			ImageJFunctions.show( ( RandomAccessibleInterval ) result.gradients.get( t ), "Failure: Gradient Timepoint " + (t+1) );
+			intensities.add( -1.0 );
+			intensities.add( -1.0 );
 		}
+		else
+		{
+			for ( int region = 0; region < 2; region++ )
+			{
+				intensities.add( getMean( sortedRegions, intensityAccess, region ) );
+				Regions.drawRegionInMask( sortedRegions.get( region ).region, insideOutsideMask );
+			}
 
-		Collections.sort( intensities );
+			Collections.sort( intensities );
+		}
 
 		result.outsideIntensities.add( intensities.get( 0 ) ); // the smaller one
 		result.insideIntensities.add( intensities.get( 1 ) ); // the larger one
-
 		result.insideOutsideMasks.add( insideOutsideMask );
 
 	}

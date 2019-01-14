@@ -49,11 +49,13 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 		microgliaMorphometry.run();
 
+		// TODO: save skeletons!
+
 		final ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimepointList = microgliaMorphometry.getMeasurementsTimepointList();
 
 		final ArrayList< String > measurementsAsRows = Measurements.measurementsAsTableRowsStringList( measurementsTimepointList, "\t" );
 
-		Measurements.saveRowsToFile( outputDirectory, measurementsAsRows );
+		Measurements.saveRowsToFile( new File( outputDirectory.toString() + File.separator + imagePlus.getTitle() + ".csv"), measurementsAsRows );
 
 	}
 }

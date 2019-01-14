@@ -147,8 +147,8 @@ public class Measurements
 
 			if ( label == 5 )
 			{
-				ImageJFunctions.show( regionSkeleton, "skel" );
-				ImageJFunctions.show( skeletonAnalyzer.getBranchpoints(), "branch" );
+//				ImageJFunctions.show( regionSkeleton, "skel" );
+//				ImageJFunctions.show( skeletonAnalyzer.getBranchpoints(), "branch" );
 			}
 
 			addMeasurement( objectMeasurements,

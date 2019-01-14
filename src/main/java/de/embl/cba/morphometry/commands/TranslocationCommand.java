@@ -1,6 +1,10 @@
 package de.embl.cba.morphometry.commands;
 
 import bdv.util.*;
+import de.embl.cba.bdv.utils.BdvUtils;
+import de.embl.cba.bdv.utils.selection.BdvSelectionEventHandler;
+import de.embl.cba.bdv.utils.sources.SelectableARGBConvertedRealSource;
+
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.translocation.MembraneTranslocationComputer;
@@ -16,6 +20,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.util.Util;
 import net.imglib2.view.Views;
 import org.scijava.command.Command;
 import org.scijava.display.DisplayService;
@@ -28,7 +33,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Measurement>Measure Plasma Membrane Translocation" )
-public class TranslocationCommand<T extends RealType<T> & NativeType< T > > implements Command
+public class TranslocationCommand< R extends RealType< R > & NativeType< R > > implements Command
 {
 	@Parameter
 	public OpService opService;
@@ -47,9 +52,10 @@ public class TranslocationCommand<T extends RealType<T> & NativeType< T > > impl
 
 	public void run()
 	{
-		ArrayList< RandomAccessibleInterval< T > > intensities = getIntensitiesFromImagePlus();
-
+		// fetch input
+		ArrayList< RandomAccessibleInterval< R > > intensities = getIntensitiesFromImagePlus();
 		final ArrayList< FinalInterval > intervals = getIntervalsFromRoiManagerAndSaveRois();
+		String dataSetName = imagePlus.getTitle();
 
 		final MembraneTranslocationComputer computer =
 				new MembraneTranslocationComputer(
@@ -59,9 +65,9 @@ public class TranslocationCommand<T extends RealType<T> & NativeType< T > > impl
 
 		final ArrayList< TranslocationResult > results = computer.getResults();
 
-		final ArrayList< RandomAccessibleInterval< T > > labelMasks = createLabelMasks( intensities, results );
+		final ArrayList< RandomAccessibleInterval< R > > labelMasks = createLabelMasks( intensities, results );
 
-		final Bdv bdv = showLabelMasksAndIntensities( intensities, labelMasks );
+		final Bdv bdv = showLabelMasksAndIntensities( intensities, labelMasks, dataSetName );
 
 		plotTranslocations( results );
 
@@ -100,7 +106,7 @@ public class TranslocationCommand<T extends RealType<T> & NativeType< T > > impl
 		return objectTablePanel;
 	}
 
-	public ArrayList< RandomAccessibleInterval< T > > getIntensitiesFromImagePlus()
+	public ArrayList< RandomAccessibleInterval< R > > getIntensitiesFromImagePlus()
 	{
 		return Utils.get2DImagePlusMovieAsFrameList(
 				imagePlus,
@@ -188,26 +194,33 @@ public class TranslocationCommand<T extends RealType<T> & NativeType< T > > impl
 		return coordinatesAndValues;
 	}
 
-	public static < T extends RealType< T > & NativeType< T > >
+	public static < R extends RealType< R > & NativeType< R > >
 	BdvHandle showLabelMasksAndIntensities(
-			ArrayList< RandomAccessibleInterval< T > > intensities,
-			ArrayList< RandomAccessibleInterval< T > > labelMasks )
+			ArrayList< RandomAccessibleInterval< R > > intensities,
+			ArrayList< RandomAccessibleInterval< R > > labelMasks,
+			String dataSetName )
 	{
-		final BdvStackSource< T > labelMasksSource = BdvFunctions.show(
-				Views.stack( labelMasks ),
-				"labelMasks",
+		final RandomAccessibleIntervalSource4D< R > labelsSource =
+				BdvUtils.createSourceFrom2DFrameList( labelMasks, "labels" );
+
+		final SelectableARGBConvertedRealSource argbLabelsSource =
+				new SelectableARGBConvertedRealSource( labelsSource );
+
+		final BdvStackSource< R > labelMasksSource = BdvFunctions.show(
+				argbLabelsSource,
+				labelMasks.size(),
 				BdvOptions.options().is2D() );
 
-		labelMasksSource.setDisplayRange( 0, Algorithms.getMaximumValue( labelMasks.get( 0 ) ) + 2 );
-		labelMasksSource.setColor( new ARGBType( ARGBType.rgba( 0,255,0,255 ) ) );
+		new BdvSelectionEventHandler( labelMasksSource.getBdvHandle(), argbLabelsSource );
 
-		final BdvStackSource< T > intensitiesSource = BdvFunctions.show(
+		final BdvStackSource< R > intensitiesSource = BdvFunctions.show(
 				Views.stack( intensities ),
 				"intensities",
 				BdvOptions.options().addTo( labelMasksSource.getBdvHandle() ).is2D() );
+
 		intensitiesSource.setDisplayRange( 0, Algorithms.getMaximumValue( intensities.get( 0 ) ) );
 
-		return intensitiesSource.getBdvHandle();
+		return labelMasksSource.getBdvHandle();
 	}
 
 
