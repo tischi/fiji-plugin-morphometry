@@ -1,7 +1,6 @@
 package de.embl.cba.morphometry.commands;
 
 import bdv.util.*;
-import de.embl.cba.bdv.utils.BdvUserInterfaceUtils;
 import de.embl.cba.bdv.utils.BdvUtils;
 import de.embl.cba.bdv.utils.overlays.BdvGrayValuesOverlay;
 import de.embl.cba.bdv.utils.selection.BdvSelectionEventHandler;
@@ -20,9 +19,7 @@ import net.imagej.ops.OpService;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
-import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.util.Util;
 import net.imglib2.view.Views;
 import org.scijava.command.Command;
 import org.scijava.display.DisplayService;
@@ -160,7 +157,7 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 		for ( int region = 0; region < results.size(); region++ )
 		{
 			Utils.drawMaskIntoImage(
-					(RandomAccessibleInterval) results.get( region ).membraneMasks.get( t ),
+					(RandomAccessibleInterval) results.get( region ).membranes.get( t ),
 					labelMask,
 					region + 1 );
 

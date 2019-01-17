@@ -1026,40 +1026,6 @@ public class Algorithms
 		return distance;
 	}
 
-	public static RandomAccessibleInterval< BitType > open(
-			RandomAccessibleInterval< BitType > mask,
-			int radius )
-	{
-		// TODO: Bug(?!) in imglib2 Closing.close makes this necessary
-		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
-		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai( mask, 2 * radius );
-		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai( morphed, 2 * radius );
-
-		if ( radius > 0 )
-		{
-			Logger.log( "Morphological opening...");
-			Shape shape = new HyperSphereShape( radius );
-			Opening.open( Views.extendZero( enlargedMask ), Views.iterable( enlargedMorphed ), shape, 1 );
-		}
-
-		return Views.interval( enlargedMorphed, mask );
-	}
-
-//	public static RandomAccessibleInterval< BitType > erode(
-//			RandomAccessibleInterval< BitType > mask,
-//			int radius )
-//	{
-//		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
-//		morphed = Views.translate( morphed, Intervals.minAsLongArray( mask ) );
-//
-//		if ( radius > 0 )
-//		{
-//			Shape shape = new HyperSphereShape( radius );
-//			Erosion.erode( Views.extendZero( mask ), Views.iterable( morphed ), shape, 1 );
-//		}
-//
-//		return morphed;
-//	}
 
 	public static < R extends RealType< R > & NativeType< R > >
 	RandomAccessibleInterval< R > erode(
@@ -1071,25 +1037,26 @@ public class Algorithms
 		if ( radius > 0 )
 		{
 			Shape shape = new HyperSphereShape( radius );
-			Erosion.erode( Views.extendZero( image ), Views.iterable( morphed ), shape, 1 );
+			Erosion.erode( Views.extendBorder( image ), Views.iterable( morphed ), shape, 1 );
 		}
 
 		return morphed;
 	}
 
-	public static RandomAccessibleInterval< BitType > dilate(
-			RandomAccessibleInterval< BitType > mask,
+	public static < R extends RealType< R > & NativeType< R > >
+	RandomAccessibleInterval< R > dilate(
+			RandomAccessibleInterval< R > image,
 			int radius )
 	{
-		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
-		morphed = Views.translate( morphed, Intervals.minAsLongArray( mask ) );
+		final RandomAccessibleInterval< R > morphed = Utils.createEmptyCopy( image );
 
 		if ( radius > 0 )
 		{
 			Shape shape = new HyperSphereShape( radius );
-			Dilation.dilate( Views.extendZero( mask ), Views.iterable( morphed ), shape, 1 );
+			Dilation.dilate( Views.extendBorder( image ), Views.iterable( morphed ), shape, 1 );
 		}
 
 		return morphed;
 	}
+
 }

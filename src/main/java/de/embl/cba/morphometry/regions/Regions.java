@@ -3,7 +3,6 @@ package de.embl.cba.morphometry.regions;
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.transforms.utils.Transforms;
-import net.imagej.ops.Ops;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
@@ -22,6 +21,7 @@ import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 public abstract class Regions
 {
@@ -186,16 +186,33 @@ public abstract class Regions
 		}
 	}
 
-	private static void drawRegion( RandomAccessibleInterval< BitType > img, LabelRegion labelRegion )
+	public static < R extends RealType< R > & NativeType< R > >
+	void onlyKeepLargestRegion(
+			RandomAccessibleInterval< R > mask )
+	{
+		final ArrayList< RegionAndSize > sortedRegions = Regions.getSizeSortedRegions( mask );
+
+		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask );
+
+		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+
+		Utils.setValues( mask, 0 );
+		Regions.drawRegion( mask, sortedRegions.get( 0 ).getRegion(), 1.0 );
+
+	}
+
+	private static < R extends RealType< R > & NativeType< R > >
+	void drawRegion( RandomAccessibleInterval< R > img,
+					 LabelRegion labelRegion,
+					 double value)
 	{
 		final Cursor< Void > regionCursor = labelRegion.cursor();
-		final RandomAccess< BitType > access = img.randomAccess();
-		BitType bitTypeTrue = new BitType( true );
+		final RandomAccess< R > access = img.randomAccess();
 		while ( regionCursor.hasNext() )
 		{
 			regionCursor.fwd();
 			access.setPosition( regionCursor );
-			access.get().set( bitTypeTrue );
+			access.get().setReal( value );
 		}
 	}
 
@@ -210,5 +227,25 @@ public abstract class Regions
 			access.setPosition( regionCursor );
 			access.get().setReal( 0 );
 		}
+	}
+
+	public static < R extends RealType< R > & NativeType< R > >
+	ArrayList< RegionAndSize > getSizeSortedRegions(
+			RandomAccessibleInterval< R > invertedMembraneMask )
+	{
+		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( invertedMembraneMask );
+
+		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+
+		final ArrayList< RegionAndSize > regionsAndSizes = new ArrayList<>();
+
+		for ( LabelRegion labelRegion : labelRegions )
+		{
+			regionsAndSizes.add( new RegionAndSize( labelRegion, labelRegion.size() ) );
+		}
+
+		Collections.sort( regionsAndSizes );
+
+		return regionsAndSizes;
 	}
 }

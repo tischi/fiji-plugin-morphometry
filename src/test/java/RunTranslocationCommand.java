@@ -10,11 +10,11 @@ public class RunTranslocationCommand
 		final ImageJ ij = new ImageJ();
 		ij.ui().showUI();
 
-		IJ.open( ExampleTranslocation.class.getResource(
+		IJ.open( TranslocationTestCommand.class.getResource(
 						"translocation/test01.zip" ).getFile() );
 
 		final RoiManager rm = new RoiManager();
-		rm.runCommand( "open", ExampleTranslocation.class.getResource( "translocation/test01-rois.zip" ).getFile() );
+		rm.runCommand( "open", TranslocationTestCommand.class.getResource( "translocation/test01-rois.zip" ).getFile() );
 
 		// invoke the plugin
 		ij.command().run( TranslocationCommand.class, true );

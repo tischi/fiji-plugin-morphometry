@@ -16,7 +16,7 @@ import net.imglib2.type.numeric.RealType;
 import javax.swing.*;
 import java.util.ArrayList;
 
-public class ExampleTranslocation
+public class TranslocationTestCommand
 {
 	public static  < T extends RealType< T > & NativeType< T > >
 	void main( String[] args )
@@ -26,12 +26,12 @@ public class ExampleTranslocation
 		ij.ui().showUI();
 
 		final ImagePlus imagePlus = IJ.openImage(
-				ExampleTranslocation.class.getResource(
-						"translocation/test01-singleSlice-transloc.zip" ).getFile() );
+				TranslocationTestCommand.class.getResource(
+						"translocation/test01.zip" ).getFile() );
 
 		final RoiManager rm = new RoiManager();
 		rm.runCommand( "open",
-				ExampleTranslocation.class.getResource(
+				TranslocationTestCommand.class.getResource(
 						"translocation/test01-rois.zip" ).getFile() );
 		final ArrayList< FinalInterval > intervals = Rois.asIntervals( rm.getRoisAsArray() );
 
@@ -46,9 +46,10 @@ public class ExampleTranslocation
 
 		for ( int r = 0; r < results.size(); r++ )
 		{
-			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).intensities, "intensities" ).show();
-			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).gradients, "gradients" ).show();
-			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).membraneMasks, "membraneMasks" ).show();
+			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).binaryGradients, ""+(r+1)+"-binary-gradients" ).show();
+			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).intensities, ""+(r+1)+"-intensities" ).show();
+			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).gradients, ""+(r+1)+"-gradients" ).show();
+			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).membranes, ""+(r+1)+"-membranes" ).show();
 		}
 
 		final JTable table = TranslocationResult.resultsAsTable( results );

@@ -19,7 +19,9 @@ public class TranslocationResult < R extends RealType< R > & NativeType< R > >
 	final public ArrayList< RandomAccessibleInterval< R > > cellMasks;
 	final public ArrayList< RandomAccessibleInterval< R > > gradients;
 	final public ArrayList< RandomAccessibleInterval< R > > intensities;
-	final public ArrayList< RandomAccessibleInterval< BitType > > membraneMasks;
+	final public ArrayList< RandomAccessibleInterval< BitType > > membranes;
+	final public ArrayList< RandomAccessibleInterval< BitType > > binaryGradients;
+
 	final public ArrayList< RandomAccessibleInterval< BitType > > insideOutsideMasks;
 
 	final public ArrayList< Double > outsideIntensities;
@@ -37,7 +39,8 @@ public class TranslocationResult < R extends RealType< R > & NativeType< R > >
 		insideIntensities = new ArrayList<Double>();
 		translocations = new ArrayList<Double>();
 		gradients = new ArrayList<RandomAccessibleInterval< R >>();
-		membraneMasks = new ArrayList<RandomAccessibleInterval<BitType>>();
+		membranes = new ArrayList<RandomAccessibleInterval<BitType>>();
+		binaryGradients = new ArrayList<RandomAccessibleInterval<BitType>>();
 		insideOutsideMasks = new ArrayList<RandomAccessibleInterval<BitType>>();
 		intensities = new ArrayList<RandomAccessibleInterval<R>>();
 	}

@@ -966,8 +966,6 @@ public class Utils
 	{
 		Cursor< T > cursor = Views.iterable( rai ).localizingCursor();
 
-		double maxValue = Double.MIN_VALUE;
-
 		while ( cursor.hasNext() )
 		{
 			cursor.next().setReal( value );
@@ -1398,6 +1396,7 @@ public class Utils
 			}
 		}
 	}
+
 
 	public static < R extends RealType< R > & NativeType< R > >
 	RandomAccessibleInterval< R > createEmptyCopy( RandomAccessibleInterval< R > image )
