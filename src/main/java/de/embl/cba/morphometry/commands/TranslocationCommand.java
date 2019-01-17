@@ -1,7 +1,9 @@
 package de.embl.cba.morphometry.commands;
 
 import bdv.util.*;
+import de.embl.cba.bdv.utils.BdvUserInterfaceUtils;
 import de.embl.cba.bdv.utils.BdvUtils;
+import de.embl.cba.bdv.utils.overlays.BdvGrayValuesOverlay;
 import de.embl.cba.bdv.utils.selection.BdvSelectionEventHandler;
 import de.embl.cba.bdv.utils.sources.SelectableARGBConvertedRealSource;
 
@@ -153,7 +155,7 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 	public static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< T >
 	createLabelMask( ArrayList< RandomAccessibleInterval< T > > movie, ArrayList< TranslocationResult > results, int t )
 	{
-		final RandomAccessibleInterval< T > labelMask = Utils.createEmptyArrayImg( movie.get( 0 ) );
+		final RandomAccessibleInterval< T > labelMask = Utils.createEmptyCopy( movie.get( 0 ) );
 
 		for ( int region = 0; region < results.size(); region++ )
 		{
@@ -211,16 +213,20 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 				labelMasks.size(),
 				BdvOptions.options().is2D() );
 
-		new BdvSelectionEventHandler( labelMasksSource.getBdvHandle(), argbLabelsSource );
+		final BdvHandle bdvHandle = labelMasksSource.getBdvHandle();
+
+		new BdvGrayValuesOverlay( bdvHandle, 50);
+
+		new BdvSelectionEventHandler( bdvHandle, argbLabelsSource );
 
 		final BdvStackSource< R > intensitiesSource = BdvFunctions.show(
 				Views.stack( intensities ),
 				"intensities",
-				BdvOptions.options().addTo( labelMasksSource.getBdvHandle() ).is2D() );
+				BdvOptions.options().addTo( bdvHandle ).is2D() );
 
 		intensitiesSource.setDisplayRange( 0, Algorithms.getMaximumValue( intensities.get( 0 ) ) );
 
-		return labelMasksSource.getBdvHandle();
+		return bdvHandle;
 	}
 
 

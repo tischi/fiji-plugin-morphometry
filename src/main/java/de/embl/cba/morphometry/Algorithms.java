@@ -2,7 +2,6 @@ package de.embl.cba.morphometry;
 
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
-import javafx.scene.transform.Transform;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
@@ -16,6 +15,7 @@ import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.loops.LoopBuilder;
@@ -28,7 +28,6 @@ import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
-import net.imglib2.util.Util;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
@@ -349,24 +348,24 @@ public class Algorithms
 		return localMaxima;
 	}
 
-	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > computeGradient(
-			RandomAccessibleInterval< T > input,
+	public static < R extends RealType< R > & NativeType< R > >
+	RandomAccessibleInterval< R > computeGradient(
+			RandomAccessibleInterval< R > input,
 			Shape shape )
 	{
 
-		RandomAccessible< Neighborhood< T > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendBorder( input ) );
-		RandomAccessibleInterval< Neighborhood< T > > neighborhoodsInterval = Views.interval( neighborhoods, input );
+		RandomAccessible< Neighborhood< R > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendBorder( input ) );
+		RandomAccessibleInterval< Neighborhood< R > > neighborhoodsInterval = Views.interval( neighborhoods, input );
 
-		final Cursor< Neighborhood< T > > neighborhoodCursor = Views.iterable( neighborhoodsInterval ).cursor();
-		final RandomAccess< T > inputAccess = input.randomAccess();
+		final Cursor< Neighborhood< R > > neighborhoodCursor = Views.iterable( neighborhoodsInterval ).cursor();
+		final RandomAccess< R > inputAccess = input.randomAccess();
 
-		final RandomAccessibleInterval< T > gradient = Utils.copyAsArrayImg( input );
-		final RandomAccess< T > gradientAccess = gradient.randomAccess();
+		final RandomAccessibleInterval< R > gradient = Utils.copyAsArrayImg( input );
+		final RandomAccess< R > gradientAccess = gradient.randomAccess();
 
 		while ( neighborhoodCursor.hasNext() )
 		{
-			final Neighborhood< T > neighborhood = neighborhoodCursor.next();
+			final Neighborhood< R > neighborhood = neighborhoodCursor.next();
 
 			inputAccess.setPosition( neighborhood );
 			gradientAccess.setPosition( neighborhood );
@@ -1046,17 +1045,33 @@ public class Algorithms
 		return Views.interval( enlargedMorphed, mask );
 	}
 
-	public static RandomAccessibleInterval< BitType > erode(
-			RandomAccessibleInterval< BitType > mask,
+//	public static RandomAccessibleInterval< BitType > erode(
+//			RandomAccessibleInterval< BitType > mask,
+//			int radius )
+//	{
+//		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+//		morphed = Views.translate( morphed, Intervals.minAsLongArray( mask ) );
+//
+//		if ( radius > 0 )
+//		{
+//			Shape shape = new HyperSphereShape( radius );
+//			Erosion.erode( Views.extendZero( mask ), Views.iterable( morphed ), shape, 1 );
+//		}
+//
+//		return morphed;
+//	}
+
+	public static < R extends RealType< R > & NativeType< R > >
+	RandomAccessibleInterval< R > erode(
+			RandomAccessibleInterval< R > image,
 			int radius )
 	{
-		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
-		morphed = Views.translate( morphed, Intervals.minAsLongArray( mask ) );
+		final RandomAccessibleInterval< R > morphed = Utils.createEmptyCopy( image );
 
 		if ( radius > 0 )
 		{
 			Shape shape = new HyperSphereShape( radius );
-			Erosion.erode( Views.extendZero( mask ), Views.iterable( morphed ), shape, 1 );
+			Erosion.erode( Views.extendZero( image ), Views.iterable( morphed ), shape, 1 );
 		}
 
 		return morphed;

@@ -27,7 +27,7 @@ public class ExampleTranslocation
 
 		final ImagePlus imagePlus = IJ.openImage(
 				ExampleTranslocation.class.getResource(
-						"translocation/test01.zip" ).getFile() );
+						"translocation/test01-singleSlice-transloc.zip" ).getFile() );
 
 		final RoiManager rm = new RoiManager();
 		rm.runCommand( "open",
@@ -46,6 +46,7 @@ public class ExampleTranslocation
 
 		for ( int r = 0; r < results.size(); r++ )
 		{
+			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).intensities, "intensities" ).show();
 			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).gradients, "gradients" ).show();
 			Utils.listOf2DImagesAsImagePlusMovie( results.get( r ).membraneMasks, "membraneMasks" ).show();
 		}

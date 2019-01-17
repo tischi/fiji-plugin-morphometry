@@ -770,16 +770,6 @@ public class Utils
 		return masks;
 	}
 
-
-	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > createEmptyArrayImg( RandomAccessibleInterval< T > rai )
-	{
-		RandomAccessibleInterval< T > newImage = new ArrayImgFactory(
-				rai.randomAccess().get() ).create( rai );
-		newImage = Transforms.getWithAdjustedOrigin( rai, newImage );
-		return newImage;
-	}
-
 	public static < T extends RealType< T > & NativeType< T > >
 	long[] getCenterLocation( Interval rai )
 	{
@@ -1407,5 +1397,14 @@ public class Utils
 				access.get().setReal( value );
 			}
 		}
+	}
+
+	public static < R extends RealType< R > & NativeType< R > >
+	RandomAccessibleInterval< R > createEmptyCopy( RandomAccessibleInterval< R > image )
+	{
+		RandomAccessibleInterval< R > copy =
+				new ArrayImgFactory( image.randomAccess().get() ).create( image );
+		copy = Views.translate( copy, Intervals.minAsLongArray( image ) );
+		return copy;
 	}
 }

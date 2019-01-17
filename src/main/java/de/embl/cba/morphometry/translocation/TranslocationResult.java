@@ -9,15 +9,16 @@ import net.imglib2.type.numeric.RealType;
 import javax.swing.*;
 import java.util.ArrayList;
 
-public class TranslocationResult < T extends RealType< T > & NativeType< T > >
+public class TranslocationResult < R extends RealType< R > & NativeType< R > >
 {
 	public static final String REGION_INDEX = "RegionIndex";
 	public static final String TIMEPOINT = "Timepoint";
 	public static final String TRANSLOCATION = "Translocation";
 	public static final String REGION_CENTER_X = "RegionCenterX";
 	public static final String REGION_CENTER_Y = "RegionCenterY";
-	final public ArrayList< RandomAccessibleInterval< T > > cellMasks;
-	final public ArrayList< RandomAccessibleInterval< T > > gradients;
+	final public ArrayList< RandomAccessibleInterval< R > > cellMasks;
+	final public ArrayList< RandomAccessibleInterval< R > > gradients;
+	final public ArrayList< RandomAccessibleInterval< R > > intensities;
 	final public ArrayList< RandomAccessibleInterval< BitType > > membraneMasks;
 	final public ArrayList< RandomAccessibleInterval< BitType > > insideOutsideMasks;
 
@@ -30,14 +31,15 @@ public class TranslocationResult < T extends RealType< T > & NativeType< T > >
 
 	public TranslocationResult( )
 	{
-		this.cellMasks = new ArrayList<>(  );
+		cellMasks = new ArrayList<>(  );
 		outsideIntensities = new ArrayList<Double>();
 		membraneIntensities = new ArrayList<Double>();
 		insideIntensities = new ArrayList<Double>();
 		translocations = new ArrayList<Double>();
-		gradients = new ArrayList<RandomAccessibleInterval<T>>();
+		gradients = new ArrayList<RandomAccessibleInterval< R >>();
 		membraneMasks = new ArrayList<RandomAccessibleInterval<BitType>>();
 		insideOutsideMasks = new ArrayList<RandomAccessibleInterval<BitType>>();
+		intensities = new ArrayList<RandomAccessibleInterval<R>>();
 	}
 
 	public static JTable resultsAsTable( ArrayList< TranslocationResult > results )

@@ -39,9 +39,7 @@ public class MembraneTranslocationComputer< T extends RealType< T > & NativeType
 	final ArrayList<FinalInterval> intervals;
 	private double signalToNoise;
 	private int closingRadius;
-	private int maxDistanceOfMembraneToOutside;
 	private int resolutionBlurWidthInPixel;
-	private int minimumGradient;
 
 	public ArrayList< TranslocationResult > getResults()
 	{
@@ -62,13 +60,10 @@ public class MembraneTranslocationComputer< T extends RealType< T > & NativeType
 		this.intervals = intervals;
 		this.opService = opService;
 
-		minimalRegionSize = 10;
+		minimalRegionSize = 50;
 		signalToNoise = 25.0;
 		closingRadius = 5;
-		minimumGradient = 20;
-
-		resolutionBlurWidthInPixel = 2;
-		maxDistanceOfMembraneToOutside = Integer.MAX_VALUE; // TODO: how to cope with the ruffling? maybe find cell boundary with a gradient
+		resolutionBlurWidthInPixel = 3;
 
 		results = new ArrayList<TranslocationResult>();
 
@@ -122,31 +117,36 @@ public class MembraneTranslocationComputer< T extends RealType< T > & NativeType
 
 	private void createMembraneMaskAndMeasureIntensity( FinalInterval interval, TranslocationResult result, int t )
 	{
+		final RandomAccessibleInterval< T > intensity = Views.interval( movie.get( t ) , interval );
+
 		final RandomAccessibleInterval< T > gauss =
-				(RandomAccessibleInterval) opService.filter().gauss(
-					Views.interval( movie.get( t ), interval ),
-					2 * resolutionBlurWidthInPixel );
+				opService.filter().gauss(
+						intensity,
+						resolutionBlurWidthInPixel );
 
-		result.gradients.add( Algorithms.computeGradient( gauss, new HyperSphereShape( 3 * resolutionBlurWidthInPixel ) ) );
+		final RandomAccessibleInterval< T > gradient = Algorithms.computeGradient( gauss,
+				new HyperSphereShape( 1 ) );
 
-		if( t == 0)
-		{
-			ImageJFunctions.show( (RandomAccessibleInterval) result.gradients.get( 0 ) );
-		}
-		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( interval ) );
+		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits(
+				Intervals.dimensionsAsLongArray( interval ) );
 		mask = Views.translate( mask, Intervals.minAsLongArray( interval ) );
 
 		opService.threshold().isoData(
 				Views.iterable( mask ),
-				Views.iterable( ( RandomAccessibleInterval< T > ) result.gradients.get( t ) ) );
+				Views.iterable( gradient ) );
 
 		Regions.removeSmallRegionsInMask( mask, minimalRegionSize );
 
-		final RandomAccessibleInterval< BitType > thin = Utils.createEmptyArrayImg( mask );
+		RandomAccessibleInterval< BitType > thin = ArrayImgs.bits(
+				Intervals.dimensionsAsLongArray( interval ) );
+		thin = Views.translate( thin, Intervals.minAsLongArray( interval ) );
+
 		opService.morphology().thinGuoHall( thin, mask );
 
 		measureMembraneIntensity( result, t, thin );
 
+		result.intensities.add( intensity );
+		result.gradients.add( gradient );
 		result.membraneMasks.add( thin );
 	}
 
@@ -199,7 +199,7 @@ public class MembraneTranslocationComputer< T extends RealType< T > & NativeType
 
 		final ArrayList< RegionAndSize > sortedRegions = getSizeSortedRegions( invertedMembraneMask );
 
-		final RandomAccessibleInterval< BitType > insideOutsideMask = Utils.createEmptyArrayImg( membraneMask );
+		final RandomAccessibleInterval< BitType > insideOutsideMask = Utils.createEmptyCopy( membraneMask );
 
 		final RandomAccess< T > intensityAccess = movie.get( t ).randomAccess();
 

@@ -10,13 +10,9 @@ public class RunTranslocationCommand
 		final ImageJ ij = new ImageJ();
 		ij.ui().showUI();
 
-		// stage image
-		//
 		IJ.open( ExampleTranslocation.class.getResource(
 						"translocation/test01.zip" ).getFile() );
 
-		// stage roimanager
-		//
 		final RoiManager rm = new RoiManager();
 		rm.runCommand( "open", ExampleTranslocation.class.getResource( "translocation/test01-rois.zip" ).getFile() );
 
