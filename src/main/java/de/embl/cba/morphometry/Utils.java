@@ -1397,12 +1397,11 @@ public class Utils
 		}
 	}
 
-
 	public static < R extends RealType< R > & NativeType< R > >
 	RandomAccessibleInterval< R > createEmptyCopy( RandomAccessibleInterval< R > image )
 	{
 		RandomAccessibleInterval< R > copy =
-				new ArrayImgFactory( image.randomAccess().get() ).create( image );
+				new ArrayImgFactory( Util.getTypeFromInterval( image ) ).create( image );
 		copy = Views.translate( copy, Intervals.minAsLongArray( image ) );
 		return copy;
 	}

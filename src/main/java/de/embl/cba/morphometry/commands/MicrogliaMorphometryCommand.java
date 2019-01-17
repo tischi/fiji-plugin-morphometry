@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-@Plugin(type = Command.class, menuPath = "Plugins>Measurement>Measure Microglia Morphometry" )
+@Plugin(type = Command.class, menuPath = "Plugins>Morphometry>Measure Microglia Morphometry" )
 public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T > > implements Command
 {
 	@Parameter

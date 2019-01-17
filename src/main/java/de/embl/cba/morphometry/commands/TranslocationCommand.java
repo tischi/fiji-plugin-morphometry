@@ -212,7 +212,7 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 
 		final BdvHandle bdvHandle = labelMasksSource.getBdvHandle();
 
-		new BdvGrayValuesOverlay( bdvHandle, 50);
+		new BdvGrayValuesOverlay( bdvHandle, 25);
 
 		new BdvSelectionEventHandler( bdvHandle, argbLabelsSource );
 

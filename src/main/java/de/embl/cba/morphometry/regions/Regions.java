@@ -187,18 +187,12 @@ public abstract class Regions
 	}
 
 	public static < R extends RealType< R > & NativeType< R > >
-	void onlyKeepLargestRegion(
-			RandomAccessibleInterval< R > mask )
+	void onlyKeepLargestRegion( RandomAccessibleInterval< R > mask )
 	{
 		final ArrayList< RegionAndSize > sortedRegions = Regions.getSizeSortedRegions( mask );
 
-		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask );
-
-		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
-
 		Utils.setValues( mask, 0 );
 		Regions.drawRegion( mask, sortedRegions.get( 0 ).getRegion(), 1.0 );
-
 	}
 
 	private static < R extends RealType< R > & NativeType< R > >

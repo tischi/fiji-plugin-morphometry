@@ -2,20 +2,20 @@ package de.embl.cba.morphometry;
 
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
+import ij.IJ;
+import ij.ImagePlus;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.morphology.Closing;
 import net.imglib2.algorithm.morphology.Dilation;
 import net.imglib2.algorithm.morphology.Erosion;
-import net.imglib2.algorithm.morphology.Opening;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
-import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.loops.LoopBuilder;
@@ -261,7 +261,6 @@ public class Algorithms
 			double localThreshold )
 	{
 
-
 		RandomAccessibleInterval< BitType > seeds = ArrayImgs.bits( Intervals.dimensionsAsLongArray( distance ) );
 		seeds = Transforms.getWithAdjustedOrigin( distance, seeds );
 
@@ -271,7 +270,6 @@ public class Algorithms
 		final Cursor< Neighborhood< T > > neighborhoodCursor = Views.iterable( neighborhoodsInterval ).cursor();
 		final RandomAccess< T > distanceRandomAccess = distance.randomAccess();
 		final RandomAccess< BitType > seedsRandomAccess = seeds.randomAccess();
-
 
 		double[] currentPosition = new double[ distance.numDimensions() ];
 
@@ -1059,4 +1057,47 @@ public class Algorithms
 		return morphed;
 	}
 
+	public static < R extends RealType< R > & NativeType< R > >
+	RandomAccessibleInterval< R > median(
+			RandomAccessibleInterval< R > intensity,
+			int radius,
+			OpService opService )
+	{
+		RandomAccessibleInterval< R > median = Utils.createEmptyCopy( intensity );
+
+		opService.filter().median(
+				Views.iterable( Views.zeroMin( median ) ),
+				Views.zeroMin( intensity ),
+				new HyperSphereShape( radius ));
+
+		median = Views.translate( median, Intervals.minAsLongArray( intensity ) );
+
+		return median;
+	}
+
+	public static < R extends RealType< R > & NativeType< R > >
+	RandomAccessibleInterval< R > median2dUsingIJ1(
+			RandomAccessibleInterval< R > intensity,
+			int radius )
+	{
+
+		final ImagePlus imagePlus = ImageJFunctions.wrap( intensity, "" ).duplicate();
+
+		IJ.run( imagePlus, "Median...", "radius=" + radius );
+
+		RandomAccessibleInterval< R > median = ImageJFunctions.wrapReal( imagePlus );
+
+		//median = Views.translate( median, Intervals.minAsLongArray( intensity ) );
+
+		return median;
+	}
+
+	public static RandomAccessibleInterval< BitType > thin(
+			RandomAccessibleInterval< BitType > input,
+			OpService opService )
+	{
+		final RandomAccessibleInterval< BitType > thin = Utils.createEmptyCopy( input );
+		opService.morphology().thinGuoHall( thin, input );
+		return thin;
+	}
 }

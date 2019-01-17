@@ -10,18 +10,15 @@ import de.embl.cba.morphometry.segmentation.SignalOverBackgroundSegmenter;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.converter.Converters;
-import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.loops.LoopBuilder;
 import net.imglib2.roi.labeling.LabelRegionCursor;
 import net.imglib2.type.NativeType;
-import net.imglib2.type.Type;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
-import net.imglib2.util.Util;
 import net.imglib2.view.Views;
 
 import java.util.ArrayList;
@@ -36,6 +33,7 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 	private int resolutionBlurWidthInPixel;
 	private int blurRadius;
 	private int erosionRadius;
+	private int region;
 
 	public ArrayList< TranslocationResult > getResults()
 	{
@@ -60,9 +58,8 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		signalToNoise = 25.0;
 		closingRadius = 5;
 		resolutionBlurWidthInPixel = 3;
-		blurRadius = 1;
-		erosionRadius = 3;
-
+		blurRadius = 4;
+		erosionRadius = 4;
 
 		results = new ArrayList<TranslocationResult>();
 
@@ -71,9 +68,9 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 
 	private void computeTranslocations()
 	{
-		for ( FinalInterval interval : intervals )
+		for ( region = 0; region < intervals.size(); region++ )
 		{
-			computeTranslocationsInRoi( interval );
+			computeTranslocationsInRoi( intervals.get( region ) );
 		}
 	}
 
@@ -120,23 +117,26 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 	{
 		final RandomAccessibleInterval< R > intensity = Views.interval( movie.get( t ) , interval );
 
-		final RandomAccessibleInterval< R > gauss =
-				opService.filter().gauss(
-						intensity,
-						blurRadius );
+//		final RandomAccessibleInterval< R > smoothed =
+//				opService.filter().gauss(
+//						intensity,
+//						1.0 );
 
-		final RandomAccessibleInterval< R > erode = Algorithms.erode( gauss, erosionRadius );
+		RandomAccessibleInterval< R > smoothed = Algorithms.median(
+				intensity, 4, opService );
+
+		final RandomAccessibleInterval< R > erode = Algorithms.erode(
+				smoothed, erosionRadius );
 
 		RandomAccessibleInterval< R > gradient = Utils.createEmptyCopy( erode );
 
-		LoopBuilder.setImages( gradient, gauss, erode ).forEachPixel( ( g, i, e ) ->
+		LoopBuilder.setImages( gradient, smoothed, erode ).forEachPixel( ( g, i, e ) ->
 				{
 					g.setReal( i.getRealDouble() - e.getRealDouble() );
 				}
 		);
 
-		RandomAccessibleInterval< BitType > binaryGradient = ArrayImgs.bits(
-				Intervals.dimensionsAsLongArray( interval ) );
+		RandomAccessibleInterval< BitType > binaryGradient = ArrayImgs.bits( Intervals.dimensionsAsLongArray( interval ) );
 		binaryGradient = Views.translate( binaryGradient, Intervals.minAsLongArray( interval ) );
 
 		opService.threshold().isoData(
@@ -145,18 +145,14 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 
 		Regions.onlyKeepLargestRegion( binaryGradient );
 
-		// try to smooth shape for helping the thinning
+		// smooth for helping the thinning
 		final RandomAccessibleInterval< BitType > openedBinaryGradient
 				= Algorithms.dilate( Algorithms.erode( binaryGradient, 1 ), 1 );
 
-		RandomAccessibleInterval< BitType > thin = ArrayImgs.bits(
-				Intervals.dimensionsAsLongArray( interval ) );
-		thin = Views.translate( thin, Intervals.minAsLongArray( interval ) );
-
-		opService.morphology().thinGuoHall( thin, openedBinaryGradient );
+		final RandomAccessibleInterval< BitType > thin = Algorithms.thin( openedBinaryGradient, opService );
 
 		result.binaryGradients.add( openedBinaryGradient );
-		result.intensities.add( intensity );
+		result.intensities.add( smoothed );
 		result.gradients.add( gradient );
 		result.membranes.add( thin );
 	}
@@ -358,19 +354,5 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 
 		return mask;
 	}
-
-	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > copyAsArrayImg( RandomAccessibleInterval< T > orig )
-	{
-		final RandomAccessibleInterval< T > copy =
-				Views.translate(
-						new ArrayImgFactory( Util.getTypeFromInterval( orig ) ).create( orig ),
-						Intervals.minAsLongArray( orig ) );
-
-		LoopBuilder.setImages( copy, orig ).forEachPixel( Type::set );
-
-		return copy;
-	}
-
 
 }
