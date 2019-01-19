@@ -14,6 +14,7 @@ import ij.ImagePlus;
 import ij.measure.Calibration;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
+import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
@@ -116,7 +117,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Regions.removeSmallRegionsInMask( dnaMask, settings.minimalMetaphasePlateVolumeInCalibratedUnits, settings.workingVoxelSize );
 
-		final ImgLabeling< Integer, IntType > labelImg = Utils.asImgLabeling( dnaMask );
+		final ImgLabeling< Integer, IntType > labelImg = Utils.asImgLabeling( dnaMask, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		final long radius = (long) ( settings.centralObjectRegionToleranceInCalibratedUnits / settings.workingVoxelSize );
 		final LabelRegion< Integer > metaphasePlateRegion = Regions.getCentralRegion( labelImg, radius );

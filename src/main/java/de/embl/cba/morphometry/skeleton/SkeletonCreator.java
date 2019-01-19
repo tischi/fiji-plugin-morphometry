@@ -5,6 +5,7 @@ import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -40,7 +41,7 @@ public class SkeletonCreator< T extends RealType< T > & NativeType< T > >
 		{
 			Logger.log( "Computing skeletons for frame " + ( t + 1 ) );
 
-			final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( masks.get( t ) );
+			final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( masks.get( t ), ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 			final RandomAccessibleInterval< BitType > skeletons =
 					Algorithms.createObjectSkeletons(

@@ -6,6 +6,7 @@ import de.embl.cba.transforms.utils.Transforms;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
@@ -143,7 +144,7 @@ public abstract class Regions
 			double sizeInCalibratedUnits,
 			double calibration )
 	{
-		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask );
+		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		long minimalObjectSize = ( long ) ( sizeInCalibratedUnits / Math.pow( calibration, imgLabeling.numDimensions() ) );
 
@@ -174,7 +175,7 @@ public abstract class Regions
 			RandomAccessibleInterval< T > mask,
 			long minimalObjectSize )
 	{
-		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask );
+		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
@@ -187,10 +188,13 @@ public abstract class Regions
 	}
 
 	public static < R extends RealType< R > & NativeType< R > >
-	void onlyKeepLargestRegion( RandomAccessibleInterval< R > mask )
+	void onlyKeepLargestRegion( RandomAccessibleInterval< R > mask,
+								ConnectedComponents.StructuringElement structuringElement )
 	{
-		final ArrayList< RegionAndSize > sortedRegions = Regions.getSizeSortedRegions( mask );
-
+		final ArrayList< RegionAndSize > sortedRegions =
+				Regions.getSizeSortedRegions(
+						mask,
+						structuringElement );
 		Utils.setValues( mask, 0 );
 		Regions.drawRegion( mask, sortedRegions.get( 0 ).getRegion(), 1.0 );
 	}
@@ -225,9 +229,12 @@ public abstract class Regions
 
 	public static < R extends RealType< R > & NativeType< R > >
 	ArrayList< RegionAndSize > getSizeSortedRegions(
-			RandomAccessibleInterval< R > invertedMembraneMask )
+			RandomAccessibleInterval< R > invertedMembraneMask,
+			ConnectedComponents.StructuringElement structuringElement )
 	{
-		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( invertedMembraneMask );
+		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling(
+				invertedMembraneMask,
+				structuringElement );
 
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 

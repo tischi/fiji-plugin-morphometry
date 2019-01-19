@@ -185,10 +185,13 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 	{
 		final CoordinatesAndValues coordinatesAndValues = new CoordinatesAndValues();
 
-		for ( int t = 0; t < results.get( r ).insideIntensities.size(); t++ )
+		for ( int t = 0; t < results.get( r ).brighterIntensities.size(); t++ )
 		{
-			coordinatesAndValues.coordinates.add( 1.0 * t );
-			coordinatesAndValues.values.add( ( double ) results.get( r ).translocations.get( t ) );
+			if ( results.get( r ).translocations.get( t ) != null )
+			{
+				coordinatesAndValues.coordinates.add( 1.0 * t );
+				coordinatesAndValues.values.add( ( Double ) results.get( r ).translocations.get( t ) );
+			}
 		}
 		return coordinatesAndValues;
 	}

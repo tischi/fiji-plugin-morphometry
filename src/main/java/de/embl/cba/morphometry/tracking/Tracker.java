@@ -5,6 +5,7 @@ import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.roi.labeling.*;
 import net.imglib2.type.NativeType;
@@ -54,7 +55,7 @@ public class Tracker < T extends RealType< T > & NativeType< T > >
 			RandomAccessibleInterval< IntType > currentLabeling = imgLabelings.get( t ).getSource();;
 			RandomAccessibleInterval< IntType > updatedLabeling = ArrayImgs.ints( Intervals.dimensionsAsLongArray( currentLabeling ) );
 
-			labelRegions = new LabelRegions( Utils.asImgLabeling( currentLabeling ) );
+			labelRegions = new LabelRegions( Utils.asImgLabeling( currentLabeling, ConnectedComponents.StructuringElement.FOUR_CONNECTED ) );
 
 			for ( LabelRegion< Integer > region : labelRegions )
 			{

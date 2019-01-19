@@ -11,6 +11,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
@@ -71,7 +72,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 		final ShapeAndIntensitySplitter splitter = new ShapeAndIntensitySplitter( masks.get( t ), intensities.get( t ), settings );
 		splitter.run();
-		labelings.add( Utils.asImgLabeling( splitter.getSplitMask() ).getIndexImg() );
+		labelings.add( Utils.asImgLabeling( splitter.getSplitMask(), ConnectedComponents.StructuringElement.FOUR_CONNECTED ).getIndexImg() );
 
 		/**
 		 * Allow user to manually correct
@@ -111,7 +112,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 
 	public RandomAccessibleInterval< BitType > getSplitMask( int t, RandomAccessibleInterval< IntType > previousLabeling )
 	{
-		final ImgLabeling< Integer, IntType > currentImgLabeling = Utils.asImgLabeling( masks.get( t ) );
+		final ImgLabeling< Integer, IntType > currentImgLabeling = Utils.asImgLabeling( masks.get( t ), ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 		RandomAccessibleInterval< IntType > currentLabeling = currentImgLabeling.getIndexImg();
 
 		HashMap< Integer, ArrayList< Integer > > overlappingObjectsLabelsMap = getOverlappingObjectLabelsMap( t, previousLabeling, currentImgLabeling, currentLabeling );
@@ -170,7 +171,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 	{
 		RandomAccessibleInterval< IntType > newLabeling = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
 
-		final LabelRegions< Integer > newRegions = new LabelRegions( Utils.asImgLabeling( mask ) );
+		final LabelRegions< Integer > newRegions = new LabelRegions( Utils.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED ) );
 
 		for ( LabelRegion< Integer > region : newRegions )
 		{

@@ -27,7 +27,7 @@ public class Plots
 				xLab,
 				yLab,
 				cv.coordinates.stream().mapToDouble(d -> d).toArray(),
-				cv.values.stream().mapToDouble(d -> d).toArray() );
+				cv.values.stream().mapToDouble( d -> d ).toArray() );
 
 		plot.show();
 	}

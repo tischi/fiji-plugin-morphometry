@@ -11,6 +11,7 @@ import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
+import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.converter.Converters;
 import net.imglib2.histogram.Histogram1d;
@@ -440,7 +441,10 @@ public class DrosphilaRegistration
 		else if ( rollAngleComputationMethod.equals( DrosophilaRegistrationSettings.PROJECTION_SHAPE_BASED_ROLL_TRANSFORM ) )
 		{
 
-			final RandomAccessibleInterval< UnsignedIntType > intMask = Converters.convert( yawAndOrientationAlignedMask, ( i, o ) -> o.set( i.getRealDouble() > 0 ? 1000 : 0 ), new UnsignedIntType() );
+			final RandomAccessibleInterval< UnsignedIntType > intMask =
+					Converters.convert( yawAndOrientationAlignedMask,
+							( i, o ) -> o.set( i.getRealDouble() > 0 ? 1000 : 0 ),
+							new UnsignedIntType() );
 
 			final AffineTransform3D intensityBasedRollTransform = computeIntensityBasedRollTransform(
 					intMask,
@@ -490,7 +494,7 @@ public class DrosphilaRegistration
 				globalDistanceThreshold,
 				localMaximaDistanceThreshold );
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = Utils.asImgLabeling( seeds );
+		final ImgLabeling< Integer, IntType > seedsLabelImg = Utils.asImgLabeling( seeds, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		if ( settings.showIntermediateResults ) show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, Utils.as3dDoubleArray( settings.registrationResolution ), false );
 

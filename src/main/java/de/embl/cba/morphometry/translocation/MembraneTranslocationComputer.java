@@ -1,16 +1,13 @@
 package de.embl.cba.morphometry.translocation;
 
-import de.embl.cba.morphometry.Algorithms;
-import de.embl.cba.morphometry.CoordinateAndValue;
-import de.embl.cba.morphometry.Logger;
-import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.regions.RegionAndSize;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.segmentation.SignalOverBackgroundSegmenter;
+import de.embl.cba.morphometry.skeleton.Skeletons;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.converter.Converters;
-import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.loops.LoopBuilder;
 import net.imglib2.roi.labeling.LabelRegionCursor;
 import net.imglib2.type.NativeType;
@@ -18,15 +15,17 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.real.DoubleType;
-import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
 
 import java.util.ArrayList;
 import java.util.Collections;
 
+import static net.imglib2.algorithm.labeling.ConnectedComponents.StructuringElement.FOUR_CONNECTED;
+
 public class MembraneTranslocationComputer< R extends RealType< R > & NativeType< R > >
 {
-	final ArrayList< RandomAccessibleInterval< R > > movie;
+	public static final Double SEGMENTATION_ERROR = null;
+	final ArrayList< RandomAccessibleInterval< R > > inputs;
 	final ArrayList<FinalInterval> intervals;
 	private double signalToNoise;
 	private int closingRadius;
@@ -46,11 +45,11 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 	private int minimalRegionSize;
 
 	public MembraneTranslocationComputer(
-			ArrayList< RandomAccessibleInterval< R > > movie,
+			ArrayList< RandomAccessibleInterval< R > > inputs,
 			ArrayList< FinalInterval > intervals,
 			OpService opService )
 	{
-		this.movie = movie;
+		this.inputs = inputs;
 		this.intervals = intervals;
 		this.opService = opService;
 
@@ -78,16 +77,13 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 	{
 		final TranslocationResult result = new TranslocationResult();
 
-		result.regionCenterX = Utils.getCenterLocation( interval )[ 0 ];
-		result.regionCenterY = Utils.getCenterLocation( interval )[ 1 ];
+		measureRegionCenter( interval, result );
 
-		for ( int t = 0; t < movie.size(); t++ )
+		for ( int t = 0; t < inputs.size(); t++ )
 		{
-			createMembraneMask( interval, result, t );
+			createMembraneAndOtherRegions( interval, result, t );
 
-			measureMembraneIntensity( result, t );
-
-			createInsideOutsideMasksAndMeasureIntensities( result, t );
+			measureIntensities( result, t  );
 
 			computeTranslocation( result, t );
 		}
@@ -95,13 +91,19 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		results.add( result );
 	}
 
+	private void measureRegionCenter( FinalInterval interval, TranslocationResult result )
+	{
+		result.regionCenterX = Utils.getCenterLocation( interval )[ 0 ];
+		result.regionCenterY = Utils.getCenterLocation( interval )[ 1 ];
+	}
+
 	private void computeTranslocation( TranslocationResult result, int t )
 	{
-		double membrane = ( double ) result.membraneIntensities.get( t );
-		double outside = ( double ) result.outsideIntensities.get( t );
-		double inside = ( double ) result.insideIntensities.get( t );
+		Double membrane = ( Double ) result.membraneIntensities.get( t );
+		Double outside = ( Double ) result.dimmerIntensities.get( t );
+		Double inside = ( Double ) result.brighterIntensities.get( t );
 
-		if ( inside > 0 || outside > 0 )
+		if ( inside != null && outside != null && membrane != null )
 		{
 			final double translocation = ( membrane - outside ) / ( inside - outside );
 			result.translocations.add( translocation );
@@ -109,26 +111,35 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		else
 		{
 			// something went wrong
-			result.translocations.add( -1.0 );
+			result.translocations.add( SEGMENTATION_ERROR );
 		}
 	}
 
-	private void createMembraneMask( FinalInterval interval, TranslocationResult result, int t )
+	private void createMembraneAndOtherRegions( FinalInterval interval, TranslocationResult result, int t )
 	{
-		final RandomAccessibleInterval< R > intensity = Views.interval( movie.get( t ) , interval );
+		final RandomAccessibleInterval< R > intensity = Views.interval( inputs.get( t ) , interval );
 
-//		final RandomAccessibleInterval< R > smoothed =
-//				opService.filter().gauss(
-//						intensity,
-//						1.0 );
+		RandomAccessibleInterval< BitType > cellEdgeSkeleton = computeCellEdge( result, intensity );
 
-		RandomAccessibleInterval< R > smoothed = Algorithms.median(
-				intensity, 4, opService );
+		final RandomAccessibleInterval< BitType > membrane = Skeletons.longestBranch( cellEdgeSkeleton );
+
+		result.cellEdges.add( cellEdgeSkeleton );
+		result.membranes.add( membrane );
+
+		createNonMembraneMasks( result, t );
+	}
+
+	private RandomAccessibleInterval< BitType > computeCellEdge( TranslocationResult result, RandomAccessibleInterval< R > intensity )
+	{
+		final RandomAccessibleInterval< R > smoothed = Algorithms.median(
+				intensity, blurRadius, opService );
+
+		result.intensities.add( smoothed );
 
 		final RandomAccessibleInterval< R > erode = Algorithms.erode(
 				smoothed, erosionRadius );
 
-		RandomAccessibleInterval< R > gradient = Utils.createEmptyCopy( erode );
+		final RandomAccessibleInterval< R > gradient = Utils.createEmptyCopy( erode );
 
 		LoopBuilder.setImages( gradient, smoothed, erode ).forEachPixel( ( g, i, e ) ->
 				{
@@ -136,32 +147,31 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 				}
 		);
 
-		RandomAccessibleInterval< BitType > binaryGradient = ArrayImgs.bits( Intervals.dimensionsAsLongArray( interval ) );
-		binaryGradient = Views.translate( binaryGradient, Intervals.minAsLongArray( interval ) );
+		result.gradients.add( gradient );
+
+		RandomAccessibleInterval< BitType > binaryGradient =
+				ArrayImgs2.img( intensity, new BitType(  ) );
 
 		opService.threshold().isoData(
 				Views.iterable( binaryGradient ),
 				Views.iterable( gradient ) );
 
-		Regions.onlyKeepLargestRegion( binaryGradient );
+		Regions.onlyKeepLargestRegion( binaryGradient, FOUR_CONNECTED );
 
-		// smooth for helping the thinning
+		// morphological smoothing for helping the thinning
 		final RandomAccessibleInterval< BitType > openedBinaryGradient
 				= Algorithms.dilate( Algorithms.erode( binaryGradient, 1 ), 1 );
 
-		final RandomAccessibleInterval< BitType > thin = Algorithms.thin( openedBinaryGradient, opService );
-
 		result.binaryGradients.add( openedBinaryGradient );
-		result.intensities.add( smoothed );
-		result.gradients.add( gradient );
-		result.membranes.add( thin );
+
+		return Skeletons.skeleton( openedBinaryGradient, opService );
 	}
 
 	private void measureMembraneIntensity( TranslocationResult result, int t )
 	{
 		final Cursor< BitType > cursor = Views.iterable(
 				(RandomAccessibleInterval) result.membranes.get( t ) ).cursor();
-		final RandomAccess< R > access = movie.get( t ).randomAccess();
+		final RandomAccess< R > access = inputs.get( t ).randomAccess();
 
 		double sum = 0.0;
 		int n = 0;
@@ -178,50 +188,76 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		result.membraneIntensities.add( sum / n );
 	}
 
-	private void createInsideOutsideMasksAndMeasureIntensities( TranslocationResult result, int t )
+	private void createNonMembraneMasks( TranslocationResult result, int t )
 	{
+		final RandomAccessibleInterval< BitType > membraneSkeleton =
+				( RandomAccessibleInterval< BitType > ) result.cellEdges.get( t );
 
-		final RandomAccessibleInterval< BitType > membraneMask = ( RandomAccessibleInterval< BitType > ) result.membranes.get( t );
+		final RandomAccessibleInterval< BitType > nonMembranePixels =
+				Converters.convert(
+						// dilate to exclude membrane blur
+						Algorithms.dilate( membraneSkeleton, 2 * resolutionBlurWidthInPixel ),
+						( i, o ) -> o.set( !i.get() ),
+						new BitType() );
 
-		final RandomAccessibleInterval< BitType > invertedMembraneMask = Converters.convert(
-				Algorithms.dilate( membraneMask, 2 * resolutionBlurWidthInPixel ), // dilate to exclude membrane blur from inside or outside
-				( i, o ) -> o.set( !i.get() ),
-				new BitType() );
+		final ArrayList< RegionAndSize > sizeSortedRegions =
+				Regions.getSizeSortedRegions(
+						nonMembranePixels,
+						FOUR_CONNECTED );
 
-		final ArrayList< RegionAndSize > sortedRegions = Regions.getSizeSortedRegions( invertedMembraneMask );
+		final ArrayList< RandomAccessibleInterval< BitType > > nonMembraneMasks = new ArrayList<>();
+		for ( int region = 0; region < Math.min( 2, sizeSortedRegions.size() ); region++ )
+		{
+			final RandomAccessibleInterval< BitType > nonMembraneMask = Utils.createEmptyCopy( membraneSkeleton );
+			Regions.drawRegionInMask( sizeSortedRegions.get( region ).getRegion(), nonMembraneMask );
+			nonMembraneMasks.add( nonMembraneMask );
+		}
 
-		final RandomAccessibleInterval< BitType > insideOutsideMask = Utils.createEmptyCopy( membraneMask );
+		result.nonMembraneMasks.add( nonMembraneMasks );
+	}
 
-		final RandomAccess< R > intensityAccess = movie.get( t ).randomAccess();
+	private void measureIntensities( TranslocationResult result,
+									 int t )
+	{
+		measureMembraneIntensity( result, t );
+
+		measureNonMembraneIntensities( result, t );
+	}
+
+	private void measureNonMembraneIntensities( TranslocationResult result, int t )
+	{
+		final RandomAccess< R > intensityAccess = inputs.get( t ).randomAccess();
+
+		final ArrayList nonMembraneMasks = result.getNonMembraneMasks();
 
 		final ArrayList< Double > intensities = new ArrayList<>();
 
-		if ( sortedRegions.size() < 2 )
+		if ( sizeSortedRegions.size() < 2 )
 		{
 			// Something went wrong
 			Logger.log( "Could not detect membrane in region " + ( results.size() + 1 ) + ", frame " + ( t + 1) );
 //			ImageJFunctions.show( ( RandomAccessibleInterval ) result.gradients.get( t ), "Failure: Gradient Timepoint " + (t+1) );
-			intensities.add( -1.0 );
-			intensities.add( -1.0 );
+			intensities.add( SEGMENTATION_ERROR );
+			intensities.add( SEGMENTATION_ERROR );
 		}
 		else
 		{
 			for ( int region = 0; region < 2; region++ )
 			{
-				intensities.add( getMean( sortedRegions, intensityAccess, region ) );
-				Regions.drawRegionInMask( sortedRegions.get( region ).getRegion(), insideOutsideMask );
+				intensities.add( getMean( sizeSortedRegions, intensityAccess, region ) );
+				Regions.drawRegionInMask( sizeSortedRegions.get( region ).getRegion(), insideOutsideMask );
 			}
 
 			Collections.sort( intensities );
 		}
 
-		result.outsideIntensities.add( intensities.get( 0 ) ); // the smaller one
-		result.insideIntensities.add( intensities.get( 1 ) ); // the larger one
-		result.insideOutsideMasks.add( insideOutsideMask );
-
+		result.dimmerIntensities.add( intensities.get( 0 ) ); // the smaller one
+		result.brighterIntensities.add( intensities.get( 1 ) ); // the larger one
 	}
 
-	private double getMean( ArrayList< RegionAndSize > regionsAndSizes, RandomAccess< R > access, int i )
+	private double getMean( ArrayList< RegionAndSize > regionsAndSizes,
+							RandomAccess< R > intensityAccess,
+							int i )
 	{
 		final LabelRegionCursor cursor = regionsAndSizes.get( i ).getRegion().cursor();
 
@@ -231,8 +267,8 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		while ( cursor.hasNext() )
 		{
 			cursor.fwd();
-			access.setPosition( cursor );
-			sum += access.get().getRealDouble();
+			intensityAccess.setPosition( cursor );
+			sum += intensityAccess.get().getRealDouble();
 			n++;
 		}
 
@@ -246,7 +282,7 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 
 		final RandomAccessibleInterval< IntType > distances = computeDistanceMap( mask );
 
-		result.outsideIntensities.add( computeMeanIntensityWithinDistanceRange(
+		result.dimmerIntensities.add( computeMeanIntensityWithinDistanceRange(
 				image,
 				distances,
 				0,
@@ -257,7 +293,7 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 
 		result.membraneIntensities.add( membraneDistanceAndIntensity.value );
 
-		result.insideIntensities.add( computeMeanIntensityWithinDistanceRange(
+		result.brighterIntensities.add( computeMeanIntensityWithinDistanceRange(
 				image,
 				distances,
 				(int) membraneDistanceAndIntensity.coordinate + resolutionBlurWidthInPixel,

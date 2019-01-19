@@ -24,7 +24,7 @@ public class TranslocationCellEdgeDetection
 		ij.ui().showUI();
 
 		final ImagePlus imagePlus = IJ.openImage(
-				TranslocationTestCommand.class.getResource(
+				TranslocationCommandTest.class.getResource(
 						"translocation/test01-singleSlice.zip" ).getFile() );
 
 		final RandomAccessibleInterval< R > intensity = ImageJFunctions.wrapReal( imagePlus );
@@ -70,7 +70,7 @@ public class TranslocationCellEdgeDetection
 		ImageJFunctions.show( gauss, "gauss" );
 		ImageJFunctions.show( gradient, "gradient" );
 		ImageJFunctions.show( mask, "mask" );
-		ImageJFunctions.show( thin, "thin" );
+		ImageJFunctions.show( thin, "skeleton" );
 
 
 

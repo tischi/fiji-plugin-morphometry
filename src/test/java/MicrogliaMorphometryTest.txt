@@ -122,9 +122,9 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 //		ArrayList< HashMap > measurements = new ArrayList<>();
 //
 //
-//		RandomAccessibleInterval< T > movie = Views.addDimension( Views.stack( results ), 0, 0 );
-//		movie = Views.permute( movie, 3, 4 );
-//		ImagePlus show = ImageJFunctions.show( movie, settings.inputDataSetName );
+//		RandomAccessibleInterval< T > inputs = Views.addDimension( Views.stack( results ), 0, 0 );
+//		inputs = Views.permute( inputs, 3, 4 );
+//		ImagePlus show = ImageJFunctions.show( inputs, settings.inputDataSetName );
 //		IJ.run( show, "Grays", "");
 //
 //		final Overlay overlay = new Overlay();
@@ -157,7 +157,7 @@ public class MicrogliaMorphometryTest <T extends RealType< T > & NativeType< T >
 //		}
 //
 //		show.setOverlay( overlay );
-//		final RandomAccessibleInterval< IntType > labelings = ( RandomAccessibleInterval ) Views.hyperSlice( movie, 2, 1 );
+//		final RandomAccessibleInterval< IntType > labelings = ( RandomAccessibleInterval ) Views.hyperSlice( inputs, 2, 1 );
 //		ImageJFunctions.show( labelings, "labelings" );
 //
 //		final RandomAccessibleInterval< LabelingType< Integer > > stack = Views.stack( imgLabelings );

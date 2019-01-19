@@ -973,7 +973,9 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T >  >
-	ImgLabeling< Integer, IntType > asImgLabeling( RandomAccessibleInterval< T > masks )
+	ImgLabeling< Integer, IntType > asImgLabeling(
+			RandomAccessibleInterval< T > masks,
+			ConnectedComponents.StructuringElement structuringElement )
 	{
 
 		RandomAccessibleInterval< IntType > labelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( masks ) );
@@ -1007,7 +1009,7 @@ public class Utils
 				Views.extendBorder( unsignedIntTypeRandomAccessibleInterval ),
 				imgLabeling,
 				labelCreator,
-				ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+				structuringElement );
 
 		return imgLabeling;
 	}
@@ -1138,7 +1140,7 @@ public class Utils
 	public static < T extends RealType< T > & NativeType< T > >
 	int getNumObjects( RandomAccessibleInterval< T > mask )
 	{
-		final LabelRegions labelRegions = new LabelRegions( asImgLabeling( mask )  );
+		final LabelRegions labelRegions = new LabelRegions( asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED )  );
 		return labelRegions.getExistingLabels().size() - 1;
 	}
 

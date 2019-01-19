@@ -16,7 +16,7 @@ import net.imglib2.type.numeric.RealType;
 import javax.swing.*;
 import java.util.ArrayList;
 
-public class TranslocationTestCommand
+public class TranslocationCommandTest
 {
 	public static  < T extends RealType< T > & NativeType< T > >
 	void main( String[] args )
@@ -26,13 +26,13 @@ public class TranslocationTestCommand
 		ij.ui().showUI();
 
 		final ImagePlus imagePlus = IJ.openImage(
-				TranslocationTestCommand.class.getResource(
-						"translocation/test01.zip" ).getFile() );
+				TranslocationCommandTest.class.getResource(
+						"translocation/touching-cells.zip" ).getFile() );
 
 		final RoiManager rm = new RoiManager();
 		rm.runCommand( "open",
-				TranslocationTestCommand.class.getResource(
-						"translocation/test01-rois.zip" ).getFile() );
+				TranslocationCommandTest.class.getResource(
+						"translocation/touching-cells.roi" ).getFile() );
 		final ArrayList< FinalInterval > intervals = Rois.asIntervals( rm.getRoisAsArray() );
 
 		ArrayList< RandomAccessibleInterval< T > > intensities = Utils.get2DImagePlusMovieAsFrameList( imagePlus, 1 );

@@ -20,13 +20,22 @@ public class TranslocationResult < R extends RealType< R > & NativeType< R > >
 	final public ArrayList< RandomAccessibleInterval< R > > gradients;
 	final public ArrayList< RandomAccessibleInterval< R > > intensities;
 	final public ArrayList< RandomAccessibleInterval< BitType > > membranes;
+	final public ArrayList< RandomAccessibleInterval< BitType > > cellEdges;
+
+	public ArrayList< ArrayList< RandomAccessibleInterval< BitType > > > getNonMembraneMasks()
+	{
+		return nonMembraneMasks;
+	}
+
+	final public ArrayList< ArrayList< RandomAccessibleInterval< BitType > > > nonMembraneMasks;
+
 	final public ArrayList< RandomAccessibleInterval< BitType > > binaryGradients;
 
 	final public ArrayList< RandomAccessibleInterval< BitType > > insideOutsideMasks;
 
-	final public ArrayList< Double > outsideIntensities;
+	final public ArrayList< Double > dimmerIntensities;
 	final public ArrayList< Double > membraneIntensities;
-	final public ArrayList< Double > insideIntensities;
+	final public ArrayList< Double > brighterIntensities;
 	final public ArrayList< Double > translocations;
 	public double regionCenterX;
 	public double regionCenterY;
@@ -34,16 +43,19 @@ public class TranslocationResult < R extends RealType< R > & NativeType< R > >
 	public TranslocationResult( )
 	{
 		cellMasks = new ArrayList<>(  );
-		outsideIntensities = new ArrayList<Double>();
+		dimmerIntensities = new ArrayList<Double>();
 		membraneIntensities = new ArrayList<Double>();
-		insideIntensities = new ArrayList<Double>();
+		brighterIntensities = new ArrayList<Double>();
 		translocations = new ArrayList<Double>();
 		gradients = new ArrayList<RandomAccessibleInterval< R >>();
 		membranes = new ArrayList<RandomAccessibleInterval<BitType>>();
 		binaryGradients = new ArrayList<RandomAccessibleInterval<BitType>>();
 		insideOutsideMasks = new ArrayList<RandomAccessibleInterval<BitType>>();
 		intensities = new ArrayList<RandomAccessibleInterval<R>>();
+		cellEdges = new ArrayList<RandomAccessibleInterval<BitType>>();;
+		nonMembraneMasks = new ArrayList<>();
 	}
+
 
 	public static JTable resultsAsTable( ArrayList< TranslocationResult > results )
 	{

@@ -7,6 +7,7 @@ import ij.ImagePlus;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
+import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.morphology.Closing;
 import net.imglib2.algorithm.morphology.Dilation;
 import net.imglib2.algorithm.morphology.Erosion;
@@ -692,7 +693,7 @@ public class Algorithms
 									localMaxima );
 
 				final ImgLabeling< Integer, IntType > watershedImgLabeling = createEmptyImgLabeling( labelRegionMask );
-				final ImgLabeling< Integer, IntType > seedsImgLabeling = Utils.asImgLabeling( seeds );
+				final ImgLabeling< Integer, IntType > seedsImgLabeling = Utils.asImgLabeling( seeds, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 				opService.image().watershed(
 						watershedImgLabeling,
@@ -893,7 +894,7 @@ public class Algorithms
 
 			if ( splitObjectLabel == WATERSHED )
 			{
-				final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( Regions.labelRegionAsMask( region ) );
+				final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( Regions.labelRegionAsMask( region ), ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 				final LabelRegions< Integer > splitRegions = new LabelRegions( imgLabeling );
 
 				long maximalLength = 0;
@@ -1092,12 +1093,4 @@ public class Algorithms
 		return median;
 	}
 
-	public static RandomAccessibleInterval< BitType > thin(
-			RandomAccessibleInterval< BitType > input,
-			OpService opService )
-	{
-		final RandomAccessibleInterval< BitType > thin = Utils.createEmptyCopy( input );
-		opService.morphology().thinGuoHall( thin, input );
-		return thin;
-	}
 }
