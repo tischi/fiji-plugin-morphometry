@@ -1,6 +1,7 @@
 package de.embl.cba.morphometry.translocation;
 
 import de.embl.cba.morphometry.*;
+import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.regions.RegionAndSize;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.segmentation.SignalOverBackgroundSegmenter;
@@ -39,7 +40,7 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		return results;
 	}
 
-	final ArrayList<TranslocationResult> results;
+	final ArrayList< TranslocationResult > results;
 
 	final OpService opService;
 	private int minimalRegionSize;
@@ -60,7 +61,7 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		blurRadius = 4;
 		erosionRadius = 4;
 
-		results = new ArrayList<TranslocationResult>();
+		results = new ArrayList<TranslocationResult >();
 
 		computeTranslocations();
 	}
@@ -75,7 +76,9 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 
 	private void computeTranslocationsInRoi( FinalInterval interval )
 	{
-		final TranslocationResult result = new TranslocationResult();
+		final TranslocationResult< ? > result = new TranslocationResult();
+
+		final ArrayList nonMembraneMasks = result.nonMembraneMasks;
 
 		measureRegionCenter( interval, result );
 
@@ -216,27 +219,29 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		result.nonMembraneMasks.add( nonMembraneMasks );
 	}
 
-	private void measureIntensities( TranslocationResult result,
-									 int t )
+	private void measureIntensities(
+			TranslocationResult< ? > result,
+			int t )
 	{
 		measureMembraneIntensity( result, t );
 
 		measureNonMembraneIntensities( result, t );
 	}
 
-	private void measureNonMembraneIntensities( TranslocationResult result, int t )
+	private void measureNonMembraneIntensities(
+			TranslocationResult< ? > result,
+			int t )
 	{
-		final RandomAccess< R > intensityAccess = inputs.get( t ).randomAccess();
+		final RandomAccessibleInterval< R > intensity = inputs.get( t );
 
-		final ArrayList nonMembraneMasks = result.getNonMembraneMasks();
+		final ArrayList< RandomAccessibleInterval< BitType > > nonMembraneMasks =
+				result.nonMembraneMasks.get( t );
 
 		final ArrayList< Double > intensities = new ArrayList<>();
 
-		if ( sizeSortedRegions.size() < 2 )
+		if ( nonMembraneMasks.size() < 2 )
 		{
-			// Something went wrong
-			Logger.log( "Could not detect membrane in region " + ( results.size() + 1 ) + ", frame " + ( t + 1) );
-//			ImageJFunctions.show( ( RandomAccessibleInterval ) result.gradients.get( t ), "Failure: Gradient Timepoint " + (t+1) );
+			Logger.log( "Error: region " + ( results.size() + 1 ) + ", frame " + ( t + 1) );
 			intensities.add( SEGMENTATION_ERROR );
 			intensities.add( SEGMENTATION_ERROR );
 		}
@@ -244,15 +249,15 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		{
 			for ( int region = 0; region < 2; region++ )
 			{
-				intensities.add( getMean( sizeSortedRegions, intensityAccess, region ) );
-				Regions.drawRegionInMask( sizeSortedRegions.get( region ).getRegion(), insideOutsideMask );
+				Measurements.sumIntensity( intensity, nonMembraneMasks.get( region )  );
+				intensities.add( Measurements.sumIntensity( intensity, nonMembraneMasks.get( region )  ) );
 			}
 
 			Collections.sort( intensities );
 		}
 
-		result.dimmerIntensities.add( intensities.get( 0 ) ); // the smaller one
-		result.brighterIntensities.add( intensities.get( 1 ) ); // the larger one
+		result.dimmerIntensities.add( intensities.get( 0 ) );
+		result.brighterIntensities.add( intensities.get( 1 ) );
 	}
 
 	private double getMean( ArrayList< RegionAndSize > regionsAndSizes,

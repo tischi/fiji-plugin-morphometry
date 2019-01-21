@@ -15,14 +15,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MicrogliaMorphometry < T extends RealType<T> & NativeType< T > >
+public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 {
 
 	private final ArrayList< RandomAccessibleInterval< T > > labelMaps;
 	private final OpService opService;
 	private ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimepointList;
 	private ArrayList< RandomAccessibleInterval< BitType > > skeletons;
-
 
 	public MicrogliaMorphometry( ArrayList< RandomAccessibleInterval< T > > labelMaps,
 								 OpService opService )

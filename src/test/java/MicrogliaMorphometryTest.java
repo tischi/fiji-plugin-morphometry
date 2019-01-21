@@ -15,14 +15,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TestMicrogliaMorphometry
+public class MicrogliaMorphometryTest
 {
 
 	public static < T extends RealType< T > & NativeType< T > > void main( String[] args ) throws IOException
 	{
 		final net.imagej.ImageJ ij = new net.imagej.ImageJ();
 
-		final String inputFile = TestMicrogliaMorphometry.class.getResource( "microglia/MAX_5C-crop-t1-3-labelMasks.tif" ).getFile().toString();
+		final String inputFile = MicrogliaMorphometryTest.class.getResource( "microglia/MAX_5C-crop-t1-3-labelMasks.tif" ).getFile().toString();
 
 		final ImagePlus imagePlus = ImageIO.openWithBioFormats( inputFile );
 
@@ -34,7 +34,7 @@ public class TestMicrogliaMorphometry
 
 		final ArrayList< HashMap< Integer, Map< String, Object > > > measurements = microgliaMorphometry.getMeasurementsTimepointList();
 
-		final JTable jTable = Measurements.createJTable( measurements );
+		final JTable jTable = Measurements.asTable( measurements );
 
 		TableUtils.saveTable( jTable, new File( "/Users/tischer/Documents/fiji-plugin-morphometry/src/test/resources/microglia/MAX_5C-crop-t1-3-measurements.csv" ) );
 

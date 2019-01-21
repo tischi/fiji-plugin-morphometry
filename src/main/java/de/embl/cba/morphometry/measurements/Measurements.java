@@ -8,7 +8,6 @@ import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.geom.real.Polygon2D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
@@ -176,21 +175,57 @@ public class Measurements
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	void measureSumIntensities( HashMap< Integer, Map< String, Object > > objectMeasurements,
-								ImgLabeling< Integer, IntType > imgLabeling,
-								RandomAccessibleInterval< T > image,
-								String channel )
+	double sumIntensity( RandomAccessibleInterval< T > image,
+						 RandomAccessibleInterval< BitType > mask
+
+	)
 	{
-		final RandomAccess< T > imageRandomAccess = image.randomAccess();
+		final Cursor< BitType > maskCursor = Views.iterable( mask ).cursor();
+		final RandomAccess< T > intensityAccess = image.randomAccess();
 
-		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+		double sum = 0;
 
-		for ( LabelRegion labelRegion : labelRegions )
+		while ( maskCursor.hasNext() )
 		{
-			long sum = measureSumIntensity( imageRandomAccess, labelRegion );
-			addMeasurement( objectMeasurements, (int) labelRegion.getLabel(), SUM_INTENSITY + SEP + channel, sum );
+			if ( maskCursor.next().get() )
+			{
+				intensityAccess.setPosition( maskCursor );
+				sum += intensityAccess.get().getRealDouble();
+			}
+
+
 		}
+
+		return sum;
 	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	double meanIntensity( RandomAccessibleInterval< T > image,
+						 RandomAccessibleInterval< BitType > mask
+
+	)
+	{
+		final Cursor< BitType > maskCursor = Views.iterable( mask ).cursor();
+		final RandomAccess< T > intensityAccess = image.randomAccess();
+
+		double sum = 0;
+		long n = 0;
+
+		while ( maskCursor.hasNext() )
+		{
+			if ( maskCursor.next().get() )
+			{
+				intensityAccess.setPosition( maskCursor );
+				sum += intensityAccess.get().getRealDouble();
+				n++;
+			}
+
+
+		}
+
+		return sum / n;
+	}
+
 
 	private static < T extends RealType< T > & NativeType< T > >
 	long measureSumIntensity( RandomAccess< T > imageRandomAccess, LabelRegion labelRegion )
@@ -297,14 +332,14 @@ public class Measurements
 		}
 	}
 
-	public static JTable createJTable( HashMap< Integer, Map< String, Object > > objectMeasurements )
+	public static JTable asTable( HashMap< Integer, Map< String, Object > > objectMeasurements )
 	{
 		final ArrayList< HashMap< Integer, Map< String, Object > > > timepoints = new ArrayList<>();
 		timepoints.add( objectMeasurements );
 		return TableUtils.createJTableFromStringList( measurementsAsTableRowsStringList( timepoints, "\t" ), "\t" );
 	}
 
-	public static JTable createJTable( ArrayList< HashMap< Integer, Map< String, Object > > > timepoints )
+	public static JTable asTable( ArrayList< HashMap< Integer, Map< String, Object > > > timepoints )
 	{
 		return TableUtils.createJTableFromStringList( measurementsAsTableRowsStringList( timepoints, "\t" ), "\t" );
 	}
@@ -368,5 +403,23 @@ public class Measurements
 		}
 
 		return measurementsTimepointList;
+	}
+
+
+	public static < T extends RealType< T > & NativeType< T > >
+	void measureSumIntensities( HashMap< Integer, Map< String, Object > > objectMeasurements,
+								ImgLabeling< Integer, IntType > imgLabeling,
+								RandomAccessibleInterval< T > image,
+								String channel )
+	{
+		final RandomAccess< T > imageRandomAccess = image.randomAccess();
+
+		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+
+		for ( LabelRegion labelRegion : labelRegions )
+		{
+			long sum = measureSumIntensity( imageRandomAccess, labelRegion );
+			addMeasurement( objectMeasurements, (int) labelRegion.getLabel(), SUM_INTENSITY + SEP + channel, sum );
+		}
 	}
 }

@@ -16,22 +16,14 @@ public class TranslocationResult < R extends RealType< R > & NativeType< R > >
 	public static final String TRANSLOCATION = "Translocation";
 	public static final String REGION_CENTER_X = "RegionCenterX";
 	public static final String REGION_CENTER_Y = "RegionCenterY";
+
 	final public ArrayList< RandomAccessibleInterval< R > > cellMasks;
 	final public ArrayList< RandomAccessibleInterval< R > > gradients;
 	final public ArrayList< RandomAccessibleInterval< R > > intensities;
+	final public ArrayList< RandomAccessibleInterval< BitType > > binaryGradients;
 	final public ArrayList< RandomAccessibleInterval< BitType > > membranes;
 	final public ArrayList< RandomAccessibleInterval< BitType > > cellEdges;
-
-	public ArrayList< ArrayList< RandomAccessibleInterval< BitType > > > getNonMembraneMasks()
-	{
-		return nonMembraneMasks;
-	}
-
 	final public ArrayList< ArrayList< RandomAccessibleInterval< BitType > > > nonMembraneMasks;
-
-	final public ArrayList< RandomAccessibleInterval< BitType > > binaryGradients;
-
-	final public ArrayList< RandomAccessibleInterval< BitType > > insideOutsideMasks;
 
 	final public ArrayList< Double > dimmerIntensities;
 	final public ArrayList< Double > membraneIntensities;
@@ -50,7 +42,6 @@ public class TranslocationResult < R extends RealType< R > & NativeType< R > >
 		gradients = new ArrayList<RandomAccessibleInterval< R >>();
 		membranes = new ArrayList<RandomAccessibleInterval<BitType>>();
 		binaryGradients = new ArrayList<RandomAccessibleInterval<BitType>>();
-		insideOutsideMasks = new ArrayList<RandomAccessibleInterval<BitType>>();
 		intensities = new ArrayList<RandomAccessibleInterval<R>>();
 		cellEdges = new ArrayList<RandomAccessibleInterval<BitType>>();;
 		nonMembraneMasks = new ArrayList<>();

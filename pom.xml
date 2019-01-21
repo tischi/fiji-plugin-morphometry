@@ -159,7 +159,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.scijava</groupId>
+			<groupId>de.embl.cba</groupId>
 			<artifactId>bdv-utils</artifactId>
 			<version>0.1.26</version>
 		</dependency>

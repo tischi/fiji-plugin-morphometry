@@ -1,17 +1,7 @@
-//import automic.table.TableModel;
+package explore;//import automic.table.TableModel;
 //import automic.utils.imagefiles.PatternOpenerWithBioformats;
-import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.spindle.SpindleMorphometry;
-import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
-import ij.ImagePlus;
-import net.imagej.ImageJ;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.view.Views;
-
-import java.io.File;
 
 public class SpindleMorphometryAutoMicTableTest<T extends RealType<T> & NativeType< T > >
 {

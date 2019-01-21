@@ -1,3 +1,5 @@
+package explore;
+
 import net.imagej.ImageJ;
 import org.scijava.command.Command;
 import org.scijava.command.DynamicCommand;
@@ -5,7 +7,6 @@ import org.scijava.command.Interactive;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.widget.Button;
-import java.awt.*;
 
 @Plugin(type = Command.class, menuPath = "", initializer = "init")
 public class TestCommand extends DynamicCommand implements Interactive

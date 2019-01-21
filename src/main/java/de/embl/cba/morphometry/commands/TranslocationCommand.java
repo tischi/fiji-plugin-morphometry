@@ -31,7 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-@Plugin(type = Command.class, menuPath = "Plugins>Measurement>Measure Plasma Membrane Translocation" )
+@Plugin(type = Command.class, menuPath = "Plugins>Measurement>Membrane Translocation" )
 public class TranslocationCommand< R extends RealType< R > & NativeType< R > > implements Command
 {
 	@Parameter
@@ -161,10 +161,14 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 					labelMask,
 					region + 1 );
 
-			Utils.drawMaskIntoImage(
-					(RandomAccessibleInterval) results.get( region ).insideOutsideMasks.get( t ),
-					labelMask,
-					region + 1 );
+			for ( int i = 0; i < 2; i++ )
+			{
+				Utils.drawMaskIntoImage(
+						( RandomAccessibleInterval ) ( ( ArrayList ) results.get( region ).nonMembraneMasks.get( t ) ).get( i ),
+						labelMask,
+						region + 1 );
+			}
+
 		}
 
 		return labelMask;

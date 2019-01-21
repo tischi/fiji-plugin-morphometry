@@ -104,7 +104,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		final HashMap<Integer, Map< String, Object > > objectMeasurements = morphometry.getObjectMeasurements();
 
 		// TODO: get rid of genericTable
-		final JTable jTable = Measurements.createJTable( objectMeasurements );
+		final JTable jTable = Measurements.asTable( objectMeasurements );
 		final ObjectTablePanel objectTablePanel = new ObjectTablePanel( jTable );
 		objectTablePanel.showPanel();
 //		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( jTable );
