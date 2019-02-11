@@ -4,8 +4,10 @@ import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.tables.TableUtils;
+import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.process.LUT;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
@@ -16,6 +18,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -101,19 +104,20 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	private void getAndSaveOutputImage( SpindleMorphometry morphometry )
 	{
 		final ImagePlus imp = morphometry.getOutputImage();
-		imp.setDisplayMode(IJ.COLOR);
 
-		imp.setC(1);
-		IJ.run(imp, "Blue", "");
+		final CompositeImage compositeImage = new CompositeImage( imp );
 
-		imp.setC(2);
-		IJ.run(imp, "Green", "");
+		compositeImage.setC(1);
+		IJ.run(compositeImage, "Blue", "");
 
-		imp.setC(3);
-		IJ.run(imp, "Yellow", "");
+		compositeImage.setC(2);
+		IJ.run(compositeImage, "Green", "");
 
-		imp.setDisplayMode(IJ.COMPOSITE);
-		save( imp );
+		compositeImage.setC(3);
+		IJ.run(compositeImage, "Yellow", "");
+
+		compositeImage.setDisplayMode( CompositeImage.COMPOSITE );
+		save( compositeImage );
 	}
 
 	private void logEnd()
