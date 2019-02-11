@@ -3,7 +3,6 @@ package de.embl.cba.morphometry.spindle;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
-import de.embl.cba.tables.objects.ObjectTablePanel;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
@@ -19,7 +18,6 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
-import javax.swing.*;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -103,11 +101,11 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 		final HashMap<Integer, Map< String, Object > > objectMeasurements = morphometry.getObjectMeasurements();
 
-		// TODO: get rid of genericTable
-		final JTable jTable = Measurements.asTable( objectMeasurements );
-		final ObjectTablePanel objectTablePanel = new ObjectTablePanel( jTable );
-		objectTablePanel.showPanel();
-//		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( jTable );
+		// TODO: show interactive table
+//		final JTable jTable = Measurements.asTable( objectMeasurements );
+//		final ObjectTablePanel objectTablePanel = new ObjectTablePanel( jTable );
+//		objectTablePanel.showTable();
+////		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( jTable );
 
 		Logger.log( "Done!" );
 

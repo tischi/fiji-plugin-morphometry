@@ -56,7 +56,7 @@ public class TranslocationCommandTest
 
 		final ObjectTablePanel objectTablePanel = new ObjectTablePanel( table );
 
-		objectTablePanel.showPanel();
+		objectTablePanel.showTable();
 
 		final ArrayList< RandomAccessibleInterval< T > > labelMasks =
 				TranslocationCommand.createLabelMasks( intensities, results );

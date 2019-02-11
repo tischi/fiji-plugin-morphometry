@@ -28,7 +28,6 @@ import org.scijava.plugin.Plugin;
 
 import javax.swing.*;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Measurement>Membrane Translocation" )
@@ -86,21 +85,15 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 
 		new FileSaver( labelMasksImp ).saveAsTiff( outputPathStump  + "-labels.tif" );
 
-		try
-		{
-			TableUtils.saveTable( objectTablePanel.getTable(), new File( outputPathStump + "-table.csv") );
-		}
-		catch ( IOException e )
-		{
-			e.printStackTrace();
-		}
+		TableUtils.saveTable( objectTablePanel.getTable(), new File( outputPathStump + "-table.csv") );
+
 	}
 
 	public ObjectTablePanel showResultsAsTable( ArrayList< TranslocationResult > results )
 	{
 		final JTable table = TranslocationResult.resultsAsTable( results );
 		final ObjectTablePanel objectTablePanel = new ObjectTablePanel( table );
-		objectTablePanel.showPanel();
+		objectTablePanel.showTable();
 
 		return objectTablePanel;
 	}

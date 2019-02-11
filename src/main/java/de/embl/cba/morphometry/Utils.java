@@ -783,7 +783,6 @@ public class Utils
 		}
 
 		return center;
-
 	}
 
 

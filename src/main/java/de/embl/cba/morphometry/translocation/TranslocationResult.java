@@ -1,6 +1,7 @@
 package de.embl.cba.morphometry.translocation;
 
-import de.embl.cba.tables.models.ColumnClassAwareTableModel;
+import de.embl.cba.tables.modelview.tables.ColumnClassAwareTableModel;
+
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -107,7 +108,7 @@ public class TranslocationResult < R extends RealType< R > & NativeType< R > >
 			}
 		}
 
-		model.refreshColumnClasses();
+		model.refreshColumnClassesFromObjectColumns();
 
 		return new JTable( model );
 	}
