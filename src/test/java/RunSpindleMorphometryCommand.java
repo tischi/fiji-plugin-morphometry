@@ -1,7 +1,7 @@
 import de.embl.cba.morphometry.spindle.SpindleMorphometryCommand;
 import net.imagej.ImageJ;
 
-public class SpindleMorphometryCommandRun
+public class RunSpindleMorphometryCommand
 {
 	public static void main( String[] args )
 	{

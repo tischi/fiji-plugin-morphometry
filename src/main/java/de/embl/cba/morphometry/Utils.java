@@ -1282,7 +1282,6 @@ public class Utils
 	{
 		final ImagePlus wrap = asImagePlus( rai, title );
 		wrap.setCalibration( calibration );
-
 		return wrap;
 	}
 

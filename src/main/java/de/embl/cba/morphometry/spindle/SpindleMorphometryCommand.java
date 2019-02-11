@@ -3,21 +3,19 @@ package de.embl.cba.morphometry.spindle;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
+import de.embl.cba.tables.TableUtils;
 import ij.IJ;
 import ij.ImagePlus;
-import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
-import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.UIService;
 
+import javax.swing.*;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,19 +25,7 @@ import java.util.Map;
 public class SpindleMorphometryCommand< R extends RealType< R > > implements Command
 {
 	@Parameter
-	public UIService uiService;
-
-	@Parameter
-	public DatasetService datasetService;
-
-	@Parameter
-	public LogService logService;
-
-	@Parameter
 	public OpService opService;
-
-	@Parameter
-	public StatusService statusService;
 
 	@Parameter
 	public File inputImageFile;
@@ -60,6 +46,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	@Parameter
 	public boolean showIntermediateResults = settings.showIntermediateResults;
+	private String imageTitle;
 
 
 	public void run()
@@ -84,6 +71,10 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	private void processFile( File file )
 	{
+		imageTitle = inputImageFile.getName().replace( ".tif", "" );
+
+		logStart();
+
 		final ImagePlus imagePlus = IJ.openImage( file.toString() );
 
 		setSettingsFromImagePlus( imagePlus );
@@ -99,16 +90,61 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		SpindleMorphometry morphometry = new SpindleMorphometry( settings, opService );
 		morphometry.run();
 
-		final HashMap<Integer, Map< String, Object > > objectMeasurements = morphometry.getObjectMeasurements();
+		getAndSaveOutputImage( morphometry );
 
-		// TODO: show interactive table
-//		final JTable jTable = Measurements.asTable( objectMeasurements );
-//		final ObjectTablePanel objectTablePanel = new ObjectTablePanel( jTable );
-//		objectTablePanel.showTable();
-////		final InteractiveTablePanel interactiveTablePanel = new InteractiveTablePanel( jTable );
+		computeAndSaveMeasurements( morphometry );
 
+		logEnd();
+
+	}
+
+	private void getAndSaveOutputImage( SpindleMorphometry morphometry )
+	{
+		final ImagePlus imp = morphometry.getOutputImage();
+		imp.setDisplayMode(IJ.COLOR);
+
+		imp.setC(1);
+		IJ.run(imp, "Blue", "");
+
+		imp.setC(2);
+		IJ.run(imp, "Green", "");
+
+		imp.setC(3);
+		IJ.run(imp, "Yellow", "");
+
+		imp.setDisplayMode(IJ.COMPOSITE);
+		save( imp );
+	}
+
+	private void logEnd()
+	{
 		Logger.log( "Done!" );
+	}
 
+	private void logStart()
+	{
+		Logger.log( " " );
+		Logger.log( "# Spindle Morphometry" );
+		Logger.log( "Processing file " + imageTitle );
+	}
+
+	private void computeAndSaveMeasurements( SpindleMorphometry morphometry )
+	{
+		final HashMap<Integer, Map< String, Object > > objectMeasurements = morphometry.getObjectMeasurements();
+		final JTable jTable = Measurements.asTable( objectMeasurements );
+
+
+		final File tableOutputFile = new File( getOutputDirectory() + "measurements.txt" );
+
+		TableUtils.saveTable( jTable, tableOutputFile );
+	}
+
+	private String getOutputDirectory()
+	{
+		return outputDirectory
+				+ File.separator
+				+ imageTitle
+				+ File.separator;
 	}
 
 	private void setSettingsFromImagePlus( ImagePlus imagePlus )
@@ -117,6 +153,14 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.imagePlusCalibration = imagePlus.getCalibration();
 		settings.maxPossibleValueInDataSet = Math.pow( 2, imagePlus.getBitDepth() ) - 1.0;
 		settings.inputDataSetName = imagePlus.getTitle();
+	}
+
+	private void save( ImagePlus imagePlus )
+	{
+		final String path = getOutputDirectory() + imageTitle + "-out.tif";
+		new File( path ).getParentFile().mkdirs();
+		Logger.log( "Saving: " + path );
+		IJ.saveAsTiff( imagePlus, path );
 	}
 
 }

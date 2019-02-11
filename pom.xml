@@ -153,9 +153,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.scijava</groupId>
+			<groupId>de.embl.cba</groupId>
 			<artifactId>transforms-utils</artifactId>
-			<version>0.1.01</version>
+			<version>0.2.00</version>
 		</dependency>
 
 		<dependency>
