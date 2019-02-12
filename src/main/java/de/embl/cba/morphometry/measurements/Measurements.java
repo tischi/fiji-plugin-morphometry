@@ -247,7 +247,6 @@ public class Measurements
 	long measureSize( RandomAccessibleInterval< IntType > labeling,
 					  int label )
 	{
-
 		final Cursor< IntType > labelCursor = Views.iterable( labeling ).localizingCursor();
 		long size = 0;
 
@@ -256,6 +255,24 @@ public class Measurements
 			long value = labelCursor.next().getInteger();
 
 			if( value == label )
+			{
+				size++;
+			}
+		}
+
+		return size;
+	}
+
+	public static
+	long measureSize( RandomAccessibleInterval< BitType > mask )
+	{
+
+		final Cursor< BitType > cursor = Views.iterable( mask ).cursor();
+		long size = 0;
+
+		while ( cursor.hasNext() )
+		{
+			if( cursor.next().get() )
 			{
 				size++;
 			}

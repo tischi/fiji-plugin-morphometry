@@ -3,6 +3,7 @@ package de.embl.cba.morphometry.viewing;
 import bdv.util.*;
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
+import javafx.scene.transform.Affine;
 import net.imagej.ImgPlus;
 import net.imagej.axis.LinearAxis;
 import net.imglib2.RandomAccessibleInterval;
@@ -30,8 +31,13 @@ public class BdvViewer
 		show( rai, title, points, Utils.as3dDoubleArray( calibration ), false );
 	}
 
+
 	public static < T extends RealType< T > & NativeType< T > >
-	void show( RandomAccessibleInterval rai, String title, List< RealPoint > points, double[] calibration, boolean resetViewTransform )
+	void show( RandomAccessibleInterval rai,
+			   String title,
+			   List< RealPoint > points,
+			   double[] calibration,
+			   boolean resetViewTransform )
 	{
 		final Bdv bdv;
 		final BdvSource bdvSource;
@@ -60,7 +66,6 @@ public class BdvViewer
 		}
 
 		bdvSource.setDisplayRange( 0, Algorithms.getMaximumValue( rai ) );
-
 
 	}
 
