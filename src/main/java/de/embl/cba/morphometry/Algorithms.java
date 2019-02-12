@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry;
 
+import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
@@ -1093,4 +1094,43 @@ public class Algorithms
 		return median;
 	}
 
+	public static < T extends RealType< T > & NativeType< T > >
+	CoordinatesAndValues computeRadialProfile(
+			RandomAccessibleInterval< T > image,
+			double[] center,
+			double spacing,
+			double maxDistanceInMicrometer )
+	{
+		final Cursor< T > cursor = Views.iterable( image ).cursor();
+		final int numDimensions = image.numDimensions();
+
+		final double[] position = new double[ numDimensions ];
+
+		int maxBin = ( int ) ( maxDistanceInMicrometer / spacing );
+		double[] counts = new double[ maxBin ];
+		double[] values = new double[ maxBin ];
+
+		while ( cursor.hasNext() )
+		{
+			cursor.localize( position );
+			final double distance = LinAlgHelpers.distance( center, position ) * spacing;
+			final double value = cursor.next().getRealDouble();
+
+			final int bin = ( int ) ( distance / spacing );
+			if ( bin < maxBin )
+			{
+				counts[ bin ] += 1;
+				values[ bin ] += value;
+			}
+		}
+
+		final CoordinatesAndValues radialProfile = new CoordinatesAndValues();
+		for ( int bin = 0; bin < maxBin; bin++ )
+		{
+			radialProfile.values.add( values[ bin ] / counts[ bin ] );
+			radialProfile.coordinates.add( bin * spacing );
+		}
+
+		return radialProfile;
+	}
 }

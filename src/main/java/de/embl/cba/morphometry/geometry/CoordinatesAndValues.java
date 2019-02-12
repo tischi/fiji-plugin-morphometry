@@ -1,7 +1,5 @@
 package de.embl.cba.morphometry.geometry;
 
-import net.imglib2.img.array.ArrayImgFactory;
-
 import java.util.ArrayList;
 
 public class CoordinatesAndValues

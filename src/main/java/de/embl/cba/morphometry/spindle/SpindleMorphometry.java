@@ -3,16 +3,15 @@ package de.embl.cba.morphometry.spindle;
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.CurveAnalysis;
+import de.embl.cba.morphometry.geometry.IndexAndValue;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidVectors;
 import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.regions.Regions;
-import de.embl.cba.morphometry.viewing.Viewer3D;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.measure.Calibration;
-import mpicbg.util.TransformUtils;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
@@ -24,7 +23,6 @@ import net.imglib2.histogram.Histogram1d;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
-import net.imglib2.realtransform.AffineTransform2D;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
@@ -323,15 +321,18 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final Projection projection = new Projection<>( tubulinAlignedAlongSpindlePoleToPoleAxis, 2 );
 
-		final RandomAccessibleInterval spindleProjection = projection.maximum();
+		final RandomAccessibleInterval< T > spindleProjection = projection.maximum();
 
-		final Histogram1d< T > spindleProjectionHistogram = opService.image().histogram( Views.iterable( spindleProjection ) );
-		final double spindleProjectionThreshold = opService.threshold().yen( spindleProjectionHistogram ).getRealDouble();
-		RandomAccessibleInterval< BitType > spindleProjectionMask =
-				Algorithms.createMask( spindleProjection, spindleProjectionThreshold );
+		final double[] center = { 0, 0 };
+		final double spacing = settings.workingVoxelSize;
+		double maxDistanceInMicrometer = 10;
+		final CoordinatesAndValues radialTubulinProfile = Algorithms.computeRadialProfile( spindleProjection, center, spacing, maxDistanceInMicrometer );
+		final CoordinatesAndValues radialTubulinProfileDerivative = CurveAnalysis.computeDerivatives( radialTubulinProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
 
-		final long spindleProjectionAreaInPixels = Measurements.measureSize( spindleProjectionMask );
-		double spindleWidth = 2 * Math.sqrt( spindleProjectionAreaInPixels / Math.PI ) * settings.workingVoxelSize;
+		if ( settings.showIntermediateResults ) Plots.plot( radialTubulinProfile, "spindle center distance [um]", "tubulin intensity" );
+		if ( settings.showIntermediateResults ) Plots.plot( radialTubulinProfileDerivative, "spindle center distance [um]", "d/dx tubulin intensity" );
+
+		final double spindleWidth = CurveAnalysis.minLocCoordinate( radialTubulinProfileDerivative );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
@@ -339,8 +340,22 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				SPINDLE_WIDTH + SEP + LENGTH_UNIT,
 				spindleWidth );
 
-		ImageJFunctions.show( spindleProjection, "spindleProjection" );
-		ImageJFunctions.show( spindleProjectionMask, "spindleProjectionMask" );
+//		final Histogram1d< T > spindleProjectionHistogram = opService.image().histogram( Views.iterable( spindleProjection ) );
+//		final double spindleProjectionThreshold = opService.threshold().yen( spindleProjectionHistogram ).getRealDouble();
+//		RandomAccessibleInterval< BitType > spindleProjectionMask =
+//				Algorithms.createMask( spindleProjection, spindleProjectionThreshold );
+//
+//		final long spindleProjectionAreaInPixels = Measurements.measureSize( spindleProjectionMask );
+//		double spindleWidth = 2 * Math.sqrt( spindleProjectionAreaInPixels / Math.PI ) * settings.workingVoxelSize;
+//
+//		Measurements.addMeasurement(
+//				objectMeasurements,
+//				0,
+//				SPINDLE_WIDTH + SEP + LENGTH_UNIT,
+//				spindleWidth );
+//
+//		ImageJFunctions.show( spindleProjection, "spindleProjection" );
+//		ImageJFunctions.show( spindleProjectionMask, "spindleProjectionMask" );
 
 
 		/**

@@ -1,7 +1,5 @@
 package de.embl.cba.morphometry.geometry;
 
-import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
-
 import java.util.ArrayList;
 
 import static java.lang.Math.abs;
@@ -36,7 +34,7 @@ public abstract class CurveAnalysis
 	public static double computeFWHM( CoordinatesAndValues coordinatesAndValues )
 	{
 
-		final IndexAndValue indexAndValue = computeMaximumIndexAndValue( coordinatesAndValues );
+		final IndexAndValue indexAndValue = findMaximumIndexAndValue( coordinatesAndValues );
 
 		final int n = coordinatesAndValues.values.size();
 
@@ -64,9 +62,8 @@ public abstract class CurveAnalysis
 	}
 
 
-	public static IndexAndValue computeMaximumIndexAndValue( CoordinatesAndValues coordinatesAndValues )
+	public static IndexAndValue findMaximumIndexAndValue( CoordinatesAndValues coordinatesAndValues )
 	{
-
 		final int n = coordinatesAndValues.coordinates.size();
 
 		final IndexAndValue indexAndValue = new IndexAndValue();
@@ -82,6 +79,49 @@ public abstract class CurveAnalysis
 		}
 
 		return indexAndValue;
+	}
+
+	public static double maxLocCoordinate( CoordinatesAndValues coordinatesAndValues )
+	{
+		final int n = coordinatesAndValues.coordinates.size();
+
+		final IndexAndValue maxLocIndexAndValue = new IndexAndValue();
+		maxLocIndexAndValue.value = - Double.MAX_VALUE;
+
+		for ( int i = 0; i < n; i++ )
+		{
+			if ( coordinatesAndValues.values.get( i ) > maxLocIndexAndValue.value )
+			{
+				maxLocIndexAndValue.value = coordinatesAndValues.values.get( i );
+				maxLocIndexAndValue.index = i;
+			}
+		}
+
+		final Double maxLocCoordinate = coordinatesAndValues.values.get( maxLocIndexAndValue.index );
+
+		return maxLocCoordinate;
+	}
+
+
+	public static double minLocCoordinate( CoordinatesAndValues coordinatesAndValues )
+	{
+		final int n = coordinatesAndValues.coordinates.size();
+
+		final IndexAndValue minLocIndexAndValue = new IndexAndValue();
+		minLocIndexAndValue.value = Double.MAX_VALUE;
+
+		for ( int i = 0; i < n; i++ )
+		{
+			if ( coordinatesAndValues.values.get( i ) < minLocIndexAndValue.value )
+			{
+				minLocIndexAndValue.value = coordinatesAndValues.values.get( i );
+				minLocIndexAndValue.index = i;
+			}
+		}
+
+		final Double maxLocCoordinate = coordinatesAndValues.values.get( minLocIndexAndValue.index );
+
+		return maxLocCoordinate;
 	}
 
 }
