@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry;
 
+import de.embl.cba.morphometry.geometry.CoordinateToValue;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import ij.gui.Plot;
 
@@ -28,6 +29,18 @@ public class Plots
 				yLab,
 				cv.coordinates.stream().mapToDouble(d -> d).toArray(),
 				cv.values.stream().mapToDouble( d -> d ).toArray() );
+
+		plot.show();
+	}
+
+	public static void plot( CoordinateToValue cv, String xLab, String yLab )
+	{
+
+		Plot plot = new Plot("",
+				xLab,
+				yLab,
+				cv.keySet().stream().mapToDouble( d -> d ).toArray(),
+				cv.values().stream().mapToDouble( d -> d ).toArray() );
 
 		plot.show();
 	}

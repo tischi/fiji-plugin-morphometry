@@ -3,7 +3,6 @@ package de.embl.cba.morphometry.spindle;
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.CurveAnalysis;
-import de.embl.cba.morphometry.geometry.IndexAndValue;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidVectors;
 import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
 import de.embl.cba.morphometry.measurements.Measurements;
@@ -19,7 +18,6 @@ import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
-import net.imglib2.histogram.Histogram1d;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
@@ -48,15 +46,16 @@ import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 {
 
-	public static final String SPINDLE_LENGTH = "SpindleLength";
-	public static final String SPINDLE_WIDTH = "SpindleWidth";
-	public static final String DNA_SPINDLE_CENTER_DISTANCE = "DnaCenterToSpindleCenterDistance";
-	public static final String SEP = "_";
+	public static final String SPINDLE_LENGTH = "Spindle_Length";
+	public static final String SPINDLE_WIDTH = "Spindle_Width";
+	public static final String DNA_WIDTH = "DNA_Width";
+	public static final String DNA_SPINDLE_CENTER_DISTANCE = "Dna_Center_To_Spindle_Center_Distance";
 	public static final String LENGTH_UNIT = "um";
-	public static final String DNA_VOLUME = "DnaVolume";
+	public static final String DNA_VOLUME = "Dna_Volume";
 	public static final String VOLUME_UNIT = "um3";
-	public static final String DNA_SHORTEST_AXIS_FWHM = "DnaShortestAxisFWHM";
+	public static final String DNA_LENGTH = "Dna_Length";
 	public static final int ALIGNED_DNA_AXIS = 2;
+	public static final String SEP = "_";
 
 	final SpindleMorphometrySettings settings;
 	final OpService opService;
@@ -170,44 +169,61 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final AffineTransform3D alignmentTransform = Ellipsoids3DImageSuite.createAlignmentTransform( ellipsoidVectors );
 		final RandomAccessibleInterval tubulinAlignedAlongShortestAxisOfDNA = Utils.copyAsArrayImg( Transforms.createTransformedView( tubulin, alignmentTransform, new NearestNeighborInterpolatorFactory() ) );
-		final RandomAccessibleInterval alignedDapi = Utils.copyAsArrayImg( Transforms.createTransformedView( dna, alignmentTransform ) );
+		final RandomAccessibleInterval alignedDNA = Utils.copyAsArrayImg( Transforms.createTransformedView( dna, alignmentTransform ) );
 		final RandomAccessibleInterval alignedProcessedMetaphasePlate = Utils.copyAsArrayImg( Transforms.createTransformedView( processedMetaPhasePlate, alignmentTransform ) );
 
-		if ( settings.showIntermediateResults ) show( alignedDapi, "aligned dapi", Transforms.origin(), workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( alignedDNA, "aligned dapi", Transforms.origin(), workingCalibration, false );
 		if ( settings.showIntermediateResults ) show( alignedProcessedMetaphasePlate, "aligned processed meta-phase plate", Transforms.origin(), workingCalibration, false );
 //		if ( settings.showIntermediateResults ) Viewer3D.show3D( alignedProcessedMetaphasePlate );
 
 		/**
-		 * Compute metaphase plate width
+		 * Compute metaphase plate length
 		 */
 
-		Logger.log( "Measuring meta-phase plate morphometry..." );
+		Logger.log( "Measuring meta-phase plate length..." );
 
-		final CoordinatesAndValues dapiProfile = Utils.computeAverageIntensitiesAlongAxis( alignedDapi, settings.maxShortAxisDist, ALIGNED_DNA_AXIS, settings.workingVoxelSize );
-		if ( settings.showIntermediateResults ) Plots.plot( dapiProfile.coordinates, dapiProfile.values, "distance to center", "dapi intensity along shortest axis" );
+		final CoordinatesAndValues dnaProfile = Utils.computeAverageIntensitiesAlongAxis( alignedDNA, settings.maxShortAxisDist, ALIGNED_DNA_AXIS, settings.workingVoxelSize );
+		if ( settings.showIntermediateResults ) Plots.plot( dnaProfile.coordinates, dnaProfile.values, "distance to center", "dapi intensity along shortest axis" );
 
-		final double fwhm = CurveAnalysis.computeFWHM( dapiProfile );
+		// TODO: replace also by gradient and maximum?
+		final double dnaLength = CurveAnalysis.computeFWHM( dnaProfile );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
 				0,
-				DNA_SHORTEST_AXIS_FWHM + SEP + LENGTH_UNIT,
-				fwhm);
+				DNA_LENGTH + SEP + LENGTH_UNIT,
+				dnaLength);
+
 
 		/**
-		 * Compute dna shortest axis based spindle length
+		 * Measure metaphase plate width
+		 */
+
+		Logger.log( "Measuring meta-phase plate width..." );
+
+		Projection projection = new Projection<>( alignedDNA, 2 );
+
+		final RandomAccessibleInterval< T > dnaProjection = projection.maximum();
+
+		final double dnaWidth = measureWidthByRadialProfile( dnaProjection, "dna width" );
+
+		Measurements.addMeasurement(
+				objectMeasurements,
+				0,
+				DNA_WIDTH + SEP + LENGTH_UNIT,
+				dnaWidth );
+
+		/**
+		 * Compute spindle end-points along shortest DNA axis
 		 */
 
 		final CoordinatesAndValues tubulinProfile = Utils.computeMaximumIntensitiesAlongAxis( tubulinAlignedAlongShortestAxisOfDNA, settings.maxShortAxisDist, ALIGNED_DNA_AXIS, settings.workingVoxelSize );
-		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfile.values, "distance to center", "tubulin maximal intensities" );
+		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfile.values, "center distance [um]", "tubulin max along shortest DNA axis" );
 
 		final CoordinatesAndValues tubulinProfileDerivative = CurveAnalysis.computeDerivatives( tubulinProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
-		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values, "distance to center", "tubulin intensity derivative" );
+		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values, "distance to center", "d/dx tubulin max along shortest DNA axis" );
 
 		double[] dnaAxisBasedSpindlePoleCoordinates = getLeftMaxAndRightMinLoc( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values );
-
-		Logger.log( "Left spindle pole found at: " + dnaAxisBasedSpindlePoleCoordinates[ 0 ] );
-		Logger.log( "Right spindle pole found at: " + dnaAxisBasedSpindlePoleCoordinates[ 1 ] );
 
 		final ArrayList< RealPoint > spindleLengthPoints = new ArrayList<>(  );
 
@@ -261,7 +277,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 
 		/**
-		 * Find spindle center
+		 * Determine spindle center
 		 */
 
 		final double[] poleToPoleVector = new double[ 3 ];
@@ -281,10 +297,13 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				DNA_SPINDLE_CENTER_DISTANCE + SEP + LENGTH_UNIT,
 				dnaCenterToSpindleCenterDistance );
 
+
 		/**
-		 * Realign spindle along pole to pole axis
+		 * Measure spindle width
 		 */
 
+		// Realign spindle along pole to pole axis
+		//
 		final double[] poleToPoleAxis = new double[ 3 ];
 		LinAlgHelpers.subtract( spindlePoles.get( 0 ), spindlePoles.get( 1 ), poleToPoleAxis );
 
@@ -314,25 +333,13 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 					false );
 		}
 
-
-		/**
-		 * Measure spindle width
-		 */
-
-		final Projection projection = new Projection<>( tubulinAlignedAlongSpindlePoleToPoleAxis, 2 );
+		// Measure width in projection along spindle axis
+		//
+		projection = new Projection<>( tubulinAlignedAlongSpindlePoleToPoleAxis, 2 );
 
 		final RandomAccessibleInterval< T > spindleProjection = projection.maximum();
 
-		final double[] center = { 0, 0 };
-		final double spacing = settings.workingVoxelSize;
-		double maxDistanceInMicrometer = 10;
-		final CoordinatesAndValues radialTubulinProfile = Algorithms.computeRadialProfile( spindleProjection, center, spacing, maxDistanceInMicrometer );
-		final CoordinatesAndValues radialTubulinProfileDerivative = CurveAnalysis.computeDerivatives( radialTubulinProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
-
-		if ( settings.showIntermediateResults ) Plots.plot( radialTubulinProfile, "spindle center distance [um]", "tubulin intensity" );
-		if ( settings.showIntermediateResults ) Plots.plot( radialTubulinProfileDerivative, "spindle center distance [um]", "d/dx tubulin intensity" );
-
-		final double spindleWidth = CurveAnalysis.minLocCoordinate( radialTubulinProfileDerivative );
+		final double spindleWidth = measureWidthByRadialProfile( spindleProjection, "tubulin" );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
@@ -362,28 +369,19 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * Create interest point image in original coordinate system
 		 */
 
-		RandomAccessibleInterval< T > interestPointsImage = Utils.copyAsArrayImg( dna );
-		Utils.setValues( interestPointsImage, 0.0 );
-
-		final double[] origin = { 0, 0, 0 };
-		drawTransformedPoint( alignmentTransform, interestPointsImage, origin, 200 );
-
-		for ( int p = 0; p < 2; p++ )
-		{
-			double[] spindlePole = new double[]{ 0.0, 0.0, dnaAxisBasedSpindlePoleCoordinates[ p ] };
-			drawTransformedPoint( alignmentTransform, interestPointsImage, spindlePole, 200 );
-		}
-
-		for ( int p = 0; p < 2; p++ )
-		{
-			drawTransformedPoint( alignmentTransform, interestPointsImage, spindlePoles.get( p ), 100 );
-		}
-
+		RandomAccessibleInterval< T > interestPointsImage = createInterestPointImage( dna, alignmentTransform, spindlePoles );
 
 		/**
-		 * Create output images
+		 * Create output image
 		 */
 
+		createOutputImage( dna, tubulin, alignmentTransform, interestPointsImage );
+
+
+	}
+
+	public void createOutputImage( RandomAccessibleInterval< T > dna, RandomAccessibleInterval< T > tubulin, AffineTransform3D alignmentTransform, RandomAccessibleInterval< T > interestPointsImage )
+	{
 		AffineTransform3D rotation = alignmentTransform.copy(); // "rotation" rotates the data such that the spindle axis is the zAxis
 		rotation.setTranslation( new double[ 3 ] );
 
@@ -409,8 +407,35 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		transformedDapiView = Transforms.createTransformedView( dna, rotationTransform );
 		transformedTubulinView = Transforms.createTransformedView( tubulin, rotationTransform );
 		transformedInterestPointView = Transforms.createTransformedView( interestPointsImage, rotationTransform, new NearestNeighborInterpolatorFactory() );
+	}
 
+	public RandomAccessibleInterval< T > createInterestPointImage( RandomAccessibleInterval< T > dna, AffineTransform3D alignmentTransform, ArrayList< double[] > spindlePoles )
+	{
+		RandomAccessibleInterval< T > interestPointsImage = Utils.copyAsArrayImg( dna );
+		Utils.setValues( interestPointsImage, 0.0 );
 
+		final double[] origin = { 0, 0, 0 };
+		drawTransformedPoint( alignmentTransform, interestPointsImage, origin, 200 );
+
+		for ( int p = 0; p < 2; p++ )
+		{
+			drawTransformedPoint( alignmentTransform, interestPointsImage, spindlePoles.get( p ), 100 );
+		}
+		return interestPointsImage;
+	}
+
+	public double measureWidthByRadialProfile( RandomAccessibleInterval< T > image, final String name )
+	{
+		final double[] center = { 0, 0 };
+		final double spacing = settings.workingVoxelSize;
+		double maxDistanceInMicrometer = 15;
+		final CoordinatesAndValues radialProfile = Algorithms.computeRadialProfile( image, center, spacing, maxDistanceInMicrometer );
+		final CoordinatesAndValues radialProfileDerivative = CurveAnalysis.computeDerivatives( radialProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
+
+		if ( settings.showIntermediateResults ) Plots.plot( radialProfile, "center distance [um]", name + " intensity" );
+		if ( settings.showIntermediateResults ) Plots.plot( radialProfileDerivative, "center distance [um]", "d/dx "+ name + " intensity" );
+
+		return CurveAnalysis.minLocCoordinate( radialProfileDerivative );
 	}
 
 	public ImagePlus getOutputImage( )

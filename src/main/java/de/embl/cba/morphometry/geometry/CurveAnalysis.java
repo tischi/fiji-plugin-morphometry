@@ -1,6 +1,7 @@
 package de.embl.cba.morphometry.geometry;
 
 import java.util.ArrayList;
+import java.util.Set;
 
 import static java.lang.Math.abs;
 
@@ -18,6 +19,20 @@ public abstract class CurveAnalysis
 
 		return derivative;
 	}
+
+	// TODO:
+//	public static CoordinatesAndValues computeDerivatives( CoordinateToValue cv, int di )
+//	{
+//		final CoordinatesAndValues derivative = new CoordinatesAndValues();
+//
+//		for ( int i = di / 2 + 1; i < cv.size() - di / 2 - 1; ++i )
+//		{
+//			derivative.values.add( cv.values.get( i + di / 2 ) - cv.values.get( i - di / 2 ) );
+//			derivative.coordinates.add( 0.5 * ( cv.coordinates.get( i + di / 2 ) + cv.coordinates.get( i - di / 2 ) ));
+//		}
+//
+//		return derivative;
+//	}
 
 	public static ArrayList< Double > computeAbsoluteDerivatives( ArrayList< Double > values, int di )
 	{

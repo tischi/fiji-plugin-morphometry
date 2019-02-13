@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry;
 
+import de.embl.cba.morphometry.geometry.CoordinateToValue;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
@@ -1124,13 +1125,15 @@ public class Algorithms
 			}
 		}
 
-		final CoordinatesAndValues radialProfile = new CoordinatesAndValues();
+		final CoordinatesAndValues radialProfileOld = new CoordinatesAndValues();
+		final CoordinateToValue radialProfile = new CoordinateToValue();
 		for ( int bin = 0; bin < maxBin; bin++ )
 		{
-			radialProfile.values.add( values[ bin ] / counts[ bin ] );
-			radialProfile.coordinates.add( bin * spacing );
+			radialProfileOld.values.add( values[ bin ] / counts[ bin ] );
+			radialProfileOld.coordinates.add( bin * spacing );
+			radialProfile.put( bin * spacing, values[ bin ] / counts[ bin ] );
 		}
 
-		return radialProfile;
+		return radialProfileOld;
 	}
 }
