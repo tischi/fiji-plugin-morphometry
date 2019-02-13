@@ -63,7 +63,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.workingVoxelSize = 0.25;
 		settings.maxShortAxisDist = 6;
-		settings.derivativeDelta = 1.0;
+		settings.derivativeDelta = 3.0;
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 		settings.watershedSeedsLocalMaximaDistanceThreshold = 1.0;
 		settings.watershedSeedsGlobalDistanceThreshold = 2.0;

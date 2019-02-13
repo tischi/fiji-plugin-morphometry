@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry;
 
+import de.embl.cba.transforms.utils.Transforms;
 import net.imglib2.Point;
 import net.imglib2.util.LinAlgHelpers;
 
@@ -41,26 +42,13 @@ public abstract class Angles
 	}
 
 
-	public static double angleOfSpindleAxisToXaxisInRadians( final double[] vector )
+	public static double angleOfSpindleAxisToXAxisInRadians( final double[] vector )
 	{
 		double[] xAxis = new double[]{ 1, 0, 0};
 
-		double angleInRadians = angleInRadians( vector, xAxis );
+		double angleInRadians = Transforms.getAngle( vector, xAxis );
 
 		return angleInRadians;
-	}
-
-	public static double angleInRadians( double[] v1, double[] v2 )
-	{
-		final double dot = LinAlgHelpers.dot( v2, v1 );
-
-		double signum = Math.signum( v1[ 1 ] );
-
-		signum = signum == 0 ? 1 : signum; // TODO: ????
-
-		final double angle = -1.0 * signum * acos( dot / ( LinAlgHelpers.length( v2 ) * LinAlgHelpers.length( v1 ) ) );
-
-		return angle;
 	}
 
 }

@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static de.embl.cba.morphometry.Angles.angleOfSpindleAxisToXaxisInRadians;
+import static de.embl.cba.morphometry.Angles.angleOfSpindleAxisToXAxisInRadians;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
@@ -100,8 +100,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 *  Compute offset and threshold
 		 */
 
-		final RandomAccessibleInterval< T > dapiDownscaledToSpindleWidth = createRescaledArrayImg( settings.dapiImage, getScalingFactors( settings.inputCalibration, 3.0 ) );
-		final double maximumValue = Algorithms.getMaximumValue( dapiDownscaledToSpindleWidth );
+		final RandomAccessibleInterval< T > dnaDownscaledToSpindleWidth = createRescaledArrayImg(
+				settings.dapiImage,
+				getScalingFactors( settings.inputCalibration, 3.0 ) );
+		final double maximumValue = Algorithms.getMaximumValue( dnaDownscaledToSpindleWidth );
 		double threshold = maximumValue / 2.0;
 
 		Logger.log( "Dapi threshold: " + threshold );
@@ -221,7 +223,11 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final CoordinatesAndValues tubulinProfile = Utils.computeMaximumIntensitiesAlongAxis( tubulinAlignedAlongShortestAxisOfDNA, settings.maxShortAxisDist, ALIGNED_DNA_AXIS, settings.workingVoxelSize );
 		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfile.values, "center distance [um]", "tubulin max along shortest DNA axis" );
 
-		final CoordinatesAndValues tubulinProfileDerivative = CurveAnalysis.computeDerivatives( tubulinProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
+		final CoordinatesAndValues tubulinProfileDerivative =
+				CurveAnalysis.computeDerivatives(
+						tubulinProfile,
+						(int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
+
 		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values, "distance to center", "d/dx tubulin max along shortest DNA axis" );
 
 		double[] dnaAxisBasedSpindlePoleCoordinates = getLeftMaxAndRightMinLoc( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values );
@@ -232,15 +238,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, dnaAxisBasedSpindlePoleCoordinates[ 0 ] } ));
 		spindleLengthPoints.add( new RealPoint( new double[]{ 0.0, 0.0, dnaAxisBasedSpindlePoleCoordinates[ 1 ] } ));
 
-
-		if ( settings.showIntermediateResults )
-		{
-			show(
-					tubulinAlignedAlongShortestAxisOfDNA, "tubulin aligned along shortest DNA axis",
-					spindleLengthPoints,
-					workingCalibration,
-					false );
-		}
 
 		/**
 		 * Refine spindle pole locations, by finding off axis maximum
@@ -299,12 +296,25 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				dnaCenterToSpindleCenterDistance );
 
 
+		if ( settings.showIntermediateResults )
+		{
+			final ArrayList< RealPoint > realPoints = new ArrayList<>();
+			realPoints.add( new RealPoint( spindlePoles.get( 0 ) ) );
+			realPoints.add( new RealPoint( spindlePoles.get( 1 ) ) );
+			realPoints.add( new RealPoint( spindleCenter ) );
+			show(
+					tubulinAlignedAlongShortestAxisOfDNA, "tubulin aligned along shortest DNA axis",
+					realPoints,
+					workingCalibration,
+					false );
+		}
+
 		/**
 		 * Measure angle between spindle axis and coverslip plane
 		 */
 
 		final double[] poleToPoleVectorInCBCS = transformToCoverslipBasedCoordinateSystem( alignmentTransform, poleToPoleVector );
-		final double angleSpindleAxisToCoverslipPlaneInDegrees = 90.0 - Math.abs( 180.0 / Math.PI * Angles.angleInRadians( new double[]{ 0, 0, 1 }, poleToPoleVectorInCBCS ) );
+		final double angleSpindleAxisToCoverslipPlaneInDegrees = 90.0 - Math.abs( 180.0 / Math.PI * Transforms.getAngle( new double[]{ 0, 0, 1 }, poleToPoleVectorInCBCS ) );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
@@ -321,12 +331,13 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		//
 		final double[] poleToPoleAxis = new double[ 3 ];
 		LinAlgHelpers.subtract( spindlePoles.get( 0 ), spindlePoles.get( 1 ), poleToPoleAxis );
+		LinAlgHelpers.normalize( poleToPoleAxis );
 
 		AffineTransform3D spindleTransform = new AffineTransform3D();
 		spindleTransform.translate( spindleCenter );
 		spindleTransform = spindleTransform.inverse();
-		AffineTransform3D poleToPoleAxisRotation = Transforms.getRotationTransform3D( poleToPoleAxis, new double[]{ 0, 0, 1} );
-		spindleTransform.preConcatenate( poleToPoleAxisRotation );
+		AffineTransform3D poleToPoleAxisRotation = Transforms.getRotationTransform3D( new double[]{ 0, 0, 1 }, poleToPoleAxis );
+		spindleTransform = spindleTransform.preConcatenate( poleToPoleAxisRotation );
 
 		final RandomAccessibleInterval tubulinAlignedAlongSpindlePoleToPoleAxis
 				= Transforms.createTransformedView( tubulinAlignedAlongShortestAxisOfDNA, spindleTransform );
@@ -335,12 +346,15 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		spindleTransform.apply( spindlePoles.get( 0 ), newPole00 );
 		final double[] newPole01 = new double[ 3 ];
 		spindleTransform.apply( spindlePoles.get( 1 ), newPole01 );
+		final double[] newCenter = new double[ 3 ];
+		spindleTransform.apply( spindleCenter, newCenter );
 
 		if ( settings.showIntermediateResults )
 		{
 			final ArrayList< RealPoint > realPoints = new ArrayList<>();
 			realPoints.add( new RealPoint( newPole00 ) );
 			realPoints.add( new RealPoint( newPole01 ) );
+			realPoints.add( new RealPoint( newCenter ) );
 			show(
 					tubulinAlignedAlongSpindlePoleToPoleAxis, "tubulin aligned pole to pole",
 					realPoints,
@@ -354,7 +368,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final RandomAccessibleInterval< T > spindleProjection = projection.maximum();
 
-		final double spindleWidth = measureWidthByRadialProfile( spindleProjection, "tubulin" );
+		final double spindleWidth = measureWidthByRadialProfile( spindleProjection, "tubulin perpendicular to spindle axis" );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
@@ -412,7 +426,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		// compute rotation vector
 		// note: we do not know in which direction of the spindle the spindleAxis vector points,
 		// but we think it does not matter for alignment to the x-axis
-		final double angleBetweenXAxisAndSpindleWithVector = angleOfSpindleAxisToXaxisInRadians( spindleAxis );
+		final double angleBetweenXAxisAndSpindleWithVector = angleOfSpindleAxisToXAxisInRadians( spindleAxis );
 
 		AffineTransform3D rotationTransform = new AffineTransform3D();
 		rotationTransform.rotate( ALIGNED_DNA_AXIS,  angleBetweenXAxisAndSpindleWithVector );
