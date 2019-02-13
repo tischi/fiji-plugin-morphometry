@@ -43,13 +43,24 @@ public abstract class Angles
 
 	public static double angleOfSpindleAxisToXaxisInRadians( final double[] vector )
 	{
-		double[] xAxis = new double[]{  1,0, 0};
+		double[] xAxis = new double[]{ 1, 0, 0};
 
-		final double dot = LinAlgHelpers.dot( xAxis, vector );
-
-		double angleInRadians = -1.0 * Math.signum( vector[ 1 ] ) * acos( dot / ( LinAlgHelpers.length( xAxis ) * LinAlgHelpers.length( vector ) ) );
-
+		double angleInRadians = angleInRadians( vector, xAxis );
 
 		return angleInRadians;
 	}
+
+	public static double angleInRadians( double[] v1, double[] v2 )
+	{
+		final double dot = LinAlgHelpers.dot( v2, v1 );
+
+		double signum = Math.signum( v1[ 1 ] );
+
+		signum = signum == 0 ? 1 : signum; // TODO: ????
+
+		final double angle = -1.0 * signum * acos( dot / ( LinAlgHelpers.length( v2 ) * LinAlgHelpers.length( v1 ) ) );
+
+		return angle;
+	}
+
 }

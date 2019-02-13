@@ -50,6 +50,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	public static final String SPINDLE_WIDTH = "Spindle_Width";
 	public static final String DNA_WIDTH = "DNA_Width";
 	public static final String DNA_SPINDLE_CENTER_DISTANCE = "Dna_Center_To_Spindle_Center_Distance";
+	public static final String SPINDLE_AXIS_TO_COVERSLIP_PLANE_ANGLE_DEGREES = "Spindle_Axis_To_Coverslip_Plane_Angle_Degrees";
 	public static final String LENGTH_UNIT = "um";
 	public static final String DNA_VOLUME = "Dna_Volume";
 	public static final String VOLUME_UNIT = "um3";
@@ -299,6 +300,20 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 
 		/**
+		 * Measure angle between spindle axis and coverslip plane
+		 */
+
+		final double[] poleToPoleVectorInCBCS = transformToCoverslipBasedCoordinateSystem( alignmentTransform, poleToPoleVector );
+		final double angleSpindleAxisToCoverslipPlaneInDegrees = 90.0 - Math.abs( 180.0 / Math.PI * Angles.angleInRadians( new double[]{ 0, 0, 1 }, poleToPoleVectorInCBCS ) );
+
+		Measurements.addMeasurement(
+				objectMeasurements,
+				0,
+				SPINDLE_AXIS_TO_COVERSLIP_PLANE_ANGLE_DEGREES,
+				angleSpindleAxisToCoverslipPlaneInDegrees );
+
+
+		/**
 		 * Measure spindle width
 		 */
 
@@ -366,7 +381,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 
 		/**
-		 * Create interest point image in original coordinate system
+		 * Create interest point image in coverslip coordinate system
 		 */
 
 		RandomAccessibleInterval< T > interestPointsImage = createInterestPointImage( dna, alignmentTransform, spindlePoles );
@@ -409,7 +424,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		transformedInterestPointView = Transforms.createTransformedView( interestPointsImage, rotationTransform, new NearestNeighborInterpolatorFactory() );
 	}
 
-	public RandomAccessibleInterval< T > createInterestPointImage( RandomAccessibleInterval< T > dna, AffineTransform3D alignmentTransform, ArrayList< double[] > spindlePoles )
+	public RandomAccessibleInterval< T > createInterestPointImage(
+			RandomAccessibleInterval< T > dna,
+			AffineTransform3D alignmentTransform,
+			ArrayList< double[] > spindlePoles )
 	{
 		RandomAccessibleInterval< T > interestPointsImage = Utils.copyAsArrayImg( dna );
 		Utils.setValues( interestPointsImage, 0.0 );
@@ -462,7 +480,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	public void drawTransformedPoint( AffineTransform3D alignmentTransform, RandomAccessibleInterval< T > interestPointsImage, double[] point, int value )
 	{
-		final double[] transformedPoint = transformToOriginalImage( alignmentTransform, point );
+		final double[] transformedPoint = transformToCoverslipBasedCoordinateSystem( alignmentTransform, point );
 		drawPoint( interestPointsImage, transformedPoint, settings.interestPointsRadius, settings.workingVoxelSize, value );
 	}
 
@@ -507,7 +525,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 
-	private double[] transformToOriginalImage( AffineTransform3D alignmentTransform, double[] point )
+	private double[] transformToCoverslipBasedCoordinateSystem( AffineTransform3D alignmentTransform, double[] point )
 	{
 		final double[] transformedPoint = new double[ point.length ];
 		for ( int i = 0; i < point.length; i++ )
