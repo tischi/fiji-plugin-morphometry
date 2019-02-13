@@ -119,7 +119,7 @@ public abstract class CurveAnalysis
 			}
 		}
 
-		final Double maxLocCoordinate = coordinatesAndValues.values.get( minLocIndexAndValue.index );
+		final Double maxLocCoordinate = coordinatesAndValues.coordinates.get( minLocIndexAndValue.index );
 
 		return maxLocCoordinate;
 	}

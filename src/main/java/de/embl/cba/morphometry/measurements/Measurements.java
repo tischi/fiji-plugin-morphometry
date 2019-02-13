@@ -42,7 +42,9 @@ public class Measurements
 
 	public static final String PIXEL_UNITS = "Pixels";
 	public static final String SUM_INTENSITY = "SumIntensity";
-	public static final String GOBAL_BACKGROUND_INTENSITY = "GobalBackgroundIntensity";
+	public static final String NUM_BOUNDARY_PIXELS = "NumBoundaryPixels";
+
+	public static final String GLOBAL_BACKGROUND_INTENSITY = "GlobalBackgroundIntensity";
 	public static final String SKELETON_LENGTH = "SkeletonLength";
 	public static final String SKELETON_NUMBER_OF_BRANCHPOINTS = "SkeletonNumBranchPoints";
 
@@ -226,7 +228,6 @@ public class Measurements
 		return sum / n;
 	}
 
-
 	private static < T extends RealType< T > & NativeType< T > >
 	long measureSumIntensity( RandomAccess< T > imageRandomAccess, LabelRegion labelRegion )
 	{
@@ -241,6 +242,31 @@ public class Measurements
 			sum += imageRandomAccess.get().getRealDouble();
 		}
 		return sum;
+	}
+
+	private static < T extends RealType< T > & NativeType< T > >
+	long measureNumBoundaryPixels( LabelRegion labelRegion, long[] min, long[] max )
+	{
+		final LabelRegionCursor cursor = labelRegion.cursor();
+
+		long numBoundaryPixels = 0;
+
+		final int numDimensions = min.length;
+		final long[] position = new long[ numDimensions ];
+		while ( cursor.hasNext() )
+		{
+			cursor.fwd();
+			cursor.localize( position );
+			for ( int d = 0; d < numDimensions ; d++ )
+			{
+				if ( position[ d ] == min[ d ] || position[ d ] == max[ d ])
+				{
+					numBoundaryPixels++;
+					break;
+				}
+			}
+		}
+		return numBoundaryPixels;
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
@@ -328,7 +354,7 @@ public class Measurements
 		for ( LabelRegion labelRegion : labelRegions )
 		{
 			final int label = ( int ) ( labelRegion.getLabel() );
-			addMeasurement( objectMeasurements, label, GOBAL_BACKGROUND_INTENSITY, offset );
+			addMeasurement( objectMeasurements, label, GLOBAL_BACKGROUND_INTENSITY, offset );
 		}
 	}
 
@@ -437,6 +463,26 @@ public class Measurements
 		{
 			long sum = measureSumIntensity( imageRandomAccess, labelRegion );
 			addMeasurement( objectMeasurements, (int) labelRegion.getLabel(), SUM_INTENSITY + SEP + channel, sum );
+		}
+	}
+
+
+	public static < T extends RealType< T > & NativeType< T > >
+	void measureNumBoundaryPixels( HashMap< Integer, Map< String, Object > > objectMeasurements,
+								   ImgLabeling< Integer, IntType > imgLabeling )
+	{
+		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+
+		final int numDimensions = imgLabeling.numDimensions();
+		final long[] imgBoundaryMin = new long[ numDimensions ];
+		final long[] imgBoundaryMax = new long[ numDimensions ];
+		imgLabeling.min( imgBoundaryMin );
+		imgLabeling.max( imgBoundaryMax );
+
+		for ( LabelRegion labelRegion : labelRegions )
+		{
+			long numBoundaryPixels = measureNumBoundaryPixels( labelRegion, imgBoundaryMin, imgBoundaryMax );
+			addMeasurement( objectMeasurements, (int) labelRegion.getLabel(), NUM_BOUNDARY_PIXELS, numBoundaryPixels );
 		}
 	}
 }

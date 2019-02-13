@@ -63,6 +63,11 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 					imgLabeling,
 					opService );
 
+			// Surfaces ( = perimeters )
+			Measurements.measureNumBoundaryPixels(
+					measurements,
+					imgLabeling );
+
 			// TODO: move to skeletonAnalyzer?
 			Measurements.measureSkeletons(
 					measurements,
