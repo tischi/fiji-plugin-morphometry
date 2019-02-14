@@ -270,8 +270,8 @@ public class Measurements
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	long measureSize( RandomAccessibleInterval< IntType > labeling,
-					  int label )
+	long measureSizeInPixels( RandomAccessibleInterval< IntType > labeling,
+							  int label )
 	{
 		final Cursor< IntType > labelCursor = Views.iterable( labeling ).localizingCursor();
 		long size = 0;
@@ -290,7 +290,7 @@ public class Measurements
 	}
 
 	public static
-	long measureSize( RandomAccessibleInterval< BitType > mask )
+	long measureSizeInPixels( RandomAccessibleInterval< BitType > mask )
 	{
 
 		final Cursor< BitType > cursor = Views.iterable( mask ).cursor();

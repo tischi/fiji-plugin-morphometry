@@ -245,7 +245,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		{
 			for ( int previousLabel : overlapSizes.keySet() )
 			{
-				final long previousObjectSize = Measurements.measureSize( previousLabeling, previousLabel );
+				final long previousObjectSize = Measurements.measureSizeInPixels( previousLabeling, previousLabel );
 
 				final double overlapFraction = 1.0 * overlapSizes.get( previousLabel ).longValue() / previousObjectSize;
 

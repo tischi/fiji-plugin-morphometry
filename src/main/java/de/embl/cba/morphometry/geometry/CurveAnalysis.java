@@ -6,6 +6,9 @@ import static java.lang.Math.abs;
 
 public abstract class CurveAnalysis
 {
+
+	// TODO: instead of CoordinatesAndValues one should use a 1D RealRandomAccessible (or, in fact, a PhysicalImg...)
+
 	public static CoordinatesAndValues derivative( CoordinatesAndValues coordinatesAndValues, int di )
 	{
 		final CoordinatesAndValues derivative = new CoordinatesAndValues();
