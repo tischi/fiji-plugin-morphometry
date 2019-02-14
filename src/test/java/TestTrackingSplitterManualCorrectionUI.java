@@ -22,13 +22,13 @@ public class TestTrackingSplitterManualCorrectionUI
 
 		final ArrayList< RandomAccessibleInterval< T > > labels = Utils.get2DImagePlusMovieAsFrameList( imagePlus, 1 );
 
-		final TrackingSplitterManualCorrectionUI trackingSplitterManualCorrectionUI = new TrackingSplitterManualCorrectionUI( labels, 100000L );
+		final TrackingSplitterManualCorrectionUI trackingSplitterManualCorrectionUI = new TrackingSplitterManualCorrectionUI( labels, 100000L, "" );
 
 		while ( ! trackingSplitterManualCorrectionUI.isThisFrameFinished() ){
 			Utils.wait( 100 );
 		}
 
-		final ArrayList< RandomAccessibleInterval< T > > correctedLabels = trackingSplitterManualCorrectionUI.getLabels();
+		final ArrayList< RandomAccessibleInterval< T > > correctedLabels = trackingSplitterManualCorrectionUI.getLabelings();
 
 
 		int a = 1;

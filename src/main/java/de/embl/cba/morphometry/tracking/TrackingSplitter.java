@@ -1,7 +1,6 @@
 package de.embl.cba.morphometry.tracking;
 
 import de.embl.cba.morphometry.Algorithms;
-import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
@@ -113,11 +112,6 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 				break; // saving will happen in the command
 			}
 
-			if ( trackingSplitterManualCorrectionUI.isSave() )
-			{
-				ImageIO.saveLabels( labelings, settings.outputLabelingsPath );
-			}
-
 		}
 	}
 
@@ -148,14 +142,14 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 	{
 		showIntensities( t );
 
-		trackingSplitterManualCorrectionUI = new TrackingSplitterManualCorrectionUI( labelings, minimalObjectSizeInPixels );
+		trackingSplitterManualCorrectionUI = new TrackingSplitterManualCorrectionUI( labelings, minimalObjectSizeInPixels, settings.outputLabelingsPath );
 
 		while ( ! trackingSplitterManualCorrectionUI.isThisFrameFinished() )
 		{
 			Utils.wait( 100 );
 		}
 
-		labelings = trackingSplitterManualCorrectionUI.getLabels();
+		labelings = trackingSplitterManualCorrectionUI.getLabelings();
 
 		hideIntensities();
 	}

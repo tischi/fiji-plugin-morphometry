@@ -33,7 +33,8 @@ public class TestTrackingSplitter
 		final MicrogliaSegmentationAndTrackingSettings settings =
 				MicrogliaSegmentationAndTracking.configureSettings(
 						Utils.getCalibration( masksAndIntensities.intensities ),
-						outputLabelingsPath, false,
+						"",
+						false,
 						ij.op());
 
 		final TrackingSplitter splitter = new TrackingSplitter( Utils.asMasks( masks ), intensities, settings );

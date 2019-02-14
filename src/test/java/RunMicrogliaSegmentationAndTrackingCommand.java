@@ -1,7 +1,7 @@
 import de.embl.cba.morphometry.commands.MicrogliaSegmentationAndTrackingCommand;
 import net.imagej.ImageJ;
 
-public class TestMicrogliaSegmentationAndTrackingCommand
+public class RunMicrogliaSegmentationAndTrackingCommand
 {
 
 	public static void main(final String... args) throws Exception

@@ -189,7 +189,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final RandomAccessibleInterval< T > dnaProjectionAlongDnaAxis = projection.maximum();
 
 		final RadialWidthAndProfile dnaLateralExtendAndProfile =
-				measureExtendByRadialProfile( dnaProjectionAlongDnaAxis, "dna lateral" );
+				measureExtendByRadialProfile( dnaProjectionAlongDnaAxis, "dna lateral", settings.derivativeDelta );
 
 		final double dnaLateralIntensityValueAtWidth = dnaLateralExtendAndProfile.profile.values.get( dnaLateralExtendAndProfile.widthIndex );
 
@@ -392,13 +392,14 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final RandomAccessibleInterval< T > spindleProjection = projection.maximum();
 
-		final RadialWidthAndProfile tubulinLateralWidthAndProfile = measureExtendByRadialProfile( spindleProjection, "tubulin lateral" );
+		final RadialWidthAndProfile spindleLateralWidthAndProfile
+				= measureExtendByRadialProfile( spindleProjection, "tubulin lateral", settings.derivativeDelta );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
 				0,
 				SPINDLE_LATERAL_EXTEND + SEP + LENGTH_UNIT,
-				tubulinLateralWidthAndProfile.width );
+				spindleLateralWidthAndProfile.width );
 
 
 		/**
@@ -406,14 +407,14 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 */
 
 
-		final Double tubulinVolumeThreshold = tubulinLateralWidthAndProfile.profile.values.get( tubulinLateralWidthAndProfile.widthIndex );
+		final double spindleVolumeThreshold = spindleLateralWidthAndProfile.profile.values.get( spindleLateralWidthAndProfile.widthIndex );
 
-		Logger.log( "Spindle volume threshold: " + tubulinVolumeThreshold );
+		Logger.log( "Spindle volume threshold: " + spindleVolumeThreshold );
 
 		// TODO: the spindle might "fall apart" if the threshold is too high and we might loose some bits...
-		final RandomAccessibleInterval< BitType > spindleVolumeMask = createCentralObjectMask( tubulin, tubulinVolumeThreshold );
+		final RandomAccessibleInterval< BitType > spindleVolumeMask = createCentralObjectMask( tubulin, spindleVolumeThreshold );
 
-		if ( settings.showIntermediateResults ) show( spindleVolumeMask, "tubulin volume mask", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( spindleVolumeMask, "spindle volume mask", null, workingCalibration, false );
 
 		/**
 		 * Compute spindle volume
@@ -518,8 +519,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	private RadialWidthAndProfile measureExtendByRadialProfile(
 			final RandomAccessibleInterval< T > image,
-			final String name
-	)
+			final String name,
+			double derivativeDelta )
 	{
 		// config
 		final double[] center = { 0, 0 };
@@ -530,7 +531,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final RadialWidthAndProfile widthAndProfile = new RadialWidthAndProfile();
 		widthAndProfile.profile = Algorithms.computeRadialProfile( image, center, spacing, maxDistanceInMicrometer );
 
-		final CoordinatesAndValues radialProfileDerivative = CurveAnalysis.derivative( widthAndProfile.profile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
+		final CoordinatesAndValues radialProfileDerivative = CurveAnalysis.derivative( widthAndProfile.profile, (int) Math.ceil( derivativeDelta / settings.workingVoxelSize ) );
 		widthAndProfile.width = CurveAnalysis.minLoc( radialProfileDerivative );
 
 		widthAndProfile.widthIndex = (int) (widthAndProfile.width / settings.workingVoxelSize);

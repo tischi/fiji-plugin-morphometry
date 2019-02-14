@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry.tracking;
 
+import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.SyncWindowsHack;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.regions.Regions;
@@ -27,11 +28,14 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 	private static Point editedLabelsImpLocation;
 	private boolean isStopped;
 	private boolean isSave;
+	private String outputLabelingsPath;
 
 	public TrackingSplitterManualCorrectionUI(
 			ArrayList< RandomAccessibleInterval< T > > labels,
-			long minimalObjectSizeInPixels )
+			long minimalObjectSizeInPixels,
+			String outputLabelingsPath )
 	{
+		this.outputLabelingsPath = outputLabelingsPath;
 		this.isThisFrameFinished = false;
 		this.minimalObjectSizeInPixels = minimalObjectSizeInPixels;
 
@@ -142,14 +146,15 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				labels = runMaximalOverlapTrackerOnEditedImagePlus();
-				closeCurrentEditedLabelsImagePlus();
-				frameLocation = frame.getLocation();
-				frame.dispose();
-
-				isThisFrameFinished = true;
-				isStopped = false;
-				isSave = true;
+				SwingUtilities.invokeLater( new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						labels = runMaximalOverlapTrackerOnEditedImagePlus();
+						ImageIO.saveLabels( labels, outputLabelingsPath );
+					}
+				} );
 			}
 		} );
 		return button;
@@ -201,7 +206,7 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 		return maximalOverlapTracker.getLabelings();
 	}
 
-	public ArrayList< RandomAccessibleInterval< T > > getLabels()
+	public ArrayList< RandomAccessibleInterval< T > > getLabelings()
 	{
 		return labels;
 	}

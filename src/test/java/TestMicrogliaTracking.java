@@ -23,6 +23,7 @@ public class TestMicrogliaTracking
 				new MicrogliaSegmentationAndTracking(
 						Utils.get2DImagePlusMovieAsFrameList( imagePlus, 1 ),
 						Utils.getCalibration( imagePlus ),
+				"",
 				false, ij.op() );
 
 		microgliaSegmentationAndTracking.run();
