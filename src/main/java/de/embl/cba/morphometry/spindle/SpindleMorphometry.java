@@ -569,15 +569,17 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		compositeImage.setC(2);
 		IJ.run(compositeImage, "Blue", "");
+		compositeImage.setDisplayRange( 0, 2 );
 
 		compositeImage.setC(3);
 		IJ.run(compositeImage, "Green", "");
 
 		compositeImage.setC(4);
 		IJ.run(compositeImage, "Green", "");
+		compositeImage.setDisplayRange( 0, 2);
 
 		compositeImage.setC(5);
-		IJ.run(compositeImage, "Red", "");
+		IJ.run(compositeImage, "Cyan", "");
 
 		compositeImage.setDisplayMode( CompositeImage.COMPOSITE );
 

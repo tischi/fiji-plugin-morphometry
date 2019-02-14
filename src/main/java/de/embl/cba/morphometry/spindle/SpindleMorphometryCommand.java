@@ -39,11 +39,11 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter
 	double dapiMaskErosion = settings.erosionOfDnaMaskInCalibratedUnits;
 
-	@Parameter
-	public long dapiChannelIndexOneBased = 2;
+	@Parameter ( label = "DNA channel [one-based index]" )
+	public long dnaChannelIndexOneBased = 2;
 
-	@Parameter
-	public long tubulinChannelIndexOneBased = 1;
+	@Parameter ( label = "Spindle channel [one-based index]" )
+	public long spindleChannelIndexOneBased = 1;
 
 	@Parameter
 	public boolean showIntermediateResults = settings.showIntermediateResults;
@@ -82,8 +82,8 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 		final RandomAccessibleInterval< R > rai = ImageJFunctions.wrapReal( imagePlus );
 
-		final RandomAccessibleInterval< R > dapi = Views.hyperSlice( rai, 2, dapiChannelIndexOneBased - 1 );
-		final RandomAccessibleInterval< R > tubulin = Views.hyperSlice( rai, 2, tubulinChannelIndexOneBased - 1 );
+		final RandomAccessibleInterval< R > dapi = Views.hyperSlice( rai, 2, dnaChannelIndexOneBased - 1 );
+		final RandomAccessibleInterval< R > tubulin = Views.hyperSlice( rai, 2, spindleChannelIndexOneBased - 1 );
 
 		settings.dnaImage = dapi;
 		settings.tubulinImage = tubulin;
@@ -101,21 +101,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	private void getAndSaveOutputImage( SpindleMorphometry morphometry )
 	{
-		final ImagePlus imp = morphometry.getOutputImage();
-
-		final CompositeImage compositeImage = new CompositeImage( imp );
-
-		compositeImage.setC(1);
-		IJ.run(compositeImage, "Blue", "");
-
-		compositeImage.setC(2);
-		IJ.run(compositeImage, "Green", "");
-
-		compositeImage.setC(3);
-		IJ.run(compositeImage, "Yellow", "");
-
-		compositeImage.setDisplayMode( CompositeImage.COMPOSITE );
-		save( compositeImage );
+		save( morphometry.getOutputImage() );
 	}
 
 	private void logEnd()
