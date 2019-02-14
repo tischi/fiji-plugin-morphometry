@@ -50,4 +50,5 @@ public class MicrogliaSegmentationAndTrackingSettings<T extends RealType<T> & Na
 	public boolean manualSegmentationCorrectionOfFirstFrame = true;
 	public boolean manualSegmentationCorrectionOfAllFrames = true;
 
+	public String outputLabelingsPath;
 }

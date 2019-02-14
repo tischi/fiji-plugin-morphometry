@@ -6,6 +6,10 @@ import loci.formats.FormatException;
 import loci.plugins.in.ImagePlusReader;
 import loci.plugins.in.ImportProcess;
 import loci.plugins.in.ImporterOptions;
+import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.type.NativeType;
+import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.IntType;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,5 +51,15 @@ public class ImageIO
 			FileSaver fileSaver = new FileSaver( imp );
 			fileSaver.saveAsTiff( outputPath );
 		}
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	void saveLabels( ArrayList< RandomAccessibleInterval< T > > labelings, String outputLabelingsPath )
+	{
+		final ImagePlus labelsImp = Utils.labelingsAsImagePlus( labelings );
+
+		new FileSaver( labelsImp ).saveAsTiff( outputLabelingsPath );
+
+		Logger.log( "Label images saved: " + outputLabelingsPath );
 	}
 }

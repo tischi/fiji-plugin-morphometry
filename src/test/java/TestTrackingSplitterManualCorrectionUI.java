@@ -24,7 +24,7 @@ public class TestTrackingSplitterManualCorrectionUI
 
 		final TrackingSplitterManualCorrectionUI trackingSplitterManualCorrectionUI = new TrackingSplitterManualCorrectionUI( labels, 100000L );
 
-		while ( ! trackingSplitterManualCorrectionUI.isFinished() ){
+		while ( ! trackingSplitterManualCorrectionUI.isThisFrameFinished() ){
 			Utils.wait( 100 );
 		}
 

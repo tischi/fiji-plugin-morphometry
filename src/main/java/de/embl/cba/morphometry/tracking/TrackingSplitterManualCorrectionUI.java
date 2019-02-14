@@ -3,7 +3,6 @@ package de.embl.cba.morphometry.tracking;
 import de.embl.cba.morphometry.SyncWindowsHack;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.regions.Regions;
-import de.embl.cba.morphometry.tracking.MaximalOverlapTracker;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imglib2.RandomAccessibleInterval;
@@ -20,18 +19,20 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 {
 	private final long minimalObjectSizeInPixels;
 	private JFrame frame;
-	private boolean isFinished;
+	private boolean isThisFrameFinished;
 	private ImagePlus editedLabelsImp;
 	private ArrayList< RandomAccessibleInterval< T > > labels;
 	private SyncWindowsHack syncWindows;
 	private static Point frameLocation;
 	private static Point editedLabelsImpLocation;
+	private boolean isStopped;
+	private boolean isSave;
 
 	public TrackingSplitterManualCorrectionUI(
 			ArrayList< RandomAccessibleInterval< T > > labels,
 			long minimalObjectSizeInPixels )
 	{
-		this.isFinished = false;
+		this.isThisFrameFinished = false;
 		this.minimalObjectSizeInPixels = minimalObjectSizeInPixels;
 
 		showNewLabelsImagePlusForEditing( labels );
@@ -39,6 +40,10 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 		add( updateLabelsButton() );
 
 		add( nextFrameButton() );
+
+		add( stopAndSaveButton() );
+
+		add( saveButton() );
 
 		showPanel();
 	}
@@ -96,10 +101,55 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 			public void actionPerformed( ActionEvent e )
 			{
 				labels = runMaximalOverlapTrackerOnEditedImagePlus();
-				isFinished = true;
 				closeCurrentEditedLabelsImagePlus();
 				frameLocation = frame.getLocation();
 				frame.dispose();
+
+				isThisFrameFinished = true;
+				isStopped = false;
+				isSave = false;
+			}
+		} );
+		return button;
+	}
+
+	public JButton stopAndSaveButton()
+	{
+		final JButton button = new JButton( "Stop and Save" );
+		button.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				labels = runMaximalOverlapTrackerOnEditedImagePlus();
+				closeCurrentEditedLabelsImagePlus();
+				frameLocation = frame.getLocation();
+				frame.dispose();
+
+				isThisFrameFinished = true;
+				isStopped = true;
+				isSave = true;
+			}
+		} );
+		return button;
+	}
+
+	public JButton saveButton()
+	{
+		final JButton button = new JButton( "Save" );
+		button.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				labels = runMaximalOverlapTrackerOnEditedImagePlus();
+				closeCurrentEditedLabelsImagePlus();
+				frameLocation = frame.getLocation();
+				frame.dispose();
+
+				isThisFrameFinished = true;
+				isStopped = false;
+				isSave = true;
 			}
 		} );
 		return button;
@@ -122,9 +172,19 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 
 	}
 
-	public boolean isFinished()
+	public boolean isThisFrameFinished()
 	{
-		return isFinished;
+		return isThisFrameFinished;
+	}
+
+	public boolean isStopped()
+	{
+		return isStopped;
+	}
+
+	public boolean isSave()
+	{
+		return isSave;
 	}
 
 	public ArrayList< RandomAccessibleInterval< T > > runMaximalOverlapTrackerOnEditedImagePlus()

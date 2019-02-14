@@ -23,7 +23,7 @@ import java.util.List;
 import static de.embl.cba.tables.TableUtils.addRelativeImagePathColumn;
 import static de.embl.cba.tables.TableUtils.saveTable;
 
-@Plugin(type = Command.class, menuPath = "Plugins>Morphometry>Measure Microglia Morphometry" )
+@Plugin(type = Command.class, menuPath = "Plugins>Morphometry>Microglia Morphometry" )
 public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T > > implements Command
 {
 	public static final String DELIM = "\t";

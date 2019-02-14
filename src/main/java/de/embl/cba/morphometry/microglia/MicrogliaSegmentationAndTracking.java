@@ -18,15 +18,17 @@ public class MicrogliaSegmentationAndTracking< T extends RealType< T > & NativeT
 
 	public MicrogliaSegmentationAndTracking( ArrayList< RandomAccessibleInterval< T  > > intensities,
 											 double[] calibration,
+											 String outputLabelingsPath,
 											 boolean showIntermediateResults,
 											 OpService opService )
 	{
 		this.intensities = intensities;
-		this.settings = configureSettings( calibration, showIntermediateResults, opService );
+		this.settings = configureSettings( calibration, outputLabelingsPath, showIntermediateResults, opService );
 	}
 
 	public static MicrogliaSegmentationAndTrackingSettings configureSettings(
 			double[] calibration,
+			String outputLabelingsPath,
 			boolean showIntermediateResults,
 			OpService opService )
 	{
@@ -51,6 +53,7 @@ public class MicrogliaSegmentationAndTracking< T extends RealType< T > & NativeT
 		settings.minimalObjectCenterDistance = 6;
 		settings.maximalWatershedLength = 10;
 		settings.closingRadius = 3;
+		settings.outputLabelingsPath = outputLabelingsPath;
 
 		return settings;
 	}

@@ -1,6 +1,7 @@
 package de.embl.cba.morphometry.tracking;
 
 import de.embl.cba.morphometry.Algorithms;
+import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
@@ -41,6 +42,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 	private final ImagePlus intensitiesImp;
 	private long minimalObjectSizeInPixels;
 	private static Point intensitiesImpLocation;
+	private TrackingSplitterManualCorrectionUI trackingSplitterManualCorrectionUI;
 
 	public TrackingSplitter( ArrayList< RandomAccessibleInterval< BitType > > masks,
 							 ArrayList< RandomAccessibleInterval< T > > intensities,
@@ -53,7 +55,6 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		minimalObjectSizeInPixels = ( long ) ( settings.minimalTrackingSplittingObjectArea / Math.pow( settings.workingVoxelSize, masks.get( 0 ).numDimensions() ) );
 
 		this.labelings = new ArrayList();
-
 		this.intensitiesImp = Utils.listOf2DImagesAsImagePlusMovie( intensities, Constants.INTENSITIES );
 	}
 
@@ -64,7 +65,6 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		int tMin = 0;  // at this point the movie is already cropped in time, such that we can process the full movie
 		int tMax = masks.size() - 1;
 		int t = tMin;
-
 
 		/**
 		 * Process first time-point
@@ -107,6 +107,17 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 			}
 
 			previousLabeling = labelings.get( t );
+
+			if( trackingSplitterManualCorrectionUI.isStopped() )
+			{
+				break; // saving will happen in the command
+			}
+
+			if ( trackingSplitterManualCorrectionUI.isSave() )
+			{
+				ImageIO.saveLabels( labelings, settings.outputLabelingsPath );
+			}
+
 		}
 	}
 
@@ -137,10 +148,9 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 	{
 		showIntensities( t );
 
-		final TrackingSplitterManualCorrectionUI trackingSplitterManualCorrectionUI
-				= new TrackingSplitterManualCorrectionUI( labelings, minimalObjectSizeInPixels );
+		trackingSplitterManualCorrectionUI = new TrackingSplitterManualCorrectionUI( labelings, minimalObjectSizeInPixels );
 
-		while ( ! trackingSplitterManualCorrectionUI.isFinished() )
+		while ( ! trackingSplitterManualCorrectionUI.isThisFrameFinished() )
 		{
 			Utils.wait( 100 );
 		}

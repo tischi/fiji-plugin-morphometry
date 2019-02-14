@@ -124,6 +124,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 		final File tableOutputFile = new File( getOutputDirectory() + "measurements.txt" );
 
+		Logger.log( "Saving " + tableOutputFile );
 		TableUtils.saveTable( jTable, tableOutputFile );
 	}
 
