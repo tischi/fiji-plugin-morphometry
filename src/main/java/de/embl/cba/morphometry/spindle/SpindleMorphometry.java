@@ -3,6 +3,7 @@ package de.embl.cba.morphometry.spindle;
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.CurveAnalysis;
+import de.embl.cba.morphometry.geometry.IndexAndValue;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidVectors;
 import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
 import de.embl.cba.morphometry.measurements.Measurements;
@@ -49,12 +50,13 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	public static final String SPINDLE_LENGTH = "Spindle_Length";
 	public static final String SPINDLE_WIDTH = "Spindle_Width";
 	public static final String DNA_WIDTH = "DNA_Width";
+	public static final String DNA_RELATIVE_CENTRAL_INTENSITY = "DNA_Normalised_Central_Intensity";
 	public static final String DNA_SPINDLE_CENTER_DISTANCE = "Dna_Center_To_Spindle_Center_Distance";
 	public static final String SPINDLE_AXIS_TO_COVERSLIP_PLANE_ANGLE_DEGREES = "Spindle_Axis_To_Coverslip_Plane_Angle_Degrees";
 	public static final String LENGTH_UNIT = "um";
-	public static final String DNA_VOLUME = "Dna_Volume";
+	public static final String DNA_VOLUME = "DNA_Volume";
 	public static final String VOLUME_UNIT = "um3";
-	public static final String DNA_LENGTH = "Dna_Length";
+	public static final String DNA_LENGTH = "DNA_Length";
 	public static final int ALIGNED_DNA_AXIS = 2;
 	public static final String SEP = "_";
 
@@ -204,17 +206,32 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Logger.log( "Measuring meta-phase plate width..." );
 
-		Projection projection = new Projection<>( alignedDNA, 2 );
+		Projection projection = new Projection( alignedDNA, 2 );
 
-		final RandomAccessibleInterval< T > dnaProjection = projection.maximum();
+		final RandomAccessibleInterval< T > dnaProjectionAlongShortestDnaAxis = projection.maximum();
 
-		final double dnaWidth = measureWidthByRadialProfile( dnaProjection, "dna width" );
+		final RadialWidthAndProfile dnaLateralWidthAndProfile =
+				measureWidthByRadialProfile( dnaProjectionAlongShortestDnaAxis, "dna width" );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
 				0,
 				DNA_WIDTH + SEP + LENGTH_UNIT,
-				dnaWidth );
+				dnaLateralWidthAndProfile.width );
+
+		/**
+		 * Measure central DNA hole
+		 */
+
+		final double dnaLateralRadialProfileMaxIntensity = CurveAnalysis.maximumIndexAndValue( dnaLateralWidthAndProfile.profile ).value;
+		final double dnaCenterMaxIntensity = dnaLateralWidthAndProfile.profile.values.get( 0 );
+		final double dnaRelativeCentralIntensity = dnaCenterMaxIntensity / dnaLateralRadialProfileMaxIntensity;
+
+		Measurements.addMeasurement(
+				objectMeasurements,
+				0,
+				DNA_RELATIVE_CENTRAL_INTENSITY,
+				dnaRelativeCentralIntensity );
 
 		/**
 		 * Compute spindle end-points along shortest DNA axis
@@ -456,18 +473,35 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return interestPointsImage;
 	}
 
-	public double measureWidthByRadialProfile( RandomAccessibleInterval< T > image, final String name )
+	class RadialWidthAndProfile
 	{
+		Double width;
+		CoordinatesAndValues profile;
+	}
+
+	public RadialWidthAndProfile measureWidthByRadialProfile(
+			final RandomAccessibleInterval< T > image,
+			final String name
+	)
+	{
+		// config
 		final double[] center = { 0, 0 };
 		final double spacing = settings.workingVoxelSize;
-		double maxDistanceInMicrometer = 15;
-		final CoordinatesAndValues radialProfile = Algorithms.computeRadialProfile( image, center, spacing, maxDistanceInMicrometer );
-		final CoordinatesAndValues radialProfileDerivative = CurveAnalysis.computeDerivatives( radialProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
+		final double maxDistanceInMicrometer = 15;
 
+		// measure
+		final RadialWidthAndProfile widthAndProfile = new RadialWidthAndProfile();
+		widthAndProfile.profile = Algorithms.computeRadialProfile( image, center, spacing, maxDistanceInMicrometer );
+
+		final CoordinatesAndValues radialProfileDerivative =
+				CurveAnalysis.computeDerivatives( radialProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
+		widthAndProfile.width = CurveAnalysis.minLocCoordinate( radialProfileDerivative );
+
+		// plot
 		if ( settings.showIntermediateResults ) Plots.plot( radialProfile, "center distance [um]", name + " intensity" );
 		if ( settings.showIntermediateResults ) Plots.plot( radialProfileDerivative, "center distance [um]", "d/dx "+ name + " intensity" );
 
-		return CurveAnalysis.minLocCoordinate( radialProfileDerivative );
+		return widthAndProfile;
 	}
 
 	public ImagePlus getOutputImage( )

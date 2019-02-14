@@ -1,7 +1,6 @@
 package de.embl.cba.morphometry.geometry;
 
 import java.util.ArrayList;
-import java.util.Set;
 
 import static java.lang.Math.abs;
 
@@ -49,7 +48,7 @@ public abstract class CurveAnalysis
 	public static double computeFWHM( CoordinatesAndValues coordinatesAndValues )
 	{
 
-		final IndexAndValue indexAndValue = findMaximumIndexAndValue( coordinatesAndValues );
+		final IndexAndValue indexAndValue = maximumIndexAndValue( coordinatesAndValues );
 
 		final int n = coordinatesAndValues.values.size();
 
@@ -77,7 +76,7 @@ public abstract class CurveAnalysis
 	}
 
 
-	public static IndexAndValue findMaximumIndexAndValue( CoordinatesAndValues coordinatesAndValues )
+	public static IndexAndValue maximumIndexAndValue( CoordinatesAndValues coordinatesAndValues )
 	{
 		final int n = coordinatesAndValues.coordinates.size();
 

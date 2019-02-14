@@ -2,6 +2,6 @@ package de.embl.cba.morphometry.geometry;
 
 public class IndexAndValue
 {
-	int index;
-	double value;
+	public int index;
+	public double value;
 }
