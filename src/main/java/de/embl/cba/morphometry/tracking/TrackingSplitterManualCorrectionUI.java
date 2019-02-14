@@ -111,7 +111,6 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 
 				isThisFrameFinished = true;
 				isStopped = false;
-				isSave = false;
 			}
 		} );
 		return button;
@@ -120,20 +119,13 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 	public JButton stopAndSaveButton()
 	{
 		final JButton button = new JButton( "Stop and Save" );
-		button.addActionListener( new ActionListener()
-		{
-			@Override
-			public void actionPerformed( ActionEvent e )
-			{
-				labels = runMaximalOverlapTrackerOnEditedImagePlus();
-				closeCurrentEditedLabelsImagePlus();
-				frameLocation = frame.getLocation();
-				frame.dispose();
-
-				isThisFrameFinished = true;
-				isStopped = true;
-				isSave = true;
-			}
+		button.addActionListener( e -> {
+			labels = runMaximalOverlapTrackerOnEditedImagePlus();
+			closeCurrentEditedLabelsImagePlus();
+			frameLocation = frame.getLocation();
+			frame.dispose();
+			isThisFrameFinished = true;
+			isStopped = true;
 		} );
 		return button;
 	}
@@ -141,25 +133,12 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 	public JButton saveButton()
 	{
 		final JButton button = new JButton( "Save" );
-		button.addActionListener( new ActionListener()
-		{
-			@Override
-			public void actionPerformed( ActionEvent e )
-			{
-				SwingUtilities.invokeLater( new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						labels = runMaximalOverlapTrackerOnEditedImagePlus();
-						ImageIO.saveLabels( labels, outputLabelingsPath );
-					}
-				} );
-			}
-		} );
+		button.addActionListener( e -> SwingUtilities.invokeLater( () -> {
+			labels = runMaximalOverlapTrackerOnEditedImagePlus();
+			ImageIO.saveLabels( labels, outputLabelingsPath );
+		} ) );
 		return button;
 	}
-
 
 	private void showPanel() {
 
@@ -187,14 +166,10 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 		return isStopped;
 	}
 
-	public boolean isSave()
-	{
-		return isSave;
-	}
-
 	public ArrayList< RandomAccessibleInterval< T > > runMaximalOverlapTrackerOnEditedImagePlus()
 	{
-		final ArrayList< RandomAccessibleInterval< T > > labels = Utils.get2DImagePlusMovieAsFrameList( editedLabelsImp, 1 );
+		final ArrayList< RandomAccessibleInterval< T > > labels =
+				Utils.get2DImagePlusMovieAsFrameList( editedLabelsImp, 1 );
 
 		// Due to the editing small unconnected regions of pixels may occur
 		Regions.removeSmallRegionsInMasks( labels, minimalObjectSizeInPixels );

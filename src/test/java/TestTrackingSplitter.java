@@ -1,7 +1,7 @@
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTracking;
 import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTrackingSettings;
-import de.embl.cba.morphometry.tracking.TrackingSplitter;
+import de.embl.cba.morphometry.tracking.SemiAutomatedTrackingSplitter;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.ImageJ;
@@ -37,7 +37,7 @@ public class TestTrackingSplitter
 						false,
 						ij.op());
 
-		final TrackingSplitter splitter = new TrackingSplitter( Utils.asMasks( masks ), intensities, settings );
+		final SemiAutomatedTrackingSplitter splitter = new SemiAutomatedTrackingSplitter( Utils.asMasks( masks ), intensities, settings );
 		splitter.run();
 		final ArrayList labelings = splitter.getLabelings();
 		Utils.listOf2DImagesAsImagePlusMovie( labelings, "Labels" ).show();

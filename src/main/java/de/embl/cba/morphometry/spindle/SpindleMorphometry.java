@@ -545,14 +545,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	public CompositeImage getOutputImage( )
 	{
-		final ArrayList< RandomAccessibleInterval< T > > list = new ArrayList<>();
-		list.add( transformedDNAView );
-		list.add( transformedDNAVolumeView );
-		list.add( transformedSpindleView );
-		list.add( transformedSpindleVolumeView );
-		list.add( transformedInterestPointView );
+		RandomAccessibleInterval< T > image = getRandomAccessibleIntervalOutput();
 
-		RandomAccessibleInterval< T > image = Views.stack( list );
 		image = Views.permute( image, 2, 3 );
 
 		final ImagePlus imp = ImageJFunctions.wrap( image, "output" );
@@ -585,6 +579,17 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		compositeImage.setDisplayMode( CompositeImage.COMPOSITE );
 
 		return compositeImage;
+	}
+
+	public RandomAccessibleInterval< T > getRandomAccessibleIntervalOutput()
+	{
+		final ArrayList< RandomAccessibleInterval< T > > list = new ArrayList<>();
+		list.add( transformedDNAView );
+		list.add( transformedDNAVolumeView );
+		list.add( transformedSpindleView );
+		list.add( transformedSpindleVolumeView );
+		list.add( transformedInterestPointView );
+		return Views.stack( list );
 	}
 
 

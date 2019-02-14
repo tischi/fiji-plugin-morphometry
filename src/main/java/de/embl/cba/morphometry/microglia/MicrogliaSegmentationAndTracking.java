@@ -2,7 +2,7 @@ package de.embl.cba.morphometry.microglia;
 
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.segmentation.SimpleSegmenterMicroglia;
-import de.embl.cba.morphometry.tracking.TrackingSplitter;
+import de.embl.cba.morphometry.tracking.SemiAutomatedTrackingSplitter;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
@@ -80,7 +80,7 @@ public class MicrogliaSegmentationAndTracking< T extends RealType< T > & NativeT
 
 	private ArrayList< RandomAccessibleInterval< T > > splitTouchingObjectsAndTrack( ArrayList< RandomAccessibleInterval< T > > intensities, ArrayList< RandomAccessibleInterval< T > > masks )
 	{
-		final TrackingSplitter splitter = new TrackingSplitter( masks, intensities, settings );
+		final SemiAutomatedTrackingSplitter splitter = new SemiAutomatedTrackingSplitter( masks, intensities, settings );
 		splitter.run();
 		return splitter.getLabelings();
 	}

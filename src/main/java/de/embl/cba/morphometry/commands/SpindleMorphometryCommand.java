@@ -1,10 +1,11 @@
-package de.embl.cba.morphometry.spindle;
+package de.embl.cba.morphometry.commands;
 
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
+import de.embl.cba.morphometry.spindle.SpindleMorphometry;
+import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import de.embl.cba.tables.TableUtils;
-import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.ops.OpService;
@@ -34,11 +35,6 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter ( style = "directory" )
 	public File outputDirectory;
 
-	SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
-
-	@Parameter
-	double dapiMaskErosion = settings.erosionOfDnaMaskInCalibratedUnits;
-
 	@Parameter ( label = "DNA channel [one-based index]" )
 	public long dnaChannelIndexOneBased = 2;
 
@@ -46,9 +42,10 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	public long spindleChannelIndexOneBased = 1;
 
 	@Parameter
-	public boolean showIntermediateResults = settings.showIntermediateResults;
-	private String imageTitle;
+	public boolean showIntermediateResults = false;
 
+	private String imageName;
+	private SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
 
 	public void run()
 	{
@@ -67,21 +64,18 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.watershedSeedsGlobalDistanceThreshold = 2.0;
 		settings.interestPointsRadius = 0.5;
 		settings.outputDirectory = outputDirectory;
-		settings.erosionOfDnaMaskInCalibratedUnits = dapiMaskErosion;
 	}
 
 	private void processFile( File file )
 	{
-		imageTitle = inputImageFile.getName().replace( ".tif", "" );
-
 		logStart();
 
-		final ImagePlus imagePlus = IJ.openImage( file.toString() );
+		imageName = inputImageFile.getName().replace( ".tif", "" );
 
+		final ImagePlus imagePlus = IJ.openImage( file.toString() );
 		setSettingsFromImagePlus( imagePlus );
 
 		final RandomAccessibleInterval< R > rai = ImageJFunctions.wrapReal( imagePlus );
-
 		final RandomAccessibleInterval< R > dapi = Views.hyperSlice( rai, 2, dnaChannelIndexOneBased - 1 );
 		final RandomAccessibleInterval< R > tubulin = Views.hyperSlice( rai, 2, spindleChannelIndexOneBased - 1 );
 
@@ -113,7 +107,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	{
 		Logger.log( " " );
 		Logger.log( "# Spindle Morphometry" );
-		Logger.log( "Processing file " + imageTitle );
+		Logger.log( "Processing file " + imageName );
 	}
 
 	private void computeAndSaveMeasurements( SpindleMorphometry morphometry )
@@ -132,7 +126,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	{
 		return outputDirectory
 				+ File.separator
-				+ imageTitle
+				+ imageName
 				+ File.separator;
 	}
 
@@ -140,13 +134,12 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	{
 		settings.inputCalibration = Utils.getCalibration( imagePlus );
 		settings.imagePlusCalibration = imagePlus.getCalibration();
-		settings.maxPossibleValueInDataSet = Math.pow( 2, imagePlus.getBitDepth() ) - 1.0;
 		settings.inputDataSetName = imagePlus.getTitle();
 	}
 
 	private void save( ImagePlus imagePlus )
 	{
-		final String path = getOutputDirectory() + imageTitle + "-out.tif";
+		final String path = getOutputDirectory() + imageName + "-out.tif";
 		new File( path ).getParentFile().mkdirs();
 		Logger.log( "Saving: " + path );
 		IJ.saveAsTiff( imagePlus, path );

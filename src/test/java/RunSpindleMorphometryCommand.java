@@ -1,4 +1,4 @@
-import de.embl.cba.morphometry.spindle.SpindleMorphometryCommand;
+import de.embl.cba.morphometry.commands.SpindleMorphometryCommand;
 import net.imagej.ImageJ;
 
 public class RunSpindleMorphometryCommand

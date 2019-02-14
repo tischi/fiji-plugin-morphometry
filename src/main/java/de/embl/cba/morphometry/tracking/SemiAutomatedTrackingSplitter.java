@@ -12,7 +12,6 @@ import ij.ImagePlus;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
-import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegionCursor;
@@ -21,19 +20,18 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.util.Intervals;
 
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
+public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType< T > >
 {
 
 	final ArrayList< RandomAccessibleInterval< BitType > > masks;
 	final ArrayList< RandomAccessibleInterval< T > > intensities;
 
-	private Integer nextId;
+	private Integer maxIndex;
 
 	private ArrayList< RandomAccessibleInterval< IntType > > labelings;
 
@@ -43,9 +41,9 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 	private static Point intensitiesImpLocation;
 	private TrackingSplitterManualCorrectionUI trackingSplitterManualCorrectionUI;
 
-	public TrackingSplitter( ArrayList< RandomAccessibleInterval< BitType > > masks,
-							 ArrayList< RandomAccessibleInterval< T > > intensities,
-							 MicrogliaSegmentationAndTrackingSettings settings )
+	public SemiAutomatedTrackingSplitter( ArrayList< RandomAccessibleInterval< BitType > > masks,
+										  ArrayList< RandomAccessibleInterval< T > > intensities,
+										  MicrogliaSegmentationAndTrackingSettings settings )
 	{
 		this.masks = masks;
 		this.intensities = intensities;
@@ -82,7 +80,7 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 			manuallyCorrectLabelings( t );
 		}
 
-		nextId = Utils.getNumObjects( labelings.get( tMin ) );
+		maxIndex = Utils.getNumObjects( labelings.get( tMin ) );
 
 		boolean showSplittingAttempts = false;
 
@@ -96,9 +94,13 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		{
 			Logger.log( "Processing frame " + ( t + 1 ) );
 
-			RandomAccessibleInterval< BitType > splitMask = getSplitMask( t, previousLabeling );
+			RandomAccessibleInterval< BitType > mask =
+					splitCurrentMaskBasedOnPreviousLabeling( t, previousLabeling );
 
-			labelings.add( getMaximalOverlapBasedLabeling( previousLabeling, splitMask ) );
+			final LabelingAndMaxIndex labelingAndMaxIndex =
+					TrackingUtils.getMaximalOverlapBasedLabeling( previousLabeling, mask, maxIndex );
+
+			labelings.add( labelingAndMaxIndex.labeling );
 
 			if ( settings.manualSegmentationCorrectionOfAllFrames )
 			{
@@ -106,6 +108,8 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 			}
 
 			previousLabeling = labelings.get( t );
+
+			maxIndex = Algorithms.getMaximumValue( labelings.get( t ) ).intValue();
 
 			if( trackingSplitterManualCorrectionUI.isStopped() )
 			{
@@ -115,20 +119,22 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		}
 	}
 
-	public RandomAccessibleInterval< BitType > getSplitMask( int t, RandomAccessibleInterval< IntType > previousLabeling )
+	public RandomAccessibleInterval< BitType > splitCurrentMaskBasedOnPreviousLabeling(
+			int currentTimePoint,
+			RandomAccessibleInterval< IntType > previousLabeling )
 	{
-		final ImgLabeling< Integer, IntType > currentImgLabeling = Utils.asImgLabeling( masks.get( t ), ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+		final ImgLabeling< Integer, IntType > currentImgLabeling = Utils.asImgLabeling( masks.get( currentTimePoint ), ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 		RandomAccessibleInterval< IntType > currentLabeling = currentImgLabeling.getIndexImg();
 
-		HashMap< Integer, ArrayList< Integer > > overlappingObjectsLabelsMap = getOverlappingObjectLabelsMap( t, previousLabeling, currentImgLabeling, currentLabeling );
+		HashMap< Integer, ArrayList< Integer > > overlappingObjectsLabelsMap = getOverlappingObjectLabelsMap( currentTimePoint, previousLabeling, currentImgLabeling, currentLabeling );
 
-		RandomAccessibleInterval< BitType > splitMask = Utils.copyAsArrayImg( masks.get( t ) );
+		RandomAccessibleInterval< BitType > splitMask = Utils.copyAsArrayImg( masks.get( currentTimePoint ) );
 
 		Algorithms.splitCurrentObjectsBasedOnOverlapWithPreviousObjects(
 				splitMask,
 				overlappingObjectsLabelsMap,
 				currentImgLabeling,
-				intensities.get( t ),
+				intensities.get( currentTimePoint ),
 				previousLabeling,
 				minimalObjectSizeInPixels,
 				( int ) ( settings.minimalObjectCenterDistance / settings.workingVoxelSize ),
@@ -142,7 +148,8 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 	{
 		showIntensities( t );
 
-		trackingSplitterManualCorrectionUI = new TrackingSplitterManualCorrectionUI( labelings, minimalObjectSizeInPixels, settings.outputLabelingsPath );
+		trackingSplitterManualCorrectionUI = new TrackingSplitterManualCorrectionUI(
+				labelings, minimalObjectSizeInPixels, settings.outputLabelingsPath );
 
 		while ( ! trackingSplitterManualCorrectionUI.isThisFrameFinished() )
 		{
@@ -169,25 +176,6 @@ public class TrackingSplitter< T extends RealType< T > & NativeType< T > >
 		IJ.run( intensitiesImp, "Enhance Contrast", "saturated=0.01");
 	}
 
-
-	private RandomAccessibleInterval< IntType > getMaximalOverlapBasedLabeling( RandomAccessibleInterval< IntType > referenceLabeling,
-																				RandomAccessibleInterval< BitType > mask )
-	{
-		RandomAccessibleInterval< IntType > newLabeling = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
-
-		final LabelRegions< Integer > newRegions = new LabelRegions( Utils.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED ) );
-
-		for ( LabelRegion< Integer > region : newRegions )
-		{
-			final HashMap< Integer, Long > overlaps = TrackingUtils.computeOverlaps( referenceLabeling, region );
-
-			int objectId = TrackingUtils.computeObjectId( overlaps, nextId );
-
-			Utils.drawObject( newLabeling, region, objectId );
-		}
-
-		return newLabeling;
-	}
 
 	public HashMap< Integer, ArrayList< Integer > > getOverlappingObjectLabelsMap( int t, RandomAccessibleInterval< IntType > previousLabeling, ImgLabeling< Integer, IntType > currentImgLabeling, RandomAccessibleInterval< IntType > currentLabeling )
 	{

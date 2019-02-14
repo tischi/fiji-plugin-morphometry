@@ -43,7 +43,6 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public RandomAccessibleInterval<T> dnaImage;
 	public RandomAccessibleInterval<T> tubulinImage;
 
-	public double maxPossibleValueInDataSet;
 	public double maxShortAxisDist;
 	public double interestPointsRadius;
 	public File outputDirectory;

@@ -77,7 +77,7 @@ public class Algorithms
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	double getMaximumValue( RandomAccessibleInterval< T > rai )
+	Double getMaximumValue( RandomAccessibleInterval< T > rai )
 	{
 		Cursor< T > cursor = Views.iterable( rai ).localizingCursor();
 

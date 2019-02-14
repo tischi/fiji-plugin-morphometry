@@ -3,13 +3,18 @@ package de.embl.cba.morphometry.tracking;
 import de.embl.cba.morphometry.Utils;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.algorithm.labeling.ConnectedComponents;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegionCursor;
 import net.imglib2.roi.labeling.LabelRegions;
-import net.imglib2.type.logic.BitType;
+import net.imglib2.type.NativeType;
+import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.util.Intervals;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class TrackingUtils
 {
@@ -25,53 +30,45 @@ public class TrackingUtils
 		}
 	}
 
-	public static int computeObjectId( HashMap< Integer, Long > overlaps, Integer nextId )
-	{
-		int objectId;
 
-		if( overlaps.size() == 0 )
-		{
-			objectId = nextId++;
-		}
-		else
-		{
-			objectId = getMaxOverlapLabel( overlaps );
-		}
-
-		return objectId;
-	}
-
+	/**
+	 * TODO: maybe some area fraction overlap might be better?
+	 *
+	 *
+	 * @param overlaps
+	 * @return
+	 */
 	public static int getMaxOverlapLabel( HashMap< Integer, Long > overlaps )
 	{
 		int maxOverlapLabel = 0;
-		long maxOverlapCount = Long.MIN_VALUE;
+		long maxOverlap = Long.MIN_VALUE;
 
 		for ( Integer label : overlaps.keySet() )
 		{
-			final long overlapCount = overlaps.get( label ).longValue();
+			final long overlap = overlaps.get( label ).longValue();
 
-			if ( overlapCount > maxOverlapCount )
+			if ( overlap > maxOverlap )
 			{
-				maxOverlapCount = overlapCount;
+				maxOverlap = overlap;
 				maxOverlapLabel = label;
 			}
 		}
 		return maxOverlapLabel;
 	}
 
-	public static HashMap< Integer, Long > computeOverlaps(
+	public static HashMap< Integer, Long > computeRegionOverlaps(
 			RandomAccessibleInterval< IntType > previousLabeling,
 			LabelRegion region )
 	{
 		final HashMap< Integer, Long > overlaps = new HashMap<>();
 
 		final RandomAccess< IntType > previousLabelsAccess = previousLabeling.randomAccess();
-		final LabelRegionCursor cursor = region.cursor();
+		final LabelRegionCursor currentRegionCursor = region.cursor();
 
-		while ( cursor.hasNext() )
+		while ( currentRegionCursor.hasNext() )
 		{
-			cursor.fwd();
-			previousLabelsAccess.setPosition( cursor );
+			currentRegionCursor.fwd();
+			previousLabelsAccess.setPosition( currentRegionCursor );
 
 			final int label = previousLabelsAccess.get().getInteger();
 
@@ -83,4 +80,49 @@ public class TrackingUtils
 		return overlaps;
 	}
 
+
+	public static < T extends RealType< T > & NativeType< T > >
+	LabelingAndMaxIndex getMaximalOverlapBasedLabeling(
+			RandomAccessibleInterval< IntType > referenceLabeling,
+			RandomAccessibleInterval< T > currentMask,
+			Integer maxIndex )
+	{
+		final HashSet< Integer > newObjectIds = new HashSet<>();
+
+		final LabelRegions< Integer > currentRegions = new LabelRegions( Utils.asImgLabeling( currentMask, ConnectedComponents.StructuringElement.FOUR_CONNECTED ) );
+
+		final LabelingAndMaxIndex labelingAndMaxIndex = new LabelingAndMaxIndex();
+
+		labelingAndMaxIndex.labeling = ArrayImgs.ints( Intervals.dimensionsAsLongArray( currentMask ) );
+
+		for ( LabelRegion< Integer > region : currentRegions )
+		{
+			final HashMap< Integer, Long > overlaps =
+					computeRegionOverlaps( referenceLabeling, region );
+
+			int objectId;
+
+			if( overlaps.size() == 0 )
+			{
+				objectId = ++maxIndex;
+			}
+			else
+			{
+				objectId = getMaxOverlapLabel( overlaps );
+
+				if ( newObjectIds.contains( objectId ) )
+				{
+					objectId = ++maxIndex;
+				}
+			}
+
+			newObjectIds.add( objectId );
+
+			Utils.drawObject( labelingAndMaxIndex.labeling, region, objectId );
+		}
+
+		labelingAndMaxIndex.maxIndex = maxIndex;
+
+		return labelingAndMaxIndex;
+	}
 }
