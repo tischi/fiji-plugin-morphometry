@@ -500,11 +500,11 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		Utils.setValues( interestPointsImage, 0.0 );
 
 		final double[] origin = { 0, 0, 0 };
-		drawTransformedPoint( alignmentTransform, interestPointsImage, origin, 200 );
+		drawTransformedPoint( alignmentTransform, interestPointsImage, origin, 255 );
 
 		for ( int p = 0; p < 2; p++ )
 		{
-			drawTransformedPoint( alignmentTransform, interestPointsImage, spindlePoles.get( p ), 100 );
+			drawTransformedPoint( alignmentTransform, interestPointsImage, spindlePoles.get( p ), 255 );
 		}
 		return interestPointsImage;
 	}
