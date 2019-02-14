@@ -3,6 +3,7 @@ package de.embl.cba.morphometry.drosophila.registration;
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
+import de.embl.cba.morphometry.geometry.CurveAnalysis;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidsMLJ;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
@@ -131,7 +132,7 @@ public class DrosphilaRegistration
 
 		if ( settings.showIntermediateResults ) Plots.plot( averageSvbIntensitiesAlongZ.coordinates, averageSvbIntensitiesAlongZ.values, "z [um]", "average intensities" );
 
-		final double embryoCenterPosition = Utils.computeMaxLoc( averageSvbIntensitiesAlongZ );
+		final double embryoCenterPosition = CurveAnalysis.maxLoc( averageSvbIntensitiesAlongZ );
 		coverslipPosition = embryoCenterPosition - DrosophilaRegistrationSettings.drosophilaWidth / 2.0;
 
 		Logger.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
@@ -507,7 +508,7 @@ public class DrosphilaRegistration
 
 		if ( settings.showIntermediateResults ) Plots.plot( coordinatesAndValues.coordinates, coordinatesAndValues.values, "x", "average intensity" );
 
-		double maxLoc = Utils.computeMaxLoc( coordinatesAndValues.coordinates, coordinatesAndValues.values, null );
+		double maxLoc = CurveAnalysis.maxLoc( coordinatesAndValues, null );
 
 		AffineTransform3D affineTransform3D = new AffineTransform3D();
 

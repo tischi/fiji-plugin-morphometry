@@ -6,7 +6,7 @@ import static java.lang.Math.abs;
 
 public abstract class CurveAnalysis
 {
-	public static CoordinatesAndValues computeDerivatives( CoordinatesAndValues coordinatesAndValues, int di )
+	public static CoordinatesAndValues derivative( CoordinatesAndValues coordinatesAndValues, int di )
 	{
 		final CoordinatesAndValues derivative = new CoordinatesAndValues();
 
@@ -20,7 +20,7 @@ public abstract class CurveAnalysis
 	}
 
 	// TODO:
-//	public static CoordinatesAndValues computeDerivatives( CoordinateToValue cv, int di )
+//	public static CoordinatesAndValues derivative( CoordinateToValue cv, int di )
 //	{
 //		final CoordinatesAndValues derivative = new CoordinatesAndValues();
 //
@@ -117,16 +117,30 @@ public abstract class CurveAnalysis
 	}
 
 
-	public static double minLocCoordinate( CoordinatesAndValues coordinatesAndValues )
+	public static double minLoc( CoordinatesAndValues coordinatesAndValues )
+	{
+		return minLoc( coordinatesAndValues, null );
+	}
+
+	public static double minLoc( CoordinatesAndValues coordinatesAndValues, double[] coordinateRangeMinMax )
 	{
 		final int n = coordinatesAndValues.coordinates.size();
+		final ArrayList< Double > coordinates = coordinatesAndValues.coordinates;
+		final ArrayList< Double > values = coordinatesAndValues.values;
 
 		final IndexAndValue minLocIndexAndValue = new IndexAndValue();
 		minLocIndexAndValue.value = Double.MAX_VALUE;
 
 		for ( int i = 0; i < n; i++ )
 		{
-			if ( coordinatesAndValues.values.get( i ) < minLocIndexAndValue.value )
+
+			if ( coordinateRangeMinMax != null )
+			{
+				if ( coordinates.get( i ) < coordinateRangeMinMax[ 0 ] ) continue;
+				if ( coordinates.get( i ) > coordinateRangeMinMax[ 1 ] ) continue;
+			}
+
+			if ( values.get( i ) < minLocIndexAndValue.value )
 			{
 				minLocIndexAndValue.value = coordinatesAndValues.values.get( i );
 				minLocIndexAndValue.index = i;
@@ -138,4 +152,53 @@ public abstract class CurveAnalysis
 		return maxLocCoordinate;
 	}
 
+	public static double maxLoc( CoordinatesAndValues coordinatesAndValues )
+	{
+		return maxLoc( coordinatesAndValues, null );
+	}
+
+	public static double maxLoc( CoordinatesAndValues coordinatesAndValues, double[] coordinateRangeMinMax )
+	{
+		final ArrayList< Double > coordinates = coordinatesAndValues.coordinates;
+		final ArrayList< Double > values = coordinatesAndValues.values;
+		final int n = values.size();
+
+		double max = - Double.MAX_VALUE;
+		double maxLoc = coordinates.get( 0 );
+
+		for ( int i = 0; i < n; ++i )
+		{
+			if ( coordinateRangeMinMax != null )
+			{
+				if ( coordinates.get( i ) < coordinateRangeMinMax[ 0 ] ) continue;
+				if ( coordinates.get( i ) > coordinateRangeMinMax[ 1 ] ) continue;
+			}
+
+			if ( values.get( i ) > max )
+			{
+				max = values.get( i );
+				maxLoc = coordinates.get( i );
+			}
+		}
+
+		return maxLoc;
+	}
+
+	public static double[] leftMaxAndRightMinLoc( CoordinatesAndValues coordinatesAndValues )
+	{
+		double[] rangeMinMax = new double[ 2 ];
+		double[] locations = new double[ 2 ];
+
+		// left
+		rangeMinMax[ 0 ] = - Double.MAX_VALUE;
+		rangeMinMax[ 1 ] = 0;
+		locations[ 0 ] = maxLoc( coordinatesAndValues, rangeMinMax );
+
+		// right
+		rangeMinMax[ 0 ] = 0;
+		rangeMinMax[ 1 ] = Double.MAX_VALUE;
+		locations[ 1 ] = minLoc( coordinatesAndValues, rangeMinMax );
+
+		return locations;
+	}
 }

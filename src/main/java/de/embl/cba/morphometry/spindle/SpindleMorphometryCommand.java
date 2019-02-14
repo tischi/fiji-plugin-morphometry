@@ -7,7 +7,6 @@ import de.embl.cba.tables.TableUtils;
 import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
-import ij.process.LUT;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
@@ -18,7 +17,6 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import javax.swing.*;
-import java.awt.*;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +37,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
 
 	@Parameter
-	double dapiMaskErosion = settings.erosionOfDapiMaskInCalibratedUnits;
+	double dapiMaskErosion = settings.erosionOfDnaMaskInCalibratedUnits;
 
 	@Parameter
 	public long dapiChannelIndexOneBased = 2;
@@ -69,7 +67,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.watershedSeedsGlobalDistanceThreshold = 2.0;
 		settings.interestPointsRadius = 0.5;
 		settings.outputDirectory = outputDirectory;
-		settings.erosionOfDapiMaskInCalibratedUnits = dapiMaskErosion;
+		settings.erosionOfDnaMaskInCalibratedUnits = dapiMaskErosion;
 	}
 
 	private void processFile( File file )
@@ -87,7 +85,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		final RandomAccessibleInterval< R > dapi = Views.hyperSlice( rai, 2, dapiChannelIndexOneBased - 1 );
 		final RandomAccessibleInterval< R > tubulin = Views.hyperSlice( rai, 2, tubulinChannelIndexOneBased - 1 );
 
-		settings.dapiImage = dapi;
+		settings.dnaImage = dapi;
 		settings.tubulinImage = tubulin;
 
 		SpindleMorphometry morphometry = new SpindleMorphometry( settings, opService );

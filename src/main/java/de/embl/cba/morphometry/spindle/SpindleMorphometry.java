@@ -3,7 +3,6 @@ package de.embl.cba.morphometry.spindle;
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.CurveAnalysis;
-import de.embl.cba.morphometry.geometry.IndexAndValue;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidVectors;
 import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
 import de.embl.cba.morphometry.measurements.Measurements;
@@ -65,7 +64,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
 	private RandomAccessibleInterval< BitType > mask;
-	private RandomAccessibleInterval transformedDapiView;
+	private RandomAccessibleInterval transformedDNAView;
 	private RandomAccessibleInterval transformedTubulinView;
 	private RandomAccessibleInterval transformedInterestPointView;
 
@@ -91,10 +90,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final double[] workingCalibration = Utils.as3dDoubleArray( settings.workingVoxelSize );
 
-		final RandomAccessibleInterval< T > dna = createRescaledArrayImg( settings.dapiImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		final RandomAccessibleInterval< T > dna = createRescaledArrayImg( settings.dnaImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 		final RandomAccessibleInterval< T > tubulin = createRescaledArrayImg( settings.tubulinImage, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
-		if ( settings.showIntermediateResults ) show( dna, "dapi isotropic resolution", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( dna, "DNA isotropic resolution", null, workingCalibration, false );
 		if ( settings.showIntermediateResults ) show( tubulin, "tubulin isotropic resolution", null, workingCalibration, false );
 
 
@@ -103,12 +102,12 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 */
 
 		final RandomAccessibleInterval< T > dnaDownscaledToSpindleWidth = createRescaledArrayImg(
-				settings.dapiImage,
+				settings.dnaImage,
 				getScalingFactors( settings.inputCalibration, 3.0 ) );
 		final double maximumValue = Algorithms.getMaximumValue( dnaDownscaledToSpindleWidth );
 		double threshold = maximumValue / 2.0;
 
-		Logger.log( "Dapi threshold: " + threshold );
+		Logger.log( "DNA threshold: " + threshold );
 
 
 		/**
@@ -117,7 +116,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		RandomAccessibleInterval< BitType > dnaMask = createMask( dna, threshold );
 
-		if ( settings.showIntermediateResults ) show( dnaMask, "dapi mask", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( dnaMask, "DNA mask", null, workingCalibration, false );
 
 
 		/**
@@ -177,34 +176,37 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final RandomAccessibleInterval alignedDNA = Utils.copyAsArrayImg( Transforms.createTransformedView( dna, alignmentTransform ) );
 		final RandomAccessibleInterval alignedProcessedMetaphasePlate = Utils.copyAsArrayImg( Transforms.createTransformedView( processedMetaPhasePlate, alignmentTransform ) );
 
-		if ( settings.showIntermediateResults ) show( alignedDNA, "aligned dapi", Transforms.origin(), workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( alignedDNA, "aligned DNA", Transforms.origin(), workingCalibration, false );
 		if ( settings.showIntermediateResults ) show( alignedProcessedMetaphasePlate, "aligned processed meta-phase plate", Transforms.origin(), workingCalibration, false );
 //		if ( settings.showIntermediateResults ) Viewer3D.show3D( alignedProcessedMetaphasePlate );
 
 		/**
-		 * Compute metaphase plate length
+		 * Compute meta-phase plate axial extend
 		 */
 
-		Logger.log( "Measuring meta-phase plate length..." );
+		Logger.log( "Measuring meta-phase plate axial extend..." );
 
-		final CoordinatesAndValues dnaProfile = Utils.computeAverageIntensitiesAlongAxis( alignedDNA, settings.maxShortAxisDist, ALIGNED_DNA_AXIS, settings.workingVoxelSize );
-		if ( settings.showIntermediateResults ) Plots.plot( dnaProfile.coordinates, dnaProfile.values, "distance to center", "dapi intensity along shortest axis" );
+		final CoordinatesAndValues dnaProfileAlongShortestDnaAxis = Utils.computeAverageIntensitiesAlongAxis( alignedDNA, settings.maxShortAxisDist, ALIGNED_DNA_AXIS, settings.workingVoxelSize );
+		if ( settings.showIntermediateResults ) Plots.plot( dnaProfileAlongShortestDnaAxis, "distance to center", "DNA intensity along shortest axis" );
 
-		// TODO: replace also by gradient and maximum?
-		final double dnaLength = CurveAnalysis.computeFWHM( dnaProfile );
+		final CoordinatesAndValues dnaProfileAlongShortestDnaAxisDerivative = CurveAnalysis.derivative( dnaProfileAlongShortestDnaAxis, ( int ) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
+		if ( settings.showIntermediateResults ) Plots.plot( dnaProfileAlongShortestDnaAxisDerivative, "distance to center", "d/dx DNA intensity along shortest axis" );
+
+		final double[] dnaAxialBoundaries = CurveAnalysis.leftMaxAndRightMinLoc( dnaProfileAlongShortestDnaAxisDerivative );
+
+		final double dnaAxialExtend = dnaAxialBoundaries[ 1 ] - dnaAxialBoundaries[ 0 ];
 
 		Measurements.addMeasurement(
 				objectMeasurements,
 				0,
 				DNA_LENGTH + SEP + LENGTH_UNIT,
-				dnaLength);
-
+				dnaAxialExtend);
 
 		/**
-		 * Measure metaphase plate width
+		 * Compute meta-phase plate lateral extend
 		 */
 
-		Logger.log( "Measuring meta-phase plate width..." );
+		Logger.log( "Measuring meta-phase lateral extend..." );
 
 		Projection projection = new Projection( alignedDNA, 2 );
 
@@ -241,13 +243,14 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfile.values, "center distance [um]", "tubulin max along shortest DNA axis" );
 
 		final CoordinatesAndValues tubulinProfileDerivative =
-				CurveAnalysis.computeDerivatives(
+				CurveAnalysis.derivative(
 						tubulinProfile,
 						(int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
 
 		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values, "distance to center", "d/dx tubulin max along shortest DNA axis" );
 
-		double[] dnaAxisBasedSpindlePoleCoordinates = getLeftMaxAndRightMinLoc( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values );
+		double[] dnaAxisBasedSpindlePoleCoordinates =
+				CurveAnalysis.leftMaxAndRightMinLoc( tubulinProfileDerivative );
 
 		final ArrayList< RealPoint > spindleLengthPoints = new ArrayList<>(  );
 
@@ -385,7 +388,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final RandomAccessibleInterval< T > spindleProjection = projection.maximum();
 
-		final double spindleWidth = measureWidthByRadialProfile( spindleProjection, "tubulin perpendicular to spindle axis" );
+		final double spindleWidth = measureWidthByRadialProfile( spindleProjection, "tubulin perpendicular to spindle axis" ).width;
 
 		Measurements.addMeasurement(
 				objectMeasurements,
@@ -450,7 +453,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Logger.log( "Rotating input data around z-axis by [degrees]: " + 180 / Math.PI * angleBetweenXAxisAndSpindleWithVector );
 
-		transformedDapiView = Transforms.createTransformedView( dna, rotationTransform );
+		transformedDNAView = Transforms.createTransformedView( dna, rotationTransform );
 		transformedTubulinView = Transforms.createTransformedView( tubulin, rotationTransform );
 		transformedInterestPointView = Transforms.createTransformedView( interestPointsImage, rotationTransform, new NearestNeighborInterpolatorFactory() );
 	}
@@ -494,11 +497,11 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		widthAndProfile.profile = Algorithms.computeRadialProfile( image, center, spacing, maxDistanceInMicrometer );
 
 		final CoordinatesAndValues radialProfileDerivative =
-				CurveAnalysis.computeDerivatives( radialProfile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
-		widthAndProfile.width = CurveAnalysis.minLocCoordinate( radialProfileDerivative );
+				CurveAnalysis.derivative( widthAndProfile.profile, (int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
+		widthAndProfile.width = CurveAnalysis.minLoc( radialProfileDerivative );
 
 		// plot
-		if ( settings.showIntermediateResults ) Plots.plot( radialProfile, "center distance [um]", name + " intensity" );
+		if ( settings.showIntermediateResults ) Plots.plot( widthAndProfile.profile, "center distance [um]", name + " intensity" );
 		if ( settings.showIntermediateResults ) Plots.plot( radialProfileDerivative, "center distance [um]", "d/dx "+ name + " intensity" );
 
 		return widthAndProfile;
@@ -507,7 +510,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	public ImagePlus getOutputImage( )
 	{
 		final ArrayList< RandomAccessibleInterval< T > > list = new ArrayList<>();
-		list.add( transformedDapiView );
+		list.add( transformedDNAView );
 		list.add( transformedTubulinView );
 		list.add( transformedInterestPointView );
 
@@ -539,13 +542,13 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	public RandomAccessibleInterval< BitType > createProcessedMetaPhasePlate( RandomAccessibleInterval< BitType > mask, Img< BitType > metaphasePlate )
 	{
-		Logger.log( "Perform morphological filtering on dapi mask..." );
+		Logger.log( "Perform morphological filtering on dna mask..." );
 
 		RandomAccessibleInterval< BitType > filtered;
 
-		if ( settings.erosionOfDapiMaskInCalibratedUnits > 0 )
+		if ( settings.erosionOfDnaMaskInCalibratedUnits > 0 )
 		{
-			filtered = Algorithms.erode( metaphasePlate, ( int ) Math.ceil( settings.erosionOfDapiMaskInCalibratedUnits / settings.workingVoxelSize ) );
+			filtered = Algorithms.erode( metaphasePlate, ( int ) Math.ceil( settings.erosionOfDnaMaskInCalibratedUnits / settings.workingVoxelSize ) );
 		}
 		else
 		{
@@ -554,7 +557,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return filtered;
 	}
 
-	public void saveMaximumProjections( RandomAccessibleInterval transformedDapiView, String name )
+	public void saveMaximumProjections( RandomAccessibleInterval transformedDNAView, String name )
 	{
 		for ( int d = 0; d < 3; ++d )
 		{
@@ -568,7 +571,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 			new File(path).getParentFile().mkdirs();
 
-			IJ.saveAsTiff( ImageJFunctions.wrap( new Projection( transformedDapiView, d ).maximum(), title ), path );
+			IJ.saveAsTiff( ImageJFunctions.wrap( new Projection( transformedDNAView, d ).maximum(), title ), path );
 		}
 	}
 
@@ -609,43 +612,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				break;
 			}
 		}
-	}
-
-	public static double[] getLeftAndRightMaxLocs( CoordinatesAndValues tubulinProfile, ArrayList< Double > tubulinProfileAbsoluteDerivative )
-	{
-		double[] rangeMinMax = new double[ 2 ];
-		double[] maxLocs = new double[ 2 ];
-
-		// left
-		rangeMinMax[ 0 ] = - Double.MAX_VALUE;
-		rangeMinMax[ 1 ] = 0;
-		maxLocs[ 1 ] = Utils.computeMaxLoc( tubulinProfile.coordinates, tubulinProfileAbsoluteDerivative, rangeMinMax );
-
-		// right
-		rangeMinMax[ 0 ] = 0;
-		rangeMinMax[ 1 ] = Double.MAX_VALUE;
-		maxLocs[ 0 ] = Utils.computeMaxLoc( tubulinProfile.coordinates, tubulinProfileAbsoluteDerivative, rangeMinMax );
-
-		return maxLocs;
-	}
-
-	public static double[] getLeftMaxAndRightMinLoc( ArrayList< Double > coordinates, ArrayList< Double > derivative )
-	{
-		double[] rangeMinMax = new double[ 2 ];
-		double[] maxLocs = new double[ 2 ];
-
-		// left
-		rangeMinMax[ 0 ] = - Double.MAX_VALUE;
-		rangeMinMax[ 1 ] = 0;
-		maxLocs[ 1 ] = Utils.computeMaxLoc( coordinates, derivative, rangeMinMax );
-
-		// right
-		rangeMinMax[ 0 ] = 0;
-		rangeMinMax[ 1 ] = Double.MAX_VALUE;
-		maxLocs[ 0 ] = Utils.computeMinLoc( coordinates, derivative, rangeMinMax );
-
-
-		return maxLocs;
 	}
 
 	public < T extends RealType< T > & NativeType< T > >

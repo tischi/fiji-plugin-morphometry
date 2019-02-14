@@ -40,7 +40,7 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 
 
 	public double[] inputCalibration;
-	public RandomAccessibleInterval<T> dapiImage;
+	public RandomAccessibleInterval<T> dnaImage;
 	public RandomAccessibleInterval<T> tubulinImage;
 
 	public double maxPossibleValueInDataSet;
@@ -52,6 +52,6 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 
 	public double minimalMetaphasePlateVolumeInCalibratedUnits = 5; // um^3
 	public double centralObjectRegionToleranceInCalibratedUnits = 3; // um
-	public double erosionOfDapiMaskInCalibratedUnits = 1.0; // um
+	public double erosionOfDnaMaskInCalibratedUnits = 1.0; // um
 	public Calibration imagePlusCalibration;
 }

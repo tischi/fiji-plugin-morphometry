@@ -44,7 +44,7 @@ public class SpindleMorphometryTest <T extends RealType<T> & NativeType< T > >
 		SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
 		settings.showIntermediateResults = true;
 		settings.inputCalibration = Utils.getCalibration( dapiImp );
-		settings.dapiImage = dapi;
+		settings.dnaImage = dapi;
 		settings.tubulinImage = tubulin;
 		settings.workingVoxelSize = 0.25;
 		settings.maxPossibleValueInDataSet = Math.pow( 2, dapiImp.getBitDepth() ) - 1.0;
