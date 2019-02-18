@@ -27,7 +27,9 @@ import java.util.Collections;
 public abstract class Regions
 {
 
-	public static LabelRegion< Integer > getCentralRegion( ImgLabeling< Integer, IntType > labeling, long radius )
+	public static LabelRegion< Integer > getCentralRegion(
+			ImgLabeling< Integer, IntType > labeling,
+			long radius )
 	{
 		int centralLabel = Algorithms.getCentralLabelIndex( labeling, radius );
 

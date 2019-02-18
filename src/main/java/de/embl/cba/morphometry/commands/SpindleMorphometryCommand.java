@@ -32,13 +32,16 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter
 	public File inputImageFile;
 
-	@Parameter ( style = "directory" )
+	@Parameter ( style = "Output Directory" )
 	public File outputDirectory;
 
-	@Parameter ( label = "DNA channel [one-based index]" )
+	@Parameter ( label = "Voxel Size during Analysis" )
+	public double voxelSpacing = 0.25;
+
+	@Parameter ( label = "DNA Channel [one-based index]" )
 	public long dnaChannelIndexOneBased = 2;
 
-	@Parameter ( label = "Spindle channel [one-based index]" )
+	@Parameter ( label = "Spindle Channel [one-based index]" )
 	public long spindleChannelIndexOneBased = 1;
 
 	@Parameter
@@ -56,7 +59,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	private void setSettingsFromUI()
 	{
 		settings.showIntermediateResults = showIntermediateResults;
-		settings.workingVoxelSize = 0.25;
+		settings.workingVoxelSize = voxelSpacing;
 		settings.maxShortAxisDist = 6;
 		settings.derivativeDelta = 3.0;
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
@@ -76,8 +79,12 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		setSettingsFromImagePlus( imagePlus );
 
 		final RandomAccessibleInterval< R > rai = ImageJFunctions.wrapReal( imagePlus );
-		final RandomAccessibleInterval< R > dapi = Views.hyperSlice( rai, 2, dnaChannelIndexOneBased - 1 );
-		final RandomAccessibleInterval< R > tubulin = Views.hyperSlice( rai, 2, spindleChannelIndexOneBased - 1 );
+
+		final RandomAccessibleInterval< R > dapi =
+				Views.hyperSlice( rai, 2, dnaChannelIndexOneBased - 1 );
+
+		final RandomAccessibleInterval< R > tubulin =
+				Views.hyperSlice( rai, 2, spindleChannelIndexOneBased - 1 );
 
 		settings.dnaImage = dapi;
 		settings.tubulinImage = tubulin;

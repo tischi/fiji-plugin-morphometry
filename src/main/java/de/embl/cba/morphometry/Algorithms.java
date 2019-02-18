@@ -131,7 +131,6 @@ public class Algorithms
 		return points;
 	}
 
-
 	public static int getCentralLabelIndex( ImgLabeling< Integer, IntType > labeling, long radius )
 	{
 		long[] centre = new long[ labeling.numDimensions() ];
@@ -143,9 +142,14 @@ public class Algorithms
 
 		final HyperSphereShape sphere = new HyperSphereShape( radius );
 
-		final RandomAccessible< Neighborhood< IntType > > nra = sphere.neighborhoodsRandomAccessible( labeling.getIndexImg() );
-		final RandomAccess< Neighborhood< IntType > > neighborhoodRandomAccess = nra.randomAccess();
+		final RandomAccessible< Neighborhood< IntType > > nra =
+				sphere.neighborhoodsRandomAccessible( labeling.getIndexImg() );
+
+		final RandomAccess< Neighborhood< IntType > > neighborhoodRandomAccess =
+				nra.randomAccess();
+
 		neighborhoodRandomAccess.setPosition( centre );
+
 		final Cursor< IntType > cursor = neighborhoodRandomAccess.get().cursor();
 
 		int centralIndex = 0;
