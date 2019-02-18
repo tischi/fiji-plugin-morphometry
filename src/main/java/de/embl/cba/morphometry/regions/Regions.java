@@ -23,20 +23,28 @@ import net.imglib2.view.Views;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 public abstract class Regions
 {
 
-	public static  LabelRegion< Integer > getCentralRegions(
+	public static Set< LabelRegion< Integer > > getCentralRegions(
 			ImgLabeling< Integer, IntType > labeling,
 			long radius )
 	{
 		final Set< Integer > centralLabels = Algorithms.getCentralLabels( labeling, radius );
 
-		final LabelRegions< Integer > labelRegions = new LabelRegions<>( labeling );
+		final LabelRegions< Integer > regions = new LabelRegions<>( labeling );
 
-		return labelRegions.getLabelRegion( centralLabel );
+		final HashSet< LabelRegion< Integer > > centralRegions = new HashSet< >();
+
+		for ( int label : centralLabels )
+		{
+			centralRegions.add( regions.getLabelRegion( label ) );
+		}
+
+		return centralRegions;
 	}
 
 	public static LabelRegion< Integer > getLargestRegion( ImgLabeling< Integer, IntType > labeling )

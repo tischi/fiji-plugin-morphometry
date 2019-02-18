@@ -29,13 +29,13 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter
 	public OpService opService;
 
-	@Parameter
+	@Parameter ( label = "Input Image File" )
 	public File inputImageFile;
 
-	@Parameter ( style = "Output Directory" )
+	@Parameter ( label = "Output Directory", style = "directory" )
 	public File outputDirectory;
 
-	@Parameter ( label = "Voxel Size during Analysis" )
+	@Parameter ( label = "Voxel Size for Analysis" )
 	public double voxelSpacing = 0.25;
 
 	@Parameter ( label = "DNA Channel [one-based index]" )
@@ -65,15 +65,16 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 		settings.watershedSeedsLocalMaximaDistanceThreshold = 1.0;
 		settings.watershedSeedsGlobalDistanceThreshold = 2.0;
+		settings.maxSpindlePoleRefinementDistance = 3.0;
 		settings.interestPointsRadius = 0.5;
 		settings.outputDirectory = outputDirectory;
 	}
 
 	private void processFile( File file )
 	{
-		logStart();
-
 		imageName = inputImageFile.getName().replace( ".tif", "" );
+
+		logStart();
 
 		final ImagePlus imagePlus = IJ.openImage( file.toString() );
 		setSettingsFromImagePlus( imagePlus );

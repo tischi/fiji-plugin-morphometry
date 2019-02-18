@@ -160,13 +160,12 @@ public class Algorithms
 
 		final Cursor< IntType > cursor = neighborhoodRandomAccess.get().cursor();
 
-		int centralIndex = 0;
 		while( cursor.hasNext() )
 		{
 			if ( cursor.next().get() != 0 )
 			{
-				final Integer label = labeling.getMapping().labelsAtIndex( centralIndex ).iterator().next();
-				centralLabels.add( label );
+				final ArrayList< Integer > labels = new ArrayList<>( labeling.getMapping().labelsAtIndex( cursor.get().getInteger() ) );
+				centralLabels.add( labels.get( 0 ) );
 			}
 		}
 
@@ -190,11 +189,11 @@ public class Algorithms
 	}
 
 
-	public static Img< BitType > createMaskFromLabelRegion( LabelRegion< Integer > centralObjectRegion, long[] dimensions )
+	public static Img< BitType > createMaskFromLabelRegion( LabelRegion< Integer > region, long[] dimensions )
 	{
 		final Img< BitType > centralObjectImg = ArrayImgs.bits( dimensions );
 
-		final Cursor< Void > regionCursor = centralObjectRegion.cursor();
+		final Cursor< Void > regionCursor = region.cursor();
 		final RandomAccess< BitType > access = centralObjectImg.randomAccess();
 		while ( regionCursor.hasNext() )
 		{
@@ -203,6 +202,25 @@ public class Algorithms
 			access.get().set( true );
 		}
 		return centralObjectImg;
+	}
+
+	public static Img< BitType > createMaskFromLabelRegions( Set< LabelRegion< Integer > > regions, long[] dimensions )
+	{
+		final Img< BitType > regionsMask = ArrayImgs.bits( dimensions );
+		final RandomAccess< BitType > maskAccess = regionsMask.randomAccess();
+
+		for ( LabelRegion region : regions )
+		{
+			final Cursor< Void > regionCursor = region.cursor();
+			while ( regionCursor.hasNext() )
+			{
+				regionCursor.fwd();
+				maskAccess.setPosition( regionCursor );
+				maskAccess.get().set( true );
+			}
+		}
+
+		return regionsMask;
 	}
 
 

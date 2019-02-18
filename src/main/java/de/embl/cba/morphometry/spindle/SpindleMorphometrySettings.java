@@ -27,7 +27,7 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public double derivativeDelta;
 
 	public double minimalMetaphasePlateVolumeInCalibratedUnits = 5; // um^3
-	public double maxCentralObjectRegionsDistanceCalibratedUnits = 7; // um
+	public double maxCentralObjectRegionsDistance = 7; // um
 	public double erosionOfDnaMaskInCalibratedUnits = 1.0; // um
 	public Calibration imagePlusCalibration;
 	public double maxSpindlePoleRefinementDistance;
