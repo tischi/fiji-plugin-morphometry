@@ -23,15 +23,16 @@ import net.imglib2.view.Views;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Set;
 
 public abstract class Regions
 {
 
-	public static LabelRegion< Integer > getCentralRegion(
+	public static  LabelRegion< Integer > getCentralRegions(
 			ImgLabeling< Integer, IntType > labeling,
 			long radius )
 	{
-		int centralLabel = Algorithms.getCentralLabelIndex( labeling, radius );
+		final Set< Integer > centralLabels = Algorithms.getCentralLabels( labeling, radius );
 
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( labeling );
 

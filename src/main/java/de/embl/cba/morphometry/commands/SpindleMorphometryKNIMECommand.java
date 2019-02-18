@@ -63,6 +63,7 @@ public class SpindleMorphometryKNIMECommand< R extends RealType< R > & NativeTyp
 		settings.outputDirectory = new File( "" );
 		settings.workingVoxelSize = 0.25;
 		settings.maxShortAxisDist = 6;
+		settings.maxSpindlePoleRefinementDistance = 3.0;
 		settings.derivativeDelta = 3.0;
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 		settings.watershedSeedsLocalMaximaDistanceThreshold = 1.0;

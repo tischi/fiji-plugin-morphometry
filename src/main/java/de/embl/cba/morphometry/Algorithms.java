@@ -131,8 +131,16 @@ public class Algorithms
 		return points;
 	}
 
-	public static int getCentralLabelIndex( ImgLabeling< Integer, IntType > labeling, long radius )
+	public static Set< Integer > getCentralLabels(
+			ImgLabeling< Integer, IntType > labeling,
+			long maxCenterDistance )
 	{
+
+		final Set< Integer > centralLabels = new HashSet<>();
+
+		if ( labeling.getMapping().numSets() == 0 )
+			return centralLabels;
+
 		long[] centre = new long[ labeling.numDimensions() ];
 
 		for ( int d = 0; d < labeling.numDimensions(); ++d )
@@ -140,7 +148,7 @@ public class Algorithms
 			centre[ d ] = labeling.dimension( d ) / 2;
 		}
 
-		final HyperSphereShape sphere = new HyperSphereShape( radius );
+		final HyperSphereShape sphere = new HyperSphereShape( maxCenterDistance );
 
 		final RandomAccessible< Neighborhood< IntType > > nra =
 				sphere.neighborhoodsRandomAccessible( labeling.getIndexImg() );
@@ -157,14 +165,12 @@ public class Algorithms
 		{
 			if ( cursor.next().get() != 0 )
 			{
-				centralIndex = cursor.get().getInteger();
-				break; // we found one non-zero index in this region
+				final Integer label = labeling.getMapping().labelsAtIndex( centralIndex ).iterator().next();
+				centralLabels.add( label );
 			}
 		}
 
-		final Integer centralLabel = labeling.getMapping().labelsAtIndex( centralIndex ).iterator().next();
-
-		return centralLabel;
+		return centralLabels;
 	}
 
 

@@ -14,7 +14,6 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 
 	public double watershedSeedsGlobalDistanceThreshold = Double.MAX_VALUE;
 	public double watershedSeedsLocalMaximaDistanceThreshold = 3 * workingVoxelSize; // at least 3 pixels
-
 	public double thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 
 	public double[] inputCalibration;
@@ -28,7 +27,8 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public double derivativeDelta;
 
 	public double minimalMetaphasePlateVolumeInCalibratedUnits = 5; // um^3
-	public double centralObjectRegionToleranceInCalibratedUnits = 3; // um
+	public double maxCentralObjectRegionsDistanceCalibratedUnits = 7; // um
 	public double erosionOfDnaMaskInCalibratedUnits = 1.0; // um
 	public Calibration imagePlusCalibration;
+	public double maxSpindlePoleRefinementDistance;
 }
