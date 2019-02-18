@@ -44,9 +44,8 @@ import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 import static java.lang.Math.toRadians;
 
 
-public class DrosphilaRegistration
+public class DrosphilaRegistration < T extends RealType< T > & NativeType< T > >
 {
-
 	final DrosophilaRegistrationSettings settings;
 	final OpService opService;
 	private RandomAccessibleInterval< BitType > embryoMask;
@@ -54,6 +53,16 @@ public class DrosphilaRegistration
 	private AffineTransform3D transformAtRegistrationResolution;
 	private Img< IntType > watershedLabelImg;
 	private double[] correctedCalibration;
+	private AffineTransform3D registration;
+	private double[] registrationCalibration;
+	private RandomAccessibleInterval< T > intensityCorrectedChannel2;
+	private RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask;
+	private RandomAccessibleInterval< T > isotropicCh1;
+	private RandomAccessibleInterval< T > isotropicCh2;
+	private RandomAccessibleInterval< T > intensityCorrectedChannel1;
+	private RandomAccessibleInterval< BitType > mask;
+	private RandomAccessibleInterval< BitType > yawAlignedMask;
+	private RandomAccessibleInterval yawAlignedIntensities;
 
 	public DrosphilaRegistration( DrosophilaRegistrationSettings settings, OpService opService )
 	{
@@ -61,144 +70,93 @@ public class DrosphilaRegistration
 		this.opService = opService;
 	}
 
-	public < T extends RealType< T > & NativeType< T > >
-	void run( RandomAccessibleInterval< T > svb, // https://en.wikipedia.org/wiki/Random_access
-			  RandomAccessibleInterval< T > other, //
-			  double[] inputCalibration )
+	public void run( RandomAccessibleInterval< T > ch1,
+			  		 RandomAccessibleInterval< T > ch2,
+			 		 double[] inputCalibration )
 	{
 
 
-		if ( settings.showIntermediateResults ) show( svb, "input image", null, inputCalibration, false );
+		if ( settings.showIntermediateResults ) show( ch1, "input image ch1 ", null, inputCalibration, false );
 
+		registration = new AffineTransform3D();
 
-		/**
-		 *  Initialise transformAtRegistrationResolution transformation as identity transform
-		 *  - The code will sequentially concatenate transformations onto it, building up the final transformAtRegistrationResolution
-		 */
+		refractiveIndexScalingCorrection( ch1, inputCalibration );
 
-		AffineTransform3D registration = new AffineTransform3D();
+		createIsotropicImages( ch1, ch2 );
 
+		refractiveIndexIntensityCorrection();
 
-		/**
-		 *  Axial calibration correction due to refractive index mismatch
-		 *  - We are using an NA 0.8 air lens imaging into water/embryo (1.33 < NA < 1.51)
-		 *  - Complicated topic: http://www.bio.brandeis.edu/marderlab/axial%20shift.pdf
-		 *  - We assume axial compression by factor ~1.6
-		 */
+		if ( ! segmentEmbryo() ) return;
 
-		Logger.log( "Refractive index scaling correction..." );
+		yawAlignment();
 
-		correctedCalibration = RefractiveIndexMismatchCorrections.getAxiallyCorrectedCalibration( inputCalibration, settings.refractiveIndexAxialCalibrationCorrectionFactor );
+		orientLongAxis();
 
-		if ( settings.showIntermediateResults ) show( svb, "corrected calibration", null, correctedCalibration, false );
-
-
-		/**
-		 *  Down-sampling to registration resolution
-		 *  - Speeds up calculations ( pow(3) effect in 3D! )
-		 *  - Reduces noise
-		 *  - Fills "holes" in staining
-		 *  - TODO: bug: during down-sampling saturated pixels become zero
-		 */
-
-		Logger.log( "Down-sampling to registration resolution..." );
-
-		final RandomAccessibleInterval< T > downscaledChannel1 = createRescaledArrayImg( svb, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
-		final RandomAccessibleInterval< T > downscaledChannel2 = createRescaledArrayImg( other, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
-
-		double[] registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
-
-		if ( settings.showIntermediateResults ) show( downscaledChannel1, "isotropic sampled at registration resolution", null, registrationCalibration, false );
-
-
-		/**
-		 *  Compute intensity offset (for refractive index mismatch corrections)
-		 */
-
-		Logger.log( "Offset and threshold..." );
-
-		final IntensityHistogram downscaledSvbIntensityHistogram = new IntensityHistogram( downscaledChannel1, 65535.0, 5.0 );
-
-		CoordinateAndValue intensityHistogramMode = downscaledSvbIntensityHistogram.getMode();
-
-		Logger.log( "Intensity offset: " + intensityHistogramMode.coordinate );
-
-
-		/**
-		 *  Compute approximate axial embryo center and coverslip coordinate
-		 */
-
-		final CoordinatesAndValues averageSvbIntensitiesAlongZ = Utils.computeAverageIntensitiesAlongAxis( downscaledChannel1, 2, settings.registrationResolution );
-
-		if ( settings.showIntermediateResults ) Plots.plot( averageSvbIntensitiesAlongZ.coordinates, averageSvbIntensitiesAlongZ.values, "z [um]", "average intensities" );
-
-		final double embryoCenterPosition = CurveAnalysis.maxLoc( averageSvbIntensitiesAlongZ );
-		coverslipPosition = embryoCenterPosition - DrosophilaRegistrationSettings.drosophilaWidth / 2.0;
-
-		Logger.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
-		Logger.log( "Approximate axial embryo center coordinate [um]: " + embryoCenterPosition );
-
-		/**
-		 *  Refractive index corrections
-		 */
+		rollTransform();
 		
-		Logger.log( "Refractive index intensity correction..." );
+		transformAtRegistrationResolution = registration;
 
-		final RefractiveIndexMismatchCorrectionSettings correctionSettings = new RefractiveIndexMismatchCorrectionSettings();
-		correctionSettings.intensityOffset = intensityHistogramMode.coordinate;
-		correctionSettings.intensityDecayLengthMicrometer = settings.refractiveIndexIntensityCorrectionDecayLength;
-		correctionSettings.coverslipPositionMicrometer = coverslipPosition;
-		correctionSettings.pixelCalibrationMicrometer = settings.registrationResolution;
+	}
 
-		final RandomAccessibleInterval< T > intensityCorrectedChannel1 = Utils.copyAsArrayImg( downscaledChannel1 );
-		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedChannel1, correctionSettings );
-
-		final RandomAccessibleInterval< T > intensityCorrectedChannel2 = Utils.copyAsArrayImg( downscaledChannel2 );
-		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedChannel2, correctionSettings );
-
-		if ( settings.showIntermediateResults ) show( intensityCorrectedChannel1, "intensity corrected channel 1", null, registrationCalibration, false );
-
-
+	public void rollTransform()
+	{
 		/**
-		 *  Compute threshold
-		 *  - TODO: How does Huang work?
-		 *  - TODO: find some more scientific method to determine threshold...
+		 *  Roll transform
 		 */
 
-		final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( intensityCorrectedChannel1 ) );
-		final double huang = opService.threshold().huang( histogram ).getRealDouble();
-		final double otsu = opService.threshold().otsu( histogram ).getRealDouble();
-		final double yen = opService.threshold().yen( histogram ).getRealDouble();
+		final AffineTransform3D rollTransform = computeRollTransform(
+				registration,
+				registrationCalibration,
+				intensityCorrectedChannel2,
+				yawAndOrientationAlignedMask,
+				settings.rollAngleComputationMethod );
 
-		double thresholdAfterIntensityCorrection = huang;
+		rollTransform.rotate( X, Math.PI ); // this changes whether the found structure should be at the top or bottom
 
-		Logger.log( "Threshold (after intensity correction): " + thresholdAfterIntensityCorrection );
+		registration = registration.preConcatenate( rollTransform  );
 
+		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedChannel1, registration ), "aligned svb at registration resolution", Transforms.origin(), registrationCalibration, false );
+	}
 
+	public void orientLongAxis()
+	{
 		/**
-		 * Create mask
+		 *  Long axis orientation
 		 */
 
-		RandomAccessibleInterval< BitType > mask = Algorithms.createMask( intensityCorrectedChannel1, thresholdAfterIntensityCorrection );
+		Logger.log( "Computing long axis orientation..." );
 
-		if ( settings.showIntermediateResults ) show( mask, "binary mask", null, registrationCalibration, false );
+		final AffineTransform3D orientationTransform = computeFlippingTransform( yawAlignedMask, yawAlignedIntensities, settings.registrationResolution );
 
+		registration = registration.preConcatenate( orientationTransform );
 
+		yawAndOrientationAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( embryoMask, registration, new NearestNeighborInterpolatorFactory() ) );
+
+		if ( settings.showIntermediateResults ) show( yawAndOrientationAlignedMask, "long axis aligned and oriented", Transforms.origin(), registrationCalibration, false );
+	}
+
+	public void yawAlignment()
+	{
 		/**
-		 * Process mask
-		 * - remove small objects
-		 * - close holes
+		 * Compute ellipsoid (probably mainly yaw) alignment
+		 * - https://en.wikipedia.org/wiki/Euler_angles
 		 */
 
-		Regions.removeSmallRegionsInMask( mask, settings.minimalObjectSize, settings.registrationResolution );
+		Logger.log( "Fit ellipsoid..." );
 
-		for ( int d = 0; d < 3; ++d )
-		{
-			mask = Algorithms.fillHoles3Din2D( mask, d, opService );
-		}
+		final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( embryoMask );
 
-		if ( settings.showIntermediateResults ) show( mask, "small objects removed and holes closed", null, registrationCalibration, false );
+		registration.preConcatenate( EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters ) );
 
+		yawAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( embryoMask, registration, new NearestNeighborInterpolatorFactory() ) );
+
+		yawAlignedIntensities = Utils.copyAsArrayImg( Transforms.createTransformedView( isotropicCh1, registration ) );
+	}
+
+	public boolean segmentEmbryo()
+	{
+
+		createMask();
 
 		/**
 		 * Distance transform
@@ -242,9 +200,9 @@ public class DrosphilaRegistration
 
 		final LabelRegion< Integer > centralObjectRegion = getCentralObjectLabelRegion( watershedLabeling );
 
-		if ( centralObjectRegion == null ) return;
+		if ( centralObjectRegion == null ) return false;
 
-		embryoMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( downscaledChannel1 ) );
+		embryoMask = Algorithms.createMaskFromLabelRegion( centralObjectRegion, Intervals.dimensionsAsLongArray( isotropicCh1 ) );
 
 		if ( settings.showIntermediateResults ) show( Utils.copyAsArrayImg( embryoMask ), "embryo mask", null, registrationCalibration, false );
 
@@ -259,64 +217,137 @@ public class DrosphilaRegistration
 
 		if ( settings.showIntermediateResults ) show( embryoMask, "embryo mask - processed", null, registrationCalibration, false );
 
+		return true;
+	}
 
+	public void createMask()
+	{
 		/**
-		 * Compute ellipsoid (probably mainly yaw) alignment
-		 * - https://en.wikipedia.org/wiki/Euler_angles
+		 *  Compute threshold
+		 *  - TODO: How does Huang work?
+		 *  - TODO: find some more scientific method to determine threshold...
 		 */
 
-		Logger.log( "Fit ellipsoid..." );
+		final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( intensityCorrectedChannel1 ) );
+		final double huang = opService.threshold().huang( histogram ).getRealDouble();
+//		final double otsu = opService.threshold().otsu( histogram ).getRealDouble();
+//		final double yen = opService.threshold().yen( histogram ).getRealDouble();
 
-		final EllipsoidMLJ ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( embryoMask );
+		double thresholdAfterIntensityCorrection = huang;
 
-		registration.preConcatenate( EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters ) );
-
-		final RandomAccessibleInterval< BitType > yawAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( embryoMask, registration, new NearestNeighborInterpolatorFactory() ) );
-
-		final RandomAccessibleInterval yawAlignedIntensities = Utils.copyAsArrayImg( Transforms.createTransformedView( downscaledChannel1, registration ) );
-
-
-
-		/**
-		 *  Long axis orientation
-		 */
-
-		Logger.log( "Computing long axis orientation..." );
-
-		final AffineTransform3D orientationTransform = computeFlippingTransform( yawAlignedMask, yawAlignedIntensities, settings.registrationResolution );
-
-		registration = registration.preConcatenate( orientationTransform );
-
-		final RandomAccessibleInterval< BitType > yawAndOrientationAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( embryoMask, registration, new NearestNeighborInterpolatorFactory() ) );
-
-		if ( settings.showIntermediateResults ) show( yawAndOrientationAlignedMask, "long axis aligned and oriented", Transforms.origin(), registrationCalibration, false );
+		Logger.log( "Threshold (after intensity correction): " + thresholdAfterIntensityCorrection );
 
 
 		/**
-		 *  Roll transform
+		 * Create mask
 		 */
 
-		final AffineTransform3D rollTransform = computeRollTransform( registration, registrationCalibration, intensityCorrectedChannel2, yawAndOrientationAlignedMask, settings.rollAngleComputationMethod );
-		rollTransform.rotate( X, Math.PI ); // this changes whether the found structure should be at the top or bottom
+		mask = Algorithms.createMask( intensityCorrectedChannel1, thresholdAfterIntensityCorrection );
 
-		if ( settings.rollAngleComputationMethod != DrosophilaRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM )
+		if ( settings.showIntermediateResults ) show( mask, "binary mask", null, registrationCalibration, false );
+
+
+		/**
+		 * Process mask
+		 * - remove small objects
+		 * - close holes
+		 */
+
+		Regions.removeSmallRegionsInMask( mask, settings.minimalObjectSize, settings.registrationResolution );
+
+		for ( int d = 0; d < 3; ++d )
 		{
-			// Also compute shape-based roll transform to see how well it would have worked
-			// We only do this to see the angle in the log file
-			computeRollTransform( registration, registrationCalibration, intensityCorrectedChannel2, yawAndOrientationAlignedMask, DrosophilaRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM );
+			mask = Algorithms.fillHoles3Din2D( mask, d, opService );
 		}
 
-		registration = registration.preConcatenate( rollTransform  );
+		if ( settings.showIntermediateResults ) show( mask, "small objects removed and holes closed", null, registrationCalibration, false );
 
-		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedChannel1, registration ), "aligned svb at registration resolution", Transforms.origin(), registrationCalibration, false );
+	}
+
+	public void refractiveIndexIntensityCorrection()
+	{
+		/**
+		 *  Compute intensity offset (for refractive index mismatch corrections)
+		 */
+
+		Logger.log( "Offset and threshold..." );
+
+		final IntensityHistogram downscaledSvbIntensityHistogram = new IntensityHistogram( isotropicCh1, 65535.0, 5.0 );
+
+		CoordinateAndValue intensityHistogramMode = downscaledSvbIntensityHistogram.getMode();
+
+		Logger.log( "Intensity offset: " + intensityHistogramMode.coordinate );
 
 
 		/**
-		 * Store final transformation
+		 *  Compute approximate axial embryo center and coverslip coordinate
 		 */
 
-		transformAtRegistrationResolution = registration;
+		final CoordinatesAndValues averageSvbIntensitiesAlongZ = Utils.computeAverageIntensitiesAlongAxis( isotropicCh1, 2, settings.registrationResolution );
 
+		if ( settings.showIntermediateResults ) Plots.plot( averageSvbIntensitiesAlongZ.coordinates, averageSvbIntensitiesAlongZ.values, "z [um]", "average intensities" );
+
+		final double embryoCenterPosition = CurveAnalysis.maxLoc( averageSvbIntensitiesAlongZ );
+		coverslipPosition = embryoCenterPosition - DrosophilaRegistrationSettings.drosophilaWidth / 2.0;
+
+		Logger.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
+		Logger.log( "Approximate axial embryo center coordinate [um]: " + embryoCenterPosition );
+
+		/**
+		 *  Refractive index corrections
+		 */
+
+		Logger.log( "Refractive index intensity correction..." );
+
+		final RefractiveIndexMismatchCorrectionSettings correctionSettings = new RefractiveIndexMismatchCorrectionSettings();
+		correctionSettings.intensityOffset = intensityHistogramMode.coordinate;
+		correctionSettings.intensityDecayLengthMicrometer = settings.refractiveIndexIntensityCorrectionDecayLength;
+		correctionSettings.coverslipPositionMicrometer = coverslipPosition;
+		correctionSettings.pixelCalibrationMicrometer = settings.registrationResolution;
+
+		intensityCorrectedChannel1 = Utils.copyAsArrayImg( isotropicCh1 );
+		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedChannel1, correctionSettings );
+
+		intensityCorrectedChannel2 = Utils.copyAsArrayImg( isotropicCh2 );
+		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrectedChannel2, correctionSettings );
+
+		if ( settings.showIntermediateResults ) show( intensityCorrectedChannel1, "intensity corrected channel 1", null, registrationCalibration, false );
+	}
+
+	public void createIsotropicImages( RandomAccessibleInterval< T > ch1, RandomAccessibleInterval< T > ch2 )
+	{
+		/**
+		 *  Down-sampling to registration resolution
+		 *  - Speeds up calculations ( pow(3) effect in 3D! )
+		 *  - Reduces noise
+		 *  - Fills "holes" in staining
+		 *  - TODO: bug: during down-sampling saturated pixels become zero
+		 */
+
+		Logger.log( "Down-sampling to registration resolution..." );
+
+		isotropicCh1 = createRescaledArrayImg( ch1, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+		isotropicCh2 = createRescaledArrayImg( ch2, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+
+		registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
+
+		if ( settings.showIntermediateResults ) show( isotropicCh1, "isotropic sampled at registration resolution", null, registrationCalibration, false );
+	}
+
+	public < T extends RealType< T > & NativeType< T > > void refractiveIndexScalingCorrection( RandomAccessibleInterval< T > svb, double[] inputCalibration )
+	{
+		/**
+		 *  Axial calibration correction due to refractive index mismatch
+		 *  - We are using an NA 0.8 air lens imaging into water/embryo (1.33 < NA < 1.51)
+		 *  - Complicated topic: http://www.bio.brandeis.edu/marderlab/axial%20shift.pdf
+		 *  - We assume axial compression by factor ~1.6
+		 */
+
+		Logger.log( "Refractive index scaling correction..." );
+
+		correctedCalibration = RefractiveIndexMismatchCorrections.getAxiallyCorrectedCalibration( inputCalibration, settings.refractiveIndexAxialCalibrationCorrectionFactor );
+
+		if ( settings.showIntermediateResults ) show( svb, "corrected calibration", null, correctedCalibration, false );
 	}
 
 	public ImgLabeling< Integer, IntType > computeWatershed( RandomAccessibleInterval< BitType > mask, RandomAccessibleInterval< DoubleType > distances, ImgLabeling< Integer, IntType > seedsLabelImg )
