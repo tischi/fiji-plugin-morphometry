@@ -133,6 +133,7 @@ public class Algorithms
 
 	public static Set< Integer > getCentralLabels(
 			ImgLabeling< Integer, IntType > labeling,
+			double[] center,
 			long maxCenterDistance )
 	{
 
@@ -141,22 +142,15 @@ public class Algorithms
 		if ( labeling.getMapping().numSets() == 0 )
 			return centralLabels;
 
-		long[] centre = new long[ labeling.numDimensions() ];
-
-		for ( int d = 0; d < labeling.numDimensions(); ++d )
-		{
-			centre[ d ] = labeling.dimension( d ) / 2;
-		}
-
 		final HyperSphereShape sphere = new HyperSphereShape( maxCenterDistance );
 
 		final RandomAccessible< Neighborhood< IntType > > nra =
-				sphere.neighborhoodsRandomAccessible( labeling.getIndexImg() );
+				sphere.neighborhoodsRandomAccessible( Views.extendZero( labeling.getIndexImg() ) );
 
 		final RandomAccess< Neighborhood< IntType > > neighborhoodRandomAccess =
 				nra.randomAccess();
 
-		neighborhoodRandomAccess.setPosition( centre );
+		neighborhoodRandomAccess.setPosition( Utils.asLongs( center ) );
 
 		final Cursor< IntType > cursor = neighborhoodRandomAccess.get().cursor();
 

@@ -3,7 +3,7 @@ import net.imagej.ImageJ;
 
 public class RunMicrogliaMorphometryCommand
 {
-	public static void main(final String... args) throws Exception
+	public static void main(final String... args)
 	{
 		final ImageJ ij = new ImageJ();
 		ij.ui().showUI();

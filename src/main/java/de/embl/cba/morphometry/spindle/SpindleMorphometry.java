@@ -102,7 +102,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final EllipsoidVectors ellipsoidVectors = determineDnaAxes( processedDna );
 
-		computeDnaAlignmentTransformAndAlignedImages( workingCalibration, dna, tubulin, processedDna, ellipsoidVectors );
+		computeDnaAlignmentTransformAndAlignImages( workingCalibration, dna, tubulin, processedDna, ellipsoidVectors );
 
 		measureDnaAxialExtend( alignedDNA );
 
@@ -325,7 +325,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return processedMetaPhasePlate;
 	}
 
-	public void computeDnaAlignmentTransformAndAlignedImages( double[] workingCalibration, RandomAccessibleInterval< T > dna, RandomAccessibleInterval< T > tubulin, RandomAccessibleInterval< BitType > processedMetaPhasePlate, EllipsoidVectors ellipsoidVectors )
+	public void computeDnaAlignmentTransformAndAlignImages( double[] workingCalibration, RandomAccessibleInterval< T > dna, RandomAccessibleInterval< T > tubulin, RandomAccessibleInterval< BitType > processedMetaPhasePlate, EllipsoidVectors ellipsoidVectors )
 	{
 		Logger.log( "Creating aligned images..." );
 
@@ -530,7 +530,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final long radius = (long) ( settings.maxCentralObjectRegionsDistance / settings.workingVoxelSize );
 
-		final Set< LabelRegion< Integer > > centralRegions = Regions.getCentralRegions( labelImg, radius );
+		final Set< LabelRegion< Integer > > centralRegions = Regions.getCentralRegions( labelImg, new double[]{0,0,0}, radius );
 
 		final Img< BitType > maskFromLabelRegions = Algorithms.createMaskFromLabelRegions(
 				centralRegions,

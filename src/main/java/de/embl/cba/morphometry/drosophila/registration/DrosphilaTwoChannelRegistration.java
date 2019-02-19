@@ -44,7 +44,7 @@ import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 import static java.lang.Math.toRadians;
 
 
-public class DrosphilaRegistration < T extends RealType< T > & NativeType< T > >
+public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeType< T > >
 {
 	final DrosophilaRegistrationSettings settings;
 	final OpService opService;
@@ -64,7 +64,7 @@ public class DrosphilaRegistration < T extends RealType< T > & NativeType< T > >
 	private RandomAccessibleInterval< BitType > yawAlignedMask;
 	private RandomAccessibleInterval yawAlignedIntensities;
 
-	public DrosphilaRegistration( DrosophilaRegistrationSettings settings, OpService opService )
+	public DrosphilaTwoChannelRegistration( DrosophilaRegistrationSettings settings, OpService opService )
 	{
 		this.settings = settings;
 		this.opService = opService;
@@ -93,7 +93,7 @@ public class DrosphilaRegistration < T extends RealType< T > & NativeType< T > >
 		orientLongAxis();
 
 		rollTransform();
-		
+
 		transformAtRegistrationResolution = registration;
 
 	}
@@ -115,7 +115,8 @@ public class DrosphilaRegistration < T extends RealType< T > & NativeType< T > >
 
 		registration = registration.preConcatenate( rollTransform  );
 
-		if ( settings.showIntermediateResults ) show( Transforms.createTransformedView( intensityCorrectedChannel1, registration ), "aligned svb at registration resolution", Transforms.origin(), registrationCalibration, false );
+		if ( settings.showIntermediateResults )
+			show( Transforms.createTransformedView( intensityCorrectedChannel1, registration ), "aligned at registration resolution", Transforms.origin(), registrationCalibration, false );
 	}
 
 	public void orientLongAxis()
@@ -167,7 +168,8 @@ public class DrosphilaRegistration < T extends RealType< T > & NativeType< T > >
 
 		final RandomAccessibleInterval< DoubleType > distances = Algorithms.computeSquaredDistances( mask );
 
-		if ( settings.showIntermediateResults ) show( distances, "squared distances", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults )
+			show( distances, "squared distances", null, registrationCalibration, false );
 
 
 		/**
@@ -189,7 +191,8 @@ public class DrosphilaRegistration < T extends RealType< T > & NativeType< T > >
 
 		final ImgLabeling< Integer, IntType > watershedLabeling = computeWatershed( mask, distances, seedsLabelImg );
 
-		if ( settings.showIntermediateResults ) show( watershedLabelImg, "watershed", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults )
+			show( watershedLabelImg, "watershed", null, registrationCalibration, false );
 
 		/**
 		 * Get main embryo
@@ -438,15 +441,15 @@ public class DrosphilaRegistration < T extends RealType< T > & NativeType< T > >
 	{
 		Logger.log( "Computing roll transform, using method: " + rollAngleComputationMethod );
 
-		if ( rollAngleComputationMethod.equals( DrosophilaRegistrationSettings.SECONDARY_CHANNEL_INTENSITY ) )
+		if ( rollAngleComputationMethod.equals( DrosophilaRegistrationSettings.INTENSITY ) )
 		{
 			final RandomAccessibleInterval yawAndOrientationAlignedCh2 = Utils.copyAsArrayImg( Transforms.createTransformedView( intensityCorrectedCh2, registration.copy(), new NearestNeighborInterpolatorFactory() ) );
 
 			final AffineTransform3D intensityBasedRollTransform = computeIntensityBasedRollTransform(
 					yawAndOrientationAlignedCh2,
-					settings.ch2ProjectionXMin,
-					settings.ch2ProjectionXMax,
-					settings.ch2ProjectionBlurSigma,
+					settings.projectionXMin,
+					settings.projectionXMax,
+					settings.projectionBlurSigma,
 					registrationCalibration );
 
 			return intensityBasedRollTransform;

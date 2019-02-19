@@ -2,7 +2,6 @@ package de.embl.cba.morphometry.geometry.ellipsoids;
 
 public class EllipsoidMLJ
 {
-
 	public static final int PHI = 0, THETA = 1, PSI = 2;
 
 	public double[] center = new double[ 3 ];
@@ -17,7 +16,6 @@ public class EllipsoidMLJ
 		s += "\nPhi: " + eulerAnglesInDegrees[ PHI ];
 		s += "\nTheta: " + eulerAnglesInDegrees[ THETA ];
 		s += "\nPsi: " + eulerAnglesInDegrees[ PSI ];
-
 		return s;
 	}
 }

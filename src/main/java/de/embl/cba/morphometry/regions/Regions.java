@@ -31,9 +31,10 @@ public abstract class Regions
 
 	public static Set< LabelRegion< Integer > > getCentralRegions(
 			ImgLabeling< Integer, IntType > labeling,
+			double[] center,
 			long radius )
 	{
-		final Set< Integer > centralLabels = Algorithms.getCentralLabels( labeling, radius );
+		final Set< Integer > centralLabels = Algorithms.getCentralLabels( labeling, center, radius );
 
 		final LabelRegions< Integer > regions = new LabelRegions<>( labeling );
 

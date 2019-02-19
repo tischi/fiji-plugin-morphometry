@@ -7,19 +7,16 @@ public class DrosophilaRegistrationSettings
 	public static final String MANUAL_THRESHOLD = "Manual threshold";
 	public static final String HUANG_AUTO_THRESHOLD = "Huang auto threshold";
 	public static final String CENTROID_SHAPE_BASED_ROLL_TRANSFORM = "Shape - Centroids";
-	public static final String SECONDARY_CHANNEL_INTENSITY = "Intensity - Secondary Channel";
 	public static final String PROJECTION_SHAPE_BASED_ROLL_TRANSFORM = "Shape - Projection";
-	public static final String PRIMARY_CHANNEL_MOMENTS = "Moments - Primary Channel";
-	public static final String PRIMARY_CHANNEL_INTENSITY =  "Intensity - Primary Channel";
+	public static final String MOMENTS = "Moments";
+	public static final String INTENSITY =  "Intensity";
 
 	// all spatial values are in micrometer
-	// morphometry length: 420
-	// morphometry width: 160
 
 	public static double drosophilaLength = 420;
 	public static double drosophilaWidth = 160;
 
-	public int primaryChannelIndexOneBased = 3;
+	public int alignmentChannelIndexOneBased = 2;
 	public int secondaryChannelIndexOneBased = 2;
 
 	public boolean showIntermediateResults = false;
@@ -35,11 +32,10 @@ public class DrosophilaRegistrationSettings
 	public double rollAngleMaxDistanceToCenter = drosophilaLength / 2.0 - 10.0;
 
 	public double watershedSeedsGlobalDistanceThreshold = drosophilaWidth / 3.0;
-	public double watershedSeedsLocalMaximaDistanceThreshold = 0.0; //drosophilaWidth / 6.0; // at least 3 pixels
+	public double watershedSeedsLocalMaximaDistanceThreshold = 0.0;
 
 	public String thresholdModality = MANUAL_THRESHOLD;
 	public double thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
-	public double closingRadius = 10;
 
 	public static double[] outputImageSize =
 			new double[]{ drosophilaLength * 1.5,
@@ -48,13 +44,15 @@ public class DrosophilaRegistrationSettings
 
 	public double minimalObjectSize = drosophilaWidth * drosophilaWidth * drosophilaWidth;
 
-	public double ch2ProjectionXMin = +20.0;
-	public double ch2ProjectionXMax = +80.0;
-	public double ch2ProjectionBlurSigma = 20.0;
+	public double projectionXMin = +20.0;
+	public double projectionXMax = +80.0;
+	public double projectionBlurSigma = 20.0;
 	public double finalProjectionMinDistanceToCenter = 60;
-	public String rollAngleComputationMethod = CENTROID_SHAPE_BASED_ROLL_TRANSFORM;
+	public String rollAngleComputationMethod = INTENSITY;
 	public double watershedSeedsLocalMaximaSearchRadius = 2 * registrationResolution;
 	public String yawTransformComputationMethod;
+	public double centralRegionDistance = drosophilaWidth * 0.5;
+	public boolean onlyComputeEllipsoidParameters = false;
 
 	public FinalInterval getOutputImageInterval()
 	{

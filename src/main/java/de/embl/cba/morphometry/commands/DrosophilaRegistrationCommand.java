@@ -1,10 +1,10 @@
 package de.embl.cba.morphometry.commands;
 
-import bdv.util.*;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Projection;
 import de.embl.cba.morphometry.drosophila.registration.DrosophilaRegistrationSettings;
-import de.embl.cba.morphometry.drosophila.registration.DrosphilaRegistration;
+import de.embl.cba.morphometry.drosophila.registration.DrosophilaRegistrationUtils;
+import de.embl.cba.morphometry.drosophila.registration.DrosophilaSingleChannelRegistration;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
 import de.embl.cba.morphometry.Utils;
@@ -14,7 +14,6 @@ import ij.io.FileSaver;
 import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.RealPoint;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
@@ -35,8 +34,8 @@ import static de.embl.cba.morphometry.Constants.*;
 import static de.embl.cba.morphometry.ImageIO.openWithBioFormats;
 
 
-@Plugin(type = Command.class, menuPath = "Plugins>Registration>EMBL>Drosophila Shavenbaby" )
-public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T > > implements Command
+@Plugin(type = Command.class, menuPath = "Plugins>Registration>EMBL>Drosophila Registration" )
+public class DrosophilaRegistrationCommand < T extends RealType< T > & NativeType< T > > implements Command
 {
 	@Parameter
 	public UIService uiService;
@@ -76,24 +75,20 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 	@Parameter
 	public boolean showIntermediateResults = settings.showIntermediateResults;
 
-	@Parameter( choices = { DrosophilaRegistrationSettings.PRIMARY_CHANNEL_MOMENTS })
-	public String longAxisAngleAlignmentMethod = DrosophilaRegistrationSettings.PRIMARY_CHANNEL_MOMENTS;
+//	@Parameter( choices = { DrosophilaRegistrationSettings.MOMENTS })
+	public String longAxisAngleAlignmentMethod = DrosophilaRegistrationSettings.MOMENTS;
 
-	@Parameter( choices = { DrosophilaRegistrationSettings.PRIMARY_CHANNEL_INTENSITY })
-	public String longAxisFlippingAlignmentMethod = DrosophilaRegistrationSettings.PRIMARY_CHANNEL_INTENSITY;
+//	@Parameter( choices = { DrosophilaRegistrationSettings.INTENSITY })
+	public String longAxisFlippingAlignmentMethod = DrosophilaRegistrationSettings.INTENSITY;
 
-	@Parameter( choices = {
-			DrosophilaRegistrationSettings.CENTROID_SHAPE_BASED_ROLL_TRANSFORM,
-			DrosophilaRegistrationSettings.PROJECTION_SHAPE_BASED_ROLL_TRANSFORM,
-			DrosophilaRegistrationSettings.SECONDARY_CHANNEL_INTENSITY })
-	public String rollAngleAlignmentMethod = DrosophilaRegistrationSettings.SECONDARY_CHANNEL_INTENSITY;
-
+//	@Parameter( choices = { DrosophilaRegistrationSettings.INTENSITY })
+	public String rollAngleAlignmentMethod = DrosophilaRegistrationSettings.INTENSITY;
 
 	@Parameter
-	public int primaryChannelIndexOneBased = settings.primaryChannelIndexOneBased;
+	public int alignmentChannelIndexOneBased = settings.alignmentChannelIndexOneBased;
 
-	@Parameter
-	public int secondaryChannelIndexOneBased = settings.secondaryChannelIndexOneBased;
+//	@Parameter
+//	public int secondaryChannelIndexOneBased = settings.secondaryChannelIndexOneBased;
 
 	@Parameter
 	public double registrationResolution = settings.registrationResolution;
@@ -109,7 +104,8 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 	{
 		setSettingsFromUI();
 
-		final DrosphilaRegistration registration = new DrosphilaRegistration( settings, opService );
+		final DrosophilaSingleChannelRegistration registration =
+				new DrosophilaSingleChannelRegistration( settings, opService );
 
 		if ( inputModality.equals( CURRENT_IMAGE ) && imagePlus != null )
 		{
@@ -150,7 +146,8 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 					 * Register
 					 */
 
-					RandomAccessibleInterval< T > registeredImages = createAlignedImages( inputImagePlus, registration );
+					RandomAccessibleInterval< T > registeredImages =
+							createAlignedImages( inputImagePlus, registration );
 
 					if ( registeredImages == null )
 					{
@@ -178,12 +175,12 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 //
 
 //					// Save ch1 non-registered projection
-//					RandomAccessibleInterval< T > channel1Image = getChannel1Image( getImages( inputImagePlus ) );
+//					RandomAccessibleInterval< T > channel1Image = getChannelImage( getChannelImages( inputImagePlus ) );
 //					RandomAccessibleInterval shavenbabyMaximum = new Projection( channel1Image, Z ).maximum();
 //					new FileSaver( ImageJFunctions.wrap( shavenbabyMaximum, "" ) ).saveAsTiff( outputFilePathStump + "-projection-ch1-raw.tif" );
 //
 //					// Save ch2 non-registered projection
-//					RandomAccessibleInterval< T > channel2Image = getChannel2Image( getImages( inputImagePlus ) );
+//					RandomAccessibleInterval< T > channel2Image = getChannel2Image( getChannelImages( inputImagePlus ) );
 //					RandomAccessibleInterval ch2Maximum = new Projection( channel2Image, Z ).maximum();
 //					new FileSaver( ImageJFunctions.wrap( ch2Maximum, "" ) ).saveAsTiff( outputFilePathStump + "-projection-ch2-raw.tif" );
 
@@ -246,7 +243,7 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 
 		for ( int channelId = 0; channelId < images.dimension( 3 ); ++channelId )
 		{
-			RandomAccessibleInterval channel = Views.hyperSlice( images, 3, channelId );
+			RandomAccessibleInterval channel = DrosophilaRegistrationUtils.getChannelImage( images, channelId );
 
 			// top
 			long rangeMin = (long) ( settings.finalProjectionMinDistanceToCenter / settings.outputResolution );
@@ -279,28 +276,19 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 		return projections;
 	}
 
-	public void showWithBdv( RandomAccessibleInterval< T > transformed, String title )
-	{
-		Bdv bdv = BdvFunctions.show( transformed, title, BdvOptions.options().axisOrder( AxisOrder.XYZC ) );
-		final ArrayList< RealPoint > points = new ArrayList<>();
-		points.add( new RealPoint( new double[]{0,0,0} ));
-		BdvFunctions.showPoints( points, "origin", BdvOptions.options().addTo( bdv ) );
-	}
-
 	public RandomAccessibleInterval< T > createAlignedImages(
 			ImagePlus imagePlus,
-			DrosphilaRegistration registration )
+			DrosophilaSingleChannelRegistration registration )
 	{
 		final double[] inputCalibration = Utils.getCalibration( imagePlus );
-		RandomAccessibleInterval< T > images = getImages( imagePlus );
-		RandomAccessibleInterval< T > channel1 = getChannel1Image( images );
-		RandomAccessibleInterval< T > channel2 = getChannel2Image( images );
+		RandomAccessibleInterval< T > images = DrosophilaRegistrationUtils.getChannelImages( imagePlus );
+		RandomAccessibleInterval< T > image = DrosophilaRegistrationUtils.getChannelImage( images, alignmentChannelIndexOneBased - 1  );
 
 		/**
 		 * Compute registration
 		 */
 		Logger.log( "Computing registration...." );
-		registration.run( channel1, channel2, inputCalibration );
+		registration.run( image, inputCalibration );
 
 		/**
 		 * Apply intensity correction
@@ -336,7 +324,7 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 		 * Apply masking ( in order to remove other, potentially touching, embryos )
 		 */
 		final RandomAccessibleInterval< BitType > alignedMaskAtOutputResolution
-				= registration.createAlignedMask( settings.outputResolution, settings.getOutputImageInterval() );
+				= registration.getAlignedMask( settings.outputResolution, settings.getOutputImageInterval() );
 		registeredImages = Utils.maskAllChannels( registeredImages, alignedMaskAtOutputResolution, settings.showIntermediateResults );
 
 		return Views.stack( registeredImages );
@@ -356,51 +344,15 @@ public class DrosophilaRegistrationCommand<T extends RealType<T> & NativeType< T
 	}
 
 
-	public RandomAccessibleInterval< T > getImages( ImagePlus imagePlus )
-	{
-		RandomAccessibleInterval< T > images = ImageJFunctions.wrap( imagePlus );
-
-		int numChannels = imagePlus.getNChannels();
-
-		if ( numChannels == 1 )
-		{
-			Views.addDimension( images );
-		}
-		else
-		{
-			images = Views.permute( images, Utils.imagePlusChannelDimension, 3 );
-		}
-
-		return images;
-	}
-
-	private RandomAccessibleInterval< T > getChannel1Image( RandomAccessibleInterval< T > images )
-	{
-		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.primaryChannelIndexOneBased - 1 );
-
-		return rai;
-	}
-
-	private RandomAccessibleInterval<T> getChannel2Image( RandomAccessibleInterval<T> images )
-	{
-		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, settings.secondaryChannelIndexOneBased - 1 );
-
-		return rai;
-	}
-
 	public void setSettingsFromUI()
 	{
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.registrationResolution = registrationResolution;
-		settings.closingRadius = 0;
 		settings.outputResolution = outputResolution;
-		//settings.refractiveIndexAxialCalibrationCorrectionFactor = refractiveIndexAxialCalibrationCorrectionFactor;
 		settings.refractiveIndexIntensityCorrectionDecayLength = refractiveIndexIntensityCorrectionDecayLength;
 		settings.thresholdModality = "";
-		//settings.thresholdInUnitsOfBackgroundPeakHalfWidth = thresholdInUnitsOfBackgroundPeakHalfWidth;
 		settings.rollAngleComputationMethod = rollAngleAlignmentMethod;
-		settings.secondaryChannelIndexOneBased = secondaryChannelIndexOneBased;
-		settings.primaryChannelIndexOneBased = primaryChannelIndexOneBased;
+		settings.alignmentChannelIndexOneBased = alignmentChannelIndexOneBased;
 	}
 
 

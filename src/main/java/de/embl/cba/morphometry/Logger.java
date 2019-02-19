@@ -14,6 +14,7 @@ public class Logger
 	public static void log( String message )
 	{
 		IJ.log( message );
+		System.out.println( message );
 
 		if ( Utils.logFilePath != null )
 		{
@@ -34,5 +35,6 @@ public class Logger
 	public static void error( String s )
 	{
 		IJ.showMessage( s );
+		System.err.println( s );
 	}
 }
