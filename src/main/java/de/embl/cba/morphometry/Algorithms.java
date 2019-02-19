@@ -137,10 +137,8 @@ public class Algorithms
 			long maxCenterDistance )
 	{
 
-		final Set< Integer > centralLabels = new HashSet<>();
-
 		if ( labeling.getMapping().numSets() == 0 )
-			return centralLabels;
+			return new HashSet<>(  );
 
 		final HyperSphereShape sphere = new HyperSphereShape( maxCenterDistance );
 
@@ -154,13 +152,21 @@ public class Algorithms
 
 		final Cursor< IntType > cursor = neighborhoodRandomAccess.get().cursor();
 
+		final Set< Integer > centralIndices = new HashSet<>();
 		while( cursor.hasNext() )
 		{
 			if ( cursor.next().get() != 0 )
 			{
-				final ArrayList< Integer > labels = new ArrayList<>( labeling.getMapping().labelsAtIndex( cursor.get().getInteger() ) );
-				centralLabels.add( labels.get( 0 ) );
+				centralIndices.add( cursor.get().getInteger() );
 			}
+		}
+
+		final Set< Integer > centralLabels = new HashSet<>();
+		for ( int index : centralIndices )
+		{
+			final ArrayList< Integer > labels =
+					new ArrayList<>( labeling.getMapping().labelsAtIndex( index ) );
+			centralLabels.add( labels.get( 0 ) );
 		}
 
 		return centralLabels;

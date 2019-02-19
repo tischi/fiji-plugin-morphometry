@@ -213,7 +213,10 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		final double[] center = getApproximateEmbryoCenter( labeling );
 
 		final Set< LabelRegion< Integer > > centralRegions =
-				Regions.getCentralRegions( labeling, center, (int) ( settings.centralRegionDistance / settings.registrationResolution ) );
+				Regions.getCentralRegions(
+						labeling,
+						center,
+						(int) ( settings.centralRegionDistance / settings.registrationResolution ) );
 
 		if ( centralRegions.size() == 0 ) return false;
 

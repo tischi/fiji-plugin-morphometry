@@ -1,7 +1,7 @@
+import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.drosophila.registration.DrosophilaRegistrationSettings;
-import de.embl.cba.morphometry.drosophila.registration.DrosophilaRegistrationUtils;
 import de.embl.cba.morphometry.drosophila.registration.DrosophilaSingleChannelRegistration;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidsMLJ;
@@ -15,7 +15,7 @@ import net.imglib2.type.numeric.RealType;
 
 import static de.embl.cba.morphometry.ImageIO.openWithBioFormats;
 
-public class TestDrosophilaEllipsoidParameterComputation
+public class ExampleDrosophilaEllipsoidParameterComputation
 {
 	public static < T extends RealType< T > & NativeType< T > >
 	void main( String[] args )
@@ -26,7 +26,7 @@ public class TestDrosophilaEllipsoidParameterComputation
 		final OpService opService = ij.op();
 
 		final String inputPath =
-				TestDrosophilaEllipsoidParameterComputation.class.getResource(  "drosophila/test01_TR1_1_W0001_P0002_T0001.zip" ).getFile().toString();
+				ExampleDrosophilaEllipsoidParameterComputation.class.getResource(  "drosophila/test01_TR1_1_W0001_P0002_T0001.zip" ).getFile().toString();
 
 		final ImagePlus imagePlus = openWithBioFormats( inputPath );
 
@@ -35,10 +35,10 @@ public class TestDrosophilaEllipsoidParameterComputation
 		settings.onlyComputeEllipsoidParameters = true;
 
 		RandomAccessibleInterval< T > images =
-				DrosophilaRegistrationUtils.getChannelImages( imagePlus );
+				ImageIO.getChannelImages( imagePlus );
 
 		RandomAccessibleInterval< T > image =
-				DrosophilaRegistrationUtils.getChannelImage( images, 0  );
+				ImageIO.getChannelImage( images, 0  );
 
 		final DrosophilaSingleChannelRegistration registration =
 				new DrosophilaSingleChannelRegistration( settings, opService );
@@ -53,7 +53,7 @@ public class TestDrosophilaEllipsoidParameterComputation
 
 		final AffineTransform3D alignmentTransform =
 				EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters );
-		
+
 	}
 
 

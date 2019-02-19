@@ -1,9 +1,9 @@
 package de.embl.cba.morphometry.commands;
 
+import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Projection;
 import de.embl.cba.morphometry.drosophila.registration.DrosophilaRegistrationSettings;
-import de.embl.cba.morphometry.drosophila.registration.DrosophilaRegistrationUtils;
 import de.embl.cba.morphometry.drosophila.registration.DrosophilaSingleChannelRegistration;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
 import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
@@ -243,7 +243,7 @@ public class DrosophilaRegistrationCommand < T extends RealType< T > & NativeTyp
 
 		for ( int channelId = 0; channelId < images.dimension( 3 ); ++channelId )
 		{
-			RandomAccessibleInterval channel = DrosophilaRegistrationUtils.getChannelImage( images, channelId );
+			RandomAccessibleInterval channel = ImageIO.getChannelImage( images, channelId );
 
 			// top
 			long rangeMin = (long) ( settings.finalProjectionMinDistanceToCenter / settings.outputResolution );
@@ -281,8 +281,8 @@ public class DrosophilaRegistrationCommand < T extends RealType< T > & NativeTyp
 			DrosophilaSingleChannelRegistration registration )
 	{
 		final double[] inputCalibration = Utils.getCalibration( imagePlus );
-		RandomAccessibleInterval< T > images = DrosophilaRegistrationUtils.getChannelImages( imagePlus );
-		RandomAccessibleInterval< T > image = DrosophilaRegistrationUtils.getChannelImage( images, alignmentChannelIndexOneBased - 1  );
+		RandomAccessibleInterval< T > images = ImageIO.getChannelImages( imagePlus );
+		RandomAccessibleInterval< T > image = ImageIO.getChannelImage( images, alignmentChannelIndexOneBased - 1  );
 
 		/**
 		 * Compute registration
