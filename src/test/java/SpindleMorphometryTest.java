@@ -47,7 +47,7 @@ public class SpindleMorphometryTest <T extends RealType<T> & NativeType< T > >
 		settings.dnaImage = dapi;
 		settings.tubulinImage = tubulin;
 		settings.workingVoxelSize = 0.25;
-		settings.maxShortAxisDist = 6;
+		settings.maxDnaAxisDist = 6;
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 		settings.watershedSeedsLocalMaximaDistanceThreshold = 1.0;
 		settings.watershedSeedsGlobalDistanceThreshold = 2.0;

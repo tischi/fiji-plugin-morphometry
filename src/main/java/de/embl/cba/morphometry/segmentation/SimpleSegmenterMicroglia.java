@@ -43,7 +43,7 @@ public class SimpleSegmenterMicroglia< T extends RealType< T > & NativeType< T >
 				createRescaledArrayImg( intensity,
 				getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
-		if ( showIntermediateResults ) show( image, "image isotropic resolution", null, workingCalibration, false );
+		if ( showIntermediateResults ) show( image, "image isotropic voxel size", null, workingCalibration, false );
 
 
 		/**

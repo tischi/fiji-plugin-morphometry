@@ -33,7 +33,7 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 //	@Parameter ( style = "Input directory" )
 	public File inputDirectory;
-//
+
 	@Parameter ( label = "File containing object label masks" )
 	public File labelMaskFile;
 

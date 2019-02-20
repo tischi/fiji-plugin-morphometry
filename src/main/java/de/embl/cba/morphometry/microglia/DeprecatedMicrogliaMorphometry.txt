@@ -75,7 +75,7 @@ public class DeprecatedMicrogliaMorphometry< T extends RealType< T > & NativeTyp
 
 		final RandomAccessibleInterval< T > intensityImage = Algorithms.createRescaledArrayImg( settings.image, getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
 
-		if ( settings.showIntermediateResults ) show( intensityImage, "image isotropic resolution", null, workingCalibration, false );
+		if ( settings.showIntermediateResults ) show( intensityImage, "image isotropic voxel size", null, workingCalibration, false );
 		
 		
 

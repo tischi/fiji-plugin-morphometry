@@ -20,13 +20,13 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public RandomAccessibleInterval<T> dnaImage;
 	public RandomAccessibleInterval<T> tubulinImage;
 
-	public double maxShortAxisDist;
+	public double maxDnaAxisDist;
 	public double interestPointsRadius;
 	public File outputDirectory;
 	public String inputDataSetName;
 	public double derivativeDelta;
 
-	public double minimalMetaphasePlateVolumeInCalibratedUnits = 5; // um^3
+	public double minimalDnaVolume = 5; // um^3
 	public double maxCentralObjectRegionsDistance = 7; // um
 	public double erosionOfDnaMaskInCalibratedUnits = 1.0; // um
 	public Calibration imagePlusCalibration;

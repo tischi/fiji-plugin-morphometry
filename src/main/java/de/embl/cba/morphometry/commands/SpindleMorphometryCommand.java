@@ -19,6 +19,7 @@ import org.scijava.plugin.Plugin;
 
 import javax.swing.*;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,6 +36,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter ( label = "Output Directory", style = "directory" )
 	public File outputDirectory;
 
+	@Parameter ( label = "Parent Directory", style = "directory" )
+	public File inputParentDirectory;
+
 	@Parameter ( label = "Voxel Size for Analysis" )
 	public double voxelSpacing = 0.25;
 
@@ -49,6 +53,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	private String imageName;
 	private SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
+	private HashMap< Integer, Map< String, Object > > objectMeasurements;
 
 	public void run()
 	{
@@ -60,7 +65,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	{
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.workingVoxelSize = voxelSpacing;
-		settings.maxShortAxisDist = 6;
+		settings.maxDnaAxisDist = 6;
 		settings.derivativeDelta = 3.0;
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 		settings.watershedSeedsLocalMaximaDistanceThreshold = 1.0;
@@ -93,17 +98,14 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		SpindleMorphometry morphometry = new SpindleMorphometry( settings, opService );
 		morphometry.run();
 
-		getAndSaveOutputImage( morphometry );
+		objectMeasurements = morphometry.getObjectMeasurements();
 
-		computeAndSaveMeasurements( morphometry );
+		saveOutputImageAndAddImagePathsToMeasurements( morphometry.getOutputImage() );
+
+		saveMeasurements( morphometry );
 
 		logEnd();
 
-	}
-
-	private void getAndSaveOutputImage( SpindleMorphometry morphometry )
-	{
-		save( morphometry.getOutputImage() );
 	}
 
 	private void logEnd()
@@ -118,11 +120,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		Logger.log( "Processing file " + imageName );
 	}
 
-	private void computeAndSaveMeasurements( SpindleMorphometry morphometry )
+	private void saveMeasurements( SpindleMorphometry morphometry )
 	{
-		final HashMap<Integer, Map< String, Object > > objectMeasurements = morphometry.getObjectMeasurements();
 		final JTable jTable = Measurements.asTable( objectMeasurements );
-
 
 		final File tableOutputFile = new File( getOutputDirectory() + "measurements.txt" );
 
@@ -145,12 +145,33 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.inputDataSetName = imagePlus.getTitle();
 	}
 
-	private void save( ImagePlus imagePlus )
+	private void saveOutputImageAndAddImagePathsToMeasurements( ImagePlus imagePlus )
 	{
-		final String path = getOutputDirectory() + imageName + "-out.tif";
-		new File( path ).getParentFile().mkdirs();
-		Logger.log( "Saving: " + path );
-		IJ.saveAsTiff( imagePlus, path );
+		final Path parentPath = inputParentDirectory.toPath();
+
+		final File outputImageFile = new File( getOutputDirectory() + imageName + "-out.tif" );
+		outputImageFile.getParentFile().mkdirs();
+
+		addImagePathToMeasurements( parentPath, inputImageFile, objectMeasurements, "Path_InputImage" );
+		addImagePathToMeasurements( parentPath, outputImageFile, objectMeasurements, "Path_OutputImage" );
+
+		Logger.log( "Saving: " + outputImageFile );
+		IJ.saveAsTiff( imagePlus, outputImageFile.toString() );
+	}
+
+	private static void addImagePathToMeasurements(
+			Path parentPath,
+			File inputImageFile,
+			HashMap< Integer, Map< String, Object > > objectMeasurements,
+			String path_inputImage )
+	{
+		final Path relativeInputImagePath = parentPath.relativize( inputImageFile.toPath() );
+
+		Measurements.addMeasurement(
+				objectMeasurements,
+				0,
+				path_inputImage,
+				relativeInputImagePath );
 	}
 
 }

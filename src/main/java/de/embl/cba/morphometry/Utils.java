@@ -1295,4 +1295,11 @@ public class Utils
 		copy = Views.translate( copy, Intervals.minAsLongArray( image ) );
 		return copy;
 	}
+
+	public static double[] copy( double[] values )
+	{
+		final double[] copy = new double[ values.length ];
+		for ( int i = 0; i < values.length; i++ ) copy[ i ] = values[ i ];
+		return copy;
+	}
 }

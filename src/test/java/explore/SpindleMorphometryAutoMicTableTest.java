@@ -48,7 +48,7 @@ public class SpindleMorphometryAutoMicTableTest<T extends RealType<T> & NativeTy
 //			settings.inputCalibration[ 2 ] = 1.05; // TODO: UI
 //			settings.workingVoxelSize = 0.25;
 //			settings.maxPossibleValueInDataSet = Math.pow( 2, imp.getBitDepth() ) - 1.0;
-//			settings.maxShortAxisDist = 6;
+//			settings.maxDnaAxisDist = 6;
 //			settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 //			settings.watershedSeedsLocalMaximaDistanceThreshold = 1.0;
 //			settings.watershedSeedsGlobalDistanceThreshold = 2.0;
