@@ -48,7 +48,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter ( label = "Spindle Channel [one-based index]" )
 	public long spindleChannelIndexOneBased = 1;
 
-	@Parameter
+	@Parameter ( label = "Show Intermediate Results" )
 	public boolean showIntermediateResults = false;
 
 	private String imageName;

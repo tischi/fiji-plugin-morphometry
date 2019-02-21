@@ -343,14 +343,18 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		/**
 		 * Morphological filtering
 		 *
-		 * - it appears that the principal axes determination is not working robustly
+		 * it appears that the principal axes determination
+		 * is not working robustly
 		 * if the meta-phase plate is too thick
 		 */
 
-		final RandomAccessibleInterval< BitType > processedMetaPhasePlate = createProcessedMetaPhasePlate( dnaMask );
+		// TODO: is this still necessary?
+		final RandomAccessibleInterval< BitType > dnaMask = createProcessedMetaPhasePlate( dnaMask );
 
-		if ( settings.showIntermediateResults ) show( processedMetaPhasePlate, "processed metaphase plate", null, workingCalibration, false );
-		return processedMetaPhasePlate;
+		if ( settings.showIntermediateResults )
+			show( dnaMask, "eroded dna mask", null, workingCalibration, false );
+
+		return dnaMask;
 	}
 
 	public void computeDnaAlignmentTransformAndAlignImages(
@@ -378,7 +382,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 					workingCalibration, false );
 
 		if ( settings.showIntermediateResults )
-			show( dnaAlignedDnaMask, "aligned processed meta-phase plate",
+			show( dnaAlignedDnaMask, "aligned DNA mask",
 					Transforms.origin(), workingCalibration, false );
 
 //		if ( settings.showIntermediateResults ) Viewer3D.show3D( dnaAlignedDnaMask );
@@ -420,11 +424,11 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		if ( settings.showIntermediateResults )
 			Plots.plot( dnaProfileAlongDnaAxis,
-					"distance to center", "DNA intensity along shortest DNA axis" );
+					"distance to center", "DNA intensity along DNA axis" );
 
 		if ( settings.showIntermediateResults )
 			Plots.plot( dnaProfileAlongDnaAxisDerivative,
-					"distance to center", "d/dx DNA intensity along shortest DNA axis" );
+					"distance to center", "d/dx DNA intensity along DNA axis" );
 
 	}
 
