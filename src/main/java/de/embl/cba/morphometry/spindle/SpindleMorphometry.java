@@ -101,6 +101,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final RandomAccessibleInterval< BitType > segmentedDna = segmentDna( dna, dnaThreshold );
 
+		// TODO: also add Elliposid vector lengths to measurements
+
 		final EllipsoidVectors ellipsoidVectors = determineDnaAxes( segmentedDna );
 
 		computeDnaAlignmentTransformAndAlignImages( dna, tubulin, segmentedDna, ellipsoidVectors );
@@ -109,6 +111,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final ProfileAndRadius dnaLateralProfileAndRadius = measureDnaLateralExtend( dnaAlignedDna );
 
+		// TODO: right now we use the lateral threshold, but we could also use the axially determined one...
 		dnaVolumeMask = measureDnaVolume( dna, dnaLateralProfileAndRadius );
 
 		measureDnaHole( dnaLateralProfileAndRadius );
@@ -349,10 +352,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 */
 
 		// TODO: is this still necessary?
-		final RandomAccessibleInterval< BitType > dnaMask = createProcessedMetaPhasePlate( dnaMask );
+		final RandomAccessibleInterval< BitType > processedDnaMask = createProcessedMetaPhasePlate( dnaMask );
 
 		if ( settings.showIntermediateResults )
-			show( dnaMask, "eroded dna mask", null, workingCalibration, false );
+			show( processedDnaMask, "eroded dna mask", null, workingCalibration, false );
 
 		return dnaMask;
 	}
