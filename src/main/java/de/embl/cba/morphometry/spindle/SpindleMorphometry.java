@@ -56,6 +56,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	public static final String DNA_VOLUME = "DNA_Volume";
 	public static final String SPINDLE_VOLUME = "Spindle_Volume";
 
+
 	public static final String DNA_RELATIVE_CENTRAL_INTENSITY = "DNA_Normalised_Central_Intensity";
 	public static final String DNA_SPINDLE_CENTER_DISTANCE = "Dna_Center_To_Spindle_Center_Distance";
 	public static final String SPINDLE_AXIS_TO_COVERSLIP_PLANE_ANGLE_DEGREES = "Spindle_Axis_To_Coverslip_Plane_Angle_Degrees";
@@ -105,7 +106,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final EllipsoidVectors ellipsoidVectors = determineDnaAxes( segmentedDna );
 
-		computeDnaAlignmentTransformAndAlignImages( dna, tubulin, segmentedDna, ellipsoidVectors );
+		computeDnaAlignmentTransformAndAlignImages(
+				dna, tubulin, segmentedDna, ellipsoidVectors );
 
 		measureDnaAxialExtend( dnaAlignedDna );
 
@@ -143,7 +145,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				spindleLateralRadiusAndProfile.profile.values.get(
 						spindleLateralRadiusAndProfile.radiusIndex );
 
-		Logger.log( "Spindle volume threshold: " + spindleVolumeThreshold );
+		Logger.log( "Spindle lateral threshold: " + spindleVolumeThreshold );
 
 		final RandomAccessibleInterval< BitType > spindleVolumeMask =
 				createCentralObjectsMask( tubulin, spindleVolumeThreshold );
@@ -412,18 +414,23 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final CoordinatesAndValues dnaProfileAlongDnaAxisDerivative =
 				CurveAnalysis.derivative(
 						dnaProfileAlongDnaAxis,
-						( int ) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
+						( int ) Math.ceil( settings.derivativeDelta
+								/ settings.workingVoxelSize ) );
 
-		final double[] dnaAxialBoundaries =
+		final ArrayList< CoordinateAndValue > dnaAxialBoundaries =
 				CurveAnalysis.leftMaxAndRightMinLoc( dnaProfileAlongDnaAxisDerivative );
 
-		final double dnaAxialExtend = dnaAxialBoundaries[ 1 ] - dnaAxialBoundaries[ 0 ];
+		final double dnaAxialExtend =
+				dnaAxialBoundaries.get( 1 ).coordinate -
+						dnaAxialBoundaries.get( 0 ).coordinate;
 
 		Measurements.addMeasurement(
 				objectMeasurements,
 				0,
 				DNA_AXIAL_EXTEND + SEP + LENGTH_UNIT,
 				dnaAxialExtend);
+
+		logDnaAxialThreshold( dnaProfileAlongDnaAxis, dnaAxialBoundaries );
 
 		if ( settings.showIntermediateResults )
 			Plots.plot( dnaProfileAlongDnaAxis,
@@ -433,6 +440,19 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			Plots.plot( dnaProfileAlongDnaAxisDerivative,
 					"distance to center", "d/dx DNA intensity along DNA axis" );
 
+	}
+
+	public void logDnaAxialThreshold(
+			CoordinatesAndValues dnaProfileAlongDnaAxis,
+			ArrayList< CoordinateAndValue > dnaAxialBoundaries )
+	{
+		for ( int i = 0; i < 2; i++ )
+		{
+			final Double valueAtCoordinate =
+					CurveAnalysis.getValueAtCoordinate( dnaProfileAlongDnaAxis,
+							dnaAxialBoundaries.get( i ).coordinate );
+			Logger.log( "DNA axial threshold " + i + ": " + valueAtCoordinate );
+		}
 	}
 
 	public ProfileAndRadius measureDnaLateralExtend( RandomAccessibleInterval< T > alignedDNA )
@@ -454,12 +474,15 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				0,
 				DNA_LATERAL_EXTEND + SEP + LENGTH_UNIT,
 				2.0 * dnaLateralProfileAndRadius.radius );
+
 		return dnaLateralProfileAndRadius;
 	}
 
-	public ArrayList< double[] > measureSpindlePoleLocations( RandomAccessibleInterval tubulinAlignedAlongShortestAxisOfDNA )
+	public ArrayList< double[] > measureSpindlePoleLocations(
+			RandomAccessibleInterval tubulinAlignedAlongShortestAxisOfDNA )
 	{
-		final ArrayList< double[] > dnaAxisBasedSpindlePoles = findSpindlePolesAlongDnaAxis( tubulinAlignedAlongShortestAxisOfDNA );
+		final ArrayList< double[] > dnaAxisBasedSpindlePoles =
+				getSpindlePolesAlongDnaAxis( tubulinAlignedAlongShortestAxisOfDNA );
 
 		final ArrayList< double[] > spindlePoles = getRefinedSpindlePoles(
 				tubulinAlignedAlongShortestAxisOfDNA,
@@ -483,9 +506,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			ProfileAndRadius dnaLateralExtendAndProfile )
 	{
 		final double dnaLateralIntensityValueAtRadius =
-				dnaLateralExtendAndProfile.profile.values.get( dnaLateralExtendAndProfile.radiusIndex );
+				dnaLateralExtendAndProfile.profile.values.get(
+						dnaLateralExtendAndProfile.radiusIndex );
 
-		Logger.log( "DNA volume threshold: " + dnaLateralIntensityValueAtRadius );
+		Logger.log( "DNA lateral threshold: " + dnaLateralIntensityValueAtRadius );
 
 		final RandomAccessibleInterval< BitType > dnaVolumeMask =
 				createCentralObjectsMask( dna, dnaLateralIntensityValueAtRadius );
@@ -504,24 +528,54 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return dnaVolumeMask;
 	}
 
-	public ArrayList< double[] > findSpindlePolesAlongDnaAxis( RandomAccessibleInterval tubulinAlignedAlongShortestAxisOfDNA )
+	public ArrayList< double[] > getSpindlePolesAlongDnaAxis(
+			RandomAccessibleInterval tubulinAlignedAlongShortestAxisOfDNA )
 	{
-		final CoordinatesAndValues tubulinProfile = Utils.computeMaximumIntensitiesAlongAxis( tubulinAlignedAlongShortestAxisOfDNA, settings.maxDnaAxisDist, ALIGNED_DNA_AXIS, settings.workingVoxelSize );
-		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfile.coordinates, tubulinProfile.values, "center distance [um]", "tubulin max along shortest DNA axis" );
+		final CoordinatesAndValues tubulinProfile =
+				Utils.computeMaximumIntensitiesAlongAxis(
+						tubulinAlignedAlongShortestAxisOfDNA,
+						settings.maxDnaAxisDist,
+						ALIGNED_DNA_AXIS,
+						settings.workingVoxelSize );
 
 		final CoordinatesAndValues tubulinProfileDerivative =
 				CurveAnalysis.derivative(
 						tubulinProfile,
-						(int) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize ) );
+						(int) Math.ceil( settings.derivativeDelta
+								/ settings.workingVoxelSize ) );
 
-		if ( settings.showIntermediateResults ) Plots.plot( tubulinProfileDerivative.coordinates, tubulinProfileDerivative.values, "distance to center", "d/dx tubulin max along shortest DNA axis" );
-
-		double[] dnaAxisBasedSpindlePoleCoordinates =
+		ArrayList< CoordinateAndValue > tubulinExtrema =
 				CurveAnalysis.leftMaxAndRightMinLoc( tubulinProfileDerivative );
 
 		final ArrayList< double[] > dnaAxisBasedSpindlePoles = new ArrayList<>();
-		dnaAxisBasedSpindlePoles.add( new double[]{ 0, 0, dnaAxisBasedSpindlePoleCoordinates[ 0 ] });
-		dnaAxisBasedSpindlePoles.add( new double[]{ 0, 0, dnaAxisBasedSpindlePoleCoordinates[ 1 ] });
+		dnaAxisBasedSpindlePoles.add( new double[]{ 0, 0, tubulinExtrema.get( 0 ).coordinate });
+		dnaAxisBasedSpindlePoles.add( new double[]{ 0, 0, tubulinExtrema.get( 1 ).coordinate });
+
+		for ( int p = 0; p < 2; p++ )
+		{
+			final Double value =
+					CurveAnalysis.getValueAtCoordinate(
+							tubulinProfile,
+							tubulinExtrema.get( p ).coordinate );
+			Logger.log( "Tubulin axial threshold " + p + ": " + value );
+		}
+
+		if ( settings.showIntermediateResults )
+			Plots.plot(
+					tubulinProfile.coordinates,
+					tubulinProfile.values,
+					"center distance [um]",
+					"tubulin max along shortest DNA axis" );
+
+		if ( settings.showIntermediateResults )
+			Plots.plot(
+					tubulinProfileDerivative.coordinates,
+					tubulinProfileDerivative.values,
+					"distance to center",
+					"d/dx tubulin max along shortest DNA axis" );
+
+
+
 		return dnaAxisBasedSpindlePoles;
 	}
 
@@ -532,7 +586,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final double dnaCenterMaxIntensity = dnaLateralProfileAndRadius.profile.values.get( 0 );
 
-		final double dnaRelativeCentralIntensity = dnaCenterMaxIntensity / dnaLateralRadialProfileMaxIntensity;
+		final double dnaRelativeCentralIntensity =
+				dnaCenterMaxIntensity / dnaLateralRadialProfileMaxIntensity;
 
 		Measurements.addMeasurement(
 				objectMeasurements,
@@ -691,7 +746,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 						profileAndRadius.profile,
 						(int) Math.ceil( derivativeDelta / settings.workingVoxelSize ) );
 
-		profileAndRadius.radius = CurveAnalysis.minLoc( radialProfileDerivative );
+		profileAndRadius.radius = CurveAnalysis.minimum( radialProfileDerivative ).coordinate;
 		profileAndRadius.radiusIndex = (int) ( profileAndRadius.radius / spacing );
 
  		if ( settings.showIntermediateResults )

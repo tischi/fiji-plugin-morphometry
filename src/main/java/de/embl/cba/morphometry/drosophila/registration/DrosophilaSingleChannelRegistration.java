@@ -1,7 +1,6 @@
 package de.embl.cba.morphometry.drosophila.registration;
 
 import de.embl.cba.morphometry.*;
-import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.CurveAnalysis;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
@@ -21,19 +20,14 @@ import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
-import net.imglib2.roi.labeling.LabelRegions;
-import net.imglib2.roi.labeling.LabelingType;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -62,7 +56,7 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 	private RandomAccessibleInterval< BitType > mask;
 	private RandomAccessibleInterval< BitType > yawAlignedMask;
 	private RandomAccessibleInterval yawAlignedIntensities;
-	private double axialEmbryoCenterPosition;
+	private CoordinateAndValue axialEmbryoCenter;
 	private EllipsoidMLJ ellipsoidParameters;
 
 	public DrosophilaSingleChannelRegistration(
@@ -247,7 +241,7 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		return new double[]{
 					labeling.dimension( 0 ) / 2.0 ,
 					labeling.dimension( 1 ) / 2.0,
-					axialEmbryoCenterPosition / settings.registrationResolution };
+					axialEmbryoCenter.coordinate / settings.registrationResolution };
 	}
 
 	private void createMask()
@@ -319,11 +313,12 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		if ( settings.showIntermediateResults )
 			Plots.plot( averageIntensitiesAlongZ.coordinates, averageIntensitiesAlongZ.values, "z [um]", "average intensities" );
 
-		axialEmbryoCenterPosition = CurveAnalysis.maxLoc( averageIntensitiesAlongZ );
-		coverslipPosition = axialEmbryoCenterPosition - DrosophilaRegistrationSettings.drosophilaWidth / 2.0;
+		axialEmbryoCenter = CurveAnalysis.maximum( averageIntensitiesAlongZ );
+		coverslipPosition = axialEmbryoCenter.coordinate
+				- DrosophilaRegistrationSettings.drosophilaWidth / 2.0;
 
 		Logger.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
-		Logger.log( "Approximate axial embryo center coordinate [um]: " + axialEmbryoCenterPosition );
+		Logger.log( "Approximate axial embryo center coordinate [um]: " + axialEmbryoCenter );
 
 		/**
 		 *  Refractive index corrections
@@ -522,15 +517,23 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 
 	private AffineTransform3D computeFlippingTransform( RandomAccessibleInterval yawAlignedMask, RandomAccessibleInterval yawAlignedIntensities, double calibration )
 	{
-		final CoordinatesAndValues coordinatesAndValues = Utils.computeAverageIntensitiesAlongAxisWithinMask( yawAlignedIntensities, yawAlignedMask, X, calibration );
+		final CoordinatesAndValues coordinatesAndValues =
+				Utils.computeAverageIntensitiesAlongAxisWithinMask(
+						yawAlignedIntensities, yawAlignedMask, X, calibration );
 
-		if ( settings.showIntermediateResults ) Plots.plot( coordinatesAndValues.coordinates, coordinatesAndValues.values, "x", "average intensity" );
+		if ( settings.showIntermediateResults )
+			Plots.plot(
+					coordinatesAndValues.coordinates,
+					coordinatesAndValues.values,
+					"x",
+					"average intensity" );
 
-		double maxLoc = CurveAnalysis.maxLoc( coordinatesAndValues, null );
+		CoordinateAndValue maximum =
+				CurveAnalysis.maximum( coordinatesAndValues, null );
 
 		AffineTransform3D affineTransform3D = new AffineTransform3D();
 
-		if ( maxLoc > 0 ) affineTransform3D.rotate( Z, toRadians( 180.0D ) );
+		if ( maximum.coordinate > 0 ) affineTransform3D.rotate( Z, toRadians( 180.0D ) );
 
 		return affineTransform3D;
 	}

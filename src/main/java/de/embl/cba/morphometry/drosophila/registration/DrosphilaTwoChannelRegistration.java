@@ -290,8 +290,11 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 
 		if ( settings.showIntermediateResults ) Plots.plot( averageSvbIntensitiesAlongZ.coordinates, averageSvbIntensitiesAlongZ.values, "z [um]", "average intensities" );
 
-		final double embryoCenterPosition = CurveAnalysis.maxLoc( averageSvbIntensitiesAlongZ );
-		coverslipPosition = embryoCenterPosition - DrosophilaRegistrationSettings.drosophilaWidth / 2.0;
+		final double embryoCenterPosition =
+				CurveAnalysis.maximum( averageSvbIntensitiesAlongZ ).coordinate;
+
+		coverslipPosition =
+				embryoCenterPosition - DrosophilaRegistrationSettings.drosophilaWidth / 2.0;
 
 		Logger.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
 		Logger.log( "Approximate axial embryo center coordinate [um]: " + embryoCenterPosition );
@@ -542,11 +545,11 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 
 		if ( settings.showIntermediateResults ) Plots.plot( coordinatesAndValues.coordinates, coordinatesAndValues.values, "x", "average intensity" );
 
-		double maxLoc = CurveAnalysis.maxLoc( coordinatesAndValues, null );
+		CoordinateAndValue maximum = CurveAnalysis.maximum( coordinatesAndValues, null );
 
 		AffineTransform3D affineTransform3D = new AffineTransform3D();
 
-		if ( maxLoc > 0 ) affineTransform3D.rotate( Z, toRadians( 180.0D ) );
+		if ( maximum.coordinate > 0 ) affineTransform3D.rotate( Z, toRadians( 180.0D ) );
 
 		return affineTransform3D;
 	}

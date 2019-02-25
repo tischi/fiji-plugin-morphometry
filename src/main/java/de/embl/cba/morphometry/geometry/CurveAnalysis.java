@@ -1,5 +1,7 @@
 package de.embl.cba.morphometry.geometry;
 
+import de.embl.cba.morphometry.CoordinateAndValue;
+
 import java.util.ArrayList;
 
 import static java.lang.Math.abs;
@@ -114,18 +116,20 @@ public abstract class CurveAnalysis
 			}
 		}
 
-		final Double maxLocCoordinate = coordinatesAndValues.values.get( maxLocIndexAndValue.index );
+		final Double maxLocCoordinate =
+				coordinatesAndValues.values.get( maxLocIndexAndValue.index );
 
 		return maxLocCoordinate;
 	}
 
 
-	public static double minLoc( CoordinatesAndValues coordinatesAndValues )
+	public static CoordinateAndValue minimum( CoordinatesAndValues coordinatesAndValues )
 	{
-		return minLoc( coordinatesAndValues, null );
+		return minimum( coordinatesAndValues, null );
 	}
 
-	public static double minLoc( CoordinatesAndValues coordinatesAndValues, double[] coordinateRangeMinMax )
+	public static CoordinateAndValue minimum(
+			CoordinatesAndValues coordinatesAndValues, double[] coordinateRangeMinMax )
 	{
 		final int n = coordinatesAndValues.coordinates.size();
 		final ArrayList< Double > coordinates = coordinatesAndValues.coordinates;
@@ -150,17 +154,22 @@ public abstract class CurveAnalysis
 			}
 		}
 
-		final Double maxLocCoordinate = coordinatesAndValues.coordinates.get( minLocIndexAndValue.index );
+		final CoordinateAndValue coordinateAndValue = new CoordinateAndValue();
+		coordinateAndValue.coordinate =
+				coordinatesAndValues.coordinates.get( minLocIndexAndValue.index );
+		coordinateAndValue.value = minLocIndexAndValue.value;
 
-		return maxLocCoordinate;
+		return coordinateAndValue;
 	}
 
-	public static double maxLoc( CoordinatesAndValues coordinatesAndValues )
+	public static CoordinateAndValue maximum( CoordinatesAndValues coordinatesAndValues )
 	{
-		return maxLoc( coordinatesAndValues, null );
+		return maximum( coordinatesAndValues, null );
 	}
 
-	public static double maxLoc( CoordinatesAndValues coordinatesAndValues, double[] coordinateRangeMinMax )
+	public static CoordinateAndValue maximum(
+			CoordinatesAndValues coordinatesAndValues,
+			double[] coordinateRangeMinMax )
 	{
 		final ArrayList< Double > coordinates = coordinatesAndValues.coordinates;
 		final ArrayList< Double > values = coordinatesAndValues.values;
@@ -184,24 +193,42 @@ public abstract class CurveAnalysis
 			}
 		}
 
-		return maxLoc;
+		final CoordinateAndValue coordinateAndValue = new CoordinateAndValue();
+		coordinateAndValue.coordinate = maxLoc;
+		coordinateAndValue.value = max;
+
+		return coordinateAndValue;
 	}
 
-	public static double[] leftMaxAndRightMinLoc( CoordinatesAndValues coordinatesAndValues )
+	public static ArrayList< CoordinateAndValue >
+	leftMaxAndRightMinLoc( CoordinatesAndValues coordinatesAndValues )
 	{
 		double[] rangeMinMax = new double[ 2 ];
-		double[] locations = new double[ 2 ];
+
+		final ArrayList< CoordinateAndValue > extrema = new ArrayList<>();
 
 		// left
 		rangeMinMax[ 0 ] = - Double.MAX_VALUE;
 		rangeMinMax[ 1 ] = 0;
-		locations[ 0 ] = maxLoc( coordinatesAndValues, rangeMinMax );
+		extrema.add( maximum( coordinatesAndValues, rangeMinMax ) );
 
 		// right
 		rangeMinMax[ 0 ] = 0;
 		rangeMinMax[ 1 ] = Double.MAX_VALUE;
-		locations[ 1 ] = minLoc( coordinatesAndValues, rangeMinMax );
+		extrema.add( minimum( coordinatesAndValues, rangeMinMax ) );
 
-		return locations;
+		return extrema;
+	}
+
+	public static Double getValueAtCoordinate(
+			CoordinatesAndValues coordinatesAndValues,
+			double coordinate )
+	{
+
+		final int coordinateIndex =
+				coordinatesAndValues.coordinates.indexOf(
+						coordinate );
+
+		return coordinatesAndValues.values.get( coordinateIndex );
 	}
 }
