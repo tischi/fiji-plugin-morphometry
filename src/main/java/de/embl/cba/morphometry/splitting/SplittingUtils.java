@@ -2,7 +2,7 @@ package de.embl.cba.morphometry.splitting;
 
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.microglia.Constants;
-import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTrackingSettings;
+import de.embl.cba.morphometry.microglia.MicrogliaSettings;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.logic.BitType;
@@ -17,7 +17,7 @@ public class SplittingUtils
 	public static HashMap< Integer, Integer > getNumObjectsFromSkeleton(
 			ImgLabeling< Integer, IntType > imgLabeling,
 			RandomAccessibleInterval< BitType > skeleton,
-			MicrogliaSegmentationAndTrackingSettings settings )
+			MicrogliaSettings settings )
 	{
 		HashMap< Integer, Map< String, Object > > skeletonMeasurements = new HashMap<>();
 		Measurements.measureSumIntensities( skeletonMeasurements, imgLabeling, skeleton, Constants.SKELETON );

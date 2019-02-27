@@ -44,8 +44,8 @@ public class SpindleMorphometryAutoMicTableTest<T extends RealType<T> & NativeTy
 //			settings.dnaImage = dnaImage;
 //			settings.tubulinImage = tubulinImage;
 //			settings.showIntermediateResults = false;
-//			settings.inputCalibration = Utils.getCalibration( imp );
-//			settings.inputCalibration[ 2 ] = 1.05; // TODO: UI
+//			settings.calibration2D = Utils.getCalibration( imp );
+//			settings.calibration2D[ 2 ] = 1.05; // TODO: UI
 //			settings.workingVoxelSize = 0.25;
 //			settings.maxPossibleValueInDataSet = Math.pow( 2, imp.getBitDepth() ) - 1.0;
 //			settings.maxDnaAxisDist = 6;

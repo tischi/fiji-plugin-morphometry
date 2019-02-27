@@ -20,18 +20,23 @@ public class TestTrackingSplitterManualCorrectionUI
 		final ImagePlus imagePlus = IJ.openImage(
 				TestTrackingSplitterManualCorrectionUI.class.getResource( "microglia/MAX_5C-crop-t1-3-labelMasks.tif" ).getFile().toString() );
 
-		final ArrayList< RandomAccessibleInterval< T > > labels = Utils.get2DImagePlusMovieAsFrameList( imagePlus, 1 );
+		final ArrayList< RandomAccessibleInterval< T > > labels =
+				Utils.get2DImagePlusMovieAsFrameList( imagePlus, 1 );
 
-		final TrackingSplitterManualCorrectionUI trackingSplitterManualCorrectionUI = new TrackingSplitterManualCorrectionUI( labels, 100000L, "" );
+		final TrackingSplitterManualCorrectionUI trackingSplitterManualCorrectionUI =
+				new TrackingSplitterManualCorrectionUI(
+						labels,
+						100000L,
+						"",
+						null );
 
 		while ( ! trackingSplitterManualCorrectionUI.isThisFrameFinished() ){
 			Utils.wait( 100 );
 		}
 
-		final ArrayList< RandomAccessibleInterval< T > > correctedLabels = trackingSplitterManualCorrectionUI.getLabelings();
+		final ArrayList< RandomAccessibleInterval< T > > correctedLabels
+				= trackingSplitterManualCorrectionUI.getLabelings();
 
-
-		int a = 1;
 	}
 
 }

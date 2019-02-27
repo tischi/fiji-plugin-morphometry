@@ -1,5 +1,7 @@
 package de.embl.cba.morphometry.microglia;
 
+import de.embl.cba.morphometry.Utils;
+import ij.measure.Calibration;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
@@ -7,7 +9,7 @@ import net.imglib2.type.numeric.RealType;
 
 import java.io.File;
 
-public class MicrogliaSegmentationAndTrackingSettings<T extends RealType<T> & NativeType< T > >
+public class MicrogliaSettings<T extends RealType<T> & NativeType< T > >
 {
 	public static final String MANUAL_THRESHOLD = "Manual threshold";
 	public static final String HUANG_AUTO_THRESHOLD = "Huang auto threshold";
@@ -30,8 +32,9 @@ public class MicrogliaSegmentationAndTrackingSettings<T extends RealType<T> & Na
 	public double closingRadius = 3.0;
 
 
-	public double[] inputCalibration;
+	public double[] calibration2D;
 	public RandomAccessibleInterval<T> image;
+	public Calibration calibration;
 
 	public double maxShortAxisDist;
 	public double interestPointsRadius;
@@ -51,4 +54,32 @@ public class MicrogliaSegmentationAndTrackingSettings<T extends RealType<T> & Na
 	public boolean manualSegmentationCorrectionOfAllFrames = true;
 
 	public String outputLabelingsPath;
+
+	/**
+		// TODO: make a proper constructor with the missing settings...
+	 * 		microgliaSettings.opService = ij.op();
+	 microgliaSettings.calibration = imagePlus.getCalibration();
+	 microgliaSettings.outputDirectory = new File( "" );
+	 */
+	public static MicrogliaSettings configureSettings( MicrogliaSettings settings )
+	{
+		settings.calibration2D = Utils.get2dCalibration( settings.calibration );
+		settings.workingVoxelSize = settings.calibration2D[ 0 ];
+		settings.maxShortAxisDist = 6;
+		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
+		settings.watershedSeedsLocalMaximaDistanceThreshold = Double.MAX_VALUE;
+		settings.watershedSeedsGlobalDistanceThreshold = 2.5;
+		settings.interestPointsRadius = 0.5;
+		settings.outputDirectory = null; //new File( path ).getParentFile();
+		settings.inputDataSetName = "test";
+		settings.returnEarly = true;
+		settings.skeletonMaxLength = 600 * settings.workingVoxelSize;
+		settings.minimalObjectSize = 200;  // um2
+		settings.minimalTrackingSplittingObjectArea = 20; // this can be very small, um2
+		settings.minimalObjectCenterDistance = 6;
+		settings.maximalWatershedLength = 10;
+		settings.closingRadius = 3;
+
+		return settings;
+	}
 }

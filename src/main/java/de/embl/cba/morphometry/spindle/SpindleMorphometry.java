@@ -135,7 +135,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	}
 
-	public RandomAccessibleInterval< BitType > measureSpindleVolume( double[] workingCalibration, ProfileAndRadius spindleLateralRadiusAndProfile )
+	public RandomAccessibleInterval< BitType > measureSpindleVolume(
+			double[] workingCalibration, ProfileAndRadius spindleLateralRadiusAndProfile )
 	{
 		/**
 		 * Extract spindle object at the threshold determined by the lateral maximal gradient

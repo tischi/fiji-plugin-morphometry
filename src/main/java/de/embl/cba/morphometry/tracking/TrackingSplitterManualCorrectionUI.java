@@ -6,6 +6,7 @@ import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.regions.Regions;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.measure.Calibration;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -16,31 +17,39 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
-public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & NativeType< T > > extends JPanel
+public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & NativeType< T > >
+		extends JPanel
 {
 	private final long minimalObjectSizeInPixels;
+	private final Calibration calibration;
 	private JFrame frame;
 	private boolean isThisFrameFinished;
-	private ImagePlus editedLabelsImp;
+	private ImagePlus editableLabelsImp;
 	private ArrayList< RandomAccessibleInterval< T > > labels;
 	private SyncWindowsHack syncWindows;
 	private static Point frameLocation;
 	private static Point editedLabelsImpLocation;
 	private boolean isStopped;
-	private boolean isSave;
 	private String outputLabelingsPath;
 
 	public TrackingSplitterManualCorrectionUI(
 			ArrayList< RandomAccessibleInterval< T > > labels,
 			long minimalObjectSizeInPixels,
-			String outputLabelingsPath )
+			String outputLabelingsPath,
+			Calibration calibration )
 	{
 		this.outputLabelingsPath = outputLabelingsPath;
 		this.isThisFrameFinished = false;
 		this.minimalObjectSizeInPixels = minimalObjectSizeInPixels;
+		this.calibration = calibration;
 
-		showNewLabelsImagePlusForEditing( labels );
+		showLabelsImageForEditing( labels );
 
+		configureAndShowUI();
+	}
+
+	public void configureAndShowUI()
+	{
 		add( updateLabelsButton() );
 
 		add( nextFrameButton() );
@@ -52,18 +61,18 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 		showPanel();
 	}
 
-	public void showNewLabelsImagePlusForEditing( ArrayList< RandomAccessibleInterval< T > > labels )
+	public void showLabelsImageForEditing( ArrayList< RandomAccessibleInterval< T > > labels )
 	{
-		editedLabelsImp = Utils.labelingsAsImagePlus( labels );
-		editedLabelsImp.show();
-		if ( editedLabelsImpLocation != null ) editedLabelsImp.getWindow().setLocation( editedLabelsImpLocation );
-		editedLabelsImp.setT( editedLabelsImp.getNFrames() );
-		editedLabelsImp.updateImage();
-		editedLabelsImp.setActivated();
-		IJ.run( editedLabelsImp, "Enhance Contrast", "saturated=0.00");
+		editableLabelsImp = Utils.labelingsAsImagePlus( labels );
+		editableLabelsImp.show();
+		if ( editedLabelsImpLocation != null )
+			editableLabelsImp.getWindow().setLocation( editedLabelsImpLocation );
+		editableLabelsImp.setT( editableLabelsImp.getNFrames() );
+		editableLabelsImp.updateImage();
+		editableLabelsImp.setActivated();
+		IJ.run( editableLabelsImp, "Enhance Contrast", "saturated=0.00");
 		IJ.run("Brightness/Contrast...");
 
-		// in case other images, e.g. the raw intensities are shown at the same time
 		syncWindows = new SyncWindowsHack();
 		syncWindows.syncAll();
 	}
@@ -71,17 +80,12 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 	public JButton updateLabelsButton()
 	{
 		final JButton button = new JButton( "Update Labels" );
-		button.addActionListener( new ActionListener()
-		{
-			@Override
-			public void actionPerformed( ActionEvent e )
-			{
-				labels = runMaximalOverlapTrackerOnEditedImagePlus();
+		button.addActionListener( e -> {
+			labels = runMaximalOverlapTrackerOnEditedImagePlus();
 
-				closeCurrentEditedLabelsImagePlus();
+			closeCurrentEditedLabelsImagePlus();
 
-				showNewLabelsImagePlusForEditing( labels );
-			}
+			showLabelsImageForEditing( labels );
 		} );
 
 		return button;
@@ -89,9 +93,9 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 
 	public void closeCurrentEditedLabelsImagePlus()
 	{
-		editedLabelsImp.changes = false;
-		editedLabelsImpLocation = editedLabelsImp.getWindow().getLocation();
-		editedLabelsImp.close();
+		editableLabelsImp.changes = false;
+		editedLabelsImpLocation = editableLabelsImp.getWindow().getLocation();
+		editableLabelsImp.close();
 
 		syncWindows.close();
 	}
@@ -135,7 +139,7 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 		final JButton button = new JButton( "Save" );
 		button.addActionListener( e -> SwingUtilities.invokeLater( () -> {
 			labels = runMaximalOverlapTrackerOnEditedImagePlus();
-			ImageIO.saveLabels( labels, outputLabelingsPath );
+			ImageIO.saveLabels( labels, calibration, outputLabelingsPath );
 		} ) );
 		return button;
 	}
@@ -169,7 +173,7 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 	public ArrayList< RandomAccessibleInterval< T > > runMaximalOverlapTrackerOnEditedImagePlus()
 	{
 		final ArrayList< RandomAccessibleInterval< T > > labels =
-				Utils.get2DImagePlusMovieAsFrameList( editedLabelsImp, 1 );
+				Utils.get2DImagePlusMovieAsFrameList( editableLabelsImp, 1 );
 
 		// Due to the editing small unconnected regions of pixels may occur
 		Regions.removeSmallRegionsInMasks( labels, minimalObjectSizeInPixels );

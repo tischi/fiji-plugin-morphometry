@@ -2,14 +2,11 @@ package de.embl.cba.morphometry;
 
 import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
-import de.embl.cba.morphometry.geometry.CurveAnalysis;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.ImagePlus;
 import ij.measure.Calibration;
 import ij.plugin.Duplicator;
 import ij.process.LUT;
-import net.imagej.Dataset;
-import net.imagej.axis.LinearAxis;
 import net.imglib2.*;
 import net.imglib2.Cursor;
 import net.imglib2.Point;
@@ -29,7 +26,6 @@ import net.imglib2.img.basictypeaccess.array.LongArray;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.loops.LoopBuilder;
 import net.imglib2.outofbounds.OutOfBounds;
-import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.*;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.Type;
@@ -472,14 +468,14 @@ public class Utils
 		return calibration;
 	}
 
-	public static double[] get2dCalibration( ImagePlus imp )
+	public static double[] get2dCalibration( Calibration calibration )
 	{
-		double[] calibration = new double[ 2 ];
+		double[] calibration2D = new double[ 2 ];
 
-		calibration[ X ] = imp.getCalibration().pixelWidth;
-		calibration[ Y ] = imp.getCalibration().pixelHeight;
+		calibration2D[ X ] = calibration.pixelWidth;
+		calibration2D[ Y ] = calibration.pixelHeight;
 
-		return calibration;
+		return calibration2D;
 	}
 
 	public static void correctCalibrationForSubSampling( double[] calibration, int subSampling )

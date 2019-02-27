@@ -5,7 +5,7 @@ import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.microglia.Constants;
-import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTrackingSettings;
+import de.embl.cba.morphometry.microglia.MicrogliaSettings;
 import de.embl.cba.morphometry.splitting.ShapeAndIntensitySplitter;
 import ij.IJ;
 import ij.ImagePlus;
@@ -30,12 +30,9 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 
 	final ArrayList< RandomAccessibleInterval< BitType > > masks;
 	final ArrayList< RandomAccessibleInterval< T > > intensities;
-
 	private Integer maxIndex;
-
 	private ArrayList< RandomAccessibleInterval< IntType > > labelings;
-
-	final MicrogliaSegmentationAndTrackingSettings settings;
+	final MicrogliaSettings settings;
 	private final ImagePlus intensitiesImp;
 	private long minimalObjectSizeInPixels;
 	private static Point intensitiesImpLocation;
@@ -43,7 +40,7 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 
 	public SemiAutomatedTrackingSplitter( ArrayList< RandomAccessibleInterval< BitType > > masks,
 										  ArrayList< RandomAccessibleInterval< T > > intensities,
-										  MicrogliaSegmentationAndTrackingSettings settings )
+										  MicrogliaSettings settings )
 	{
 		this.masks = masks;
 		this.intensities = intensities;
@@ -59,7 +56,7 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 	public void run()
 	{
 
-		int tMin = 0;  // at this point the movie is already cropped in time, such that we can process the full movie
+		int tMin = 0;
 		int tMax = masks.size() - 1;
 		int t = tMin;
 
@@ -67,9 +64,12 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 		 * Process first time-point
 		 */
 
-		final ShapeAndIntensitySplitter splitter = new ShapeAndIntensitySplitter( masks.get( t ), intensities.get( t ), settings );
+		final ShapeAndIntensitySplitter splitter =
+				new ShapeAndIntensitySplitter( masks.get( t ), intensities.get( t ), settings );
 		splitter.run();
-		labelings.add( Utils.asImgLabeling( splitter.getSplitMask(), ConnectedComponents.StructuringElement.FOUR_CONNECTED ).getIndexImg() );
+		labelings.add( Utils.asImgLabeling(
+				splitter.getSplitMask(),
+				ConnectedComponents.StructuringElement.FOUR_CONNECTED ).getIndexImg() );
 
 		/**
 		 * Allow user to manually correct
@@ -123,12 +123,22 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 			int currentTimePoint,
 			RandomAccessibleInterval< IntType > previousLabeling )
 	{
-		final ImgLabeling< Integer, IntType > currentImgLabeling = Utils.asImgLabeling( masks.get( currentTimePoint ), ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+		final ImgLabeling< Integer, IntType > currentImgLabeling =
+				Utils.asImgLabeling(
+						masks.get( currentTimePoint ),
+						ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+
 		RandomAccessibleInterval< IntType > currentLabeling = currentImgLabeling.getIndexImg();
 
-		HashMap< Integer, ArrayList< Integer > > overlappingObjectsLabelsMap = getOverlappingObjectLabelsMap( currentTimePoint, previousLabeling, currentImgLabeling, currentLabeling );
+		HashMap< Integer, ArrayList< Integer > > overlappingObjectsLabelsMap =
+				getOverlappingObjectLabelsMap(
+						currentTimePoint,
+						previousLabeling,
+						currentImgLabeling,
+						currentLabeling );
 
-		RandomAccessibleInterval< BitType > splitMask = Utils.copyAsArrayImg( masks.get( currentTimePoint ) );
+		RandomAccessibleInterval< BitType > splitMask =
+				Utils.copyAsArrayImg( masks.get( currentTimePoint ) );
 
 		Algorithms.splitCurrentObjectsBasedOnOverlapWithPreviousObjects(
 				splitMask,
@@ -148,8 +158,12 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 	{
 		showIntensities( t );
 
-		trackingSplitterManualCorrectionUI = new TrackingSplitterManualCorrectionUI(
-				labelings, minimalObjectSizeInPixels, settings.outputLabelingsPath );
+		trackingSplitterManualCorrectionUI =
+				new TrackingSplitterManualCorrectionUI(
+						labelings,
+						minimalObjectSizeInPixels,
+						settings.outputLabelingsPath,
+						settings.calibration );
 
 		while ( ! trackingSplitterManualCorrectionUI.isThisFrameFinished() )
 		{

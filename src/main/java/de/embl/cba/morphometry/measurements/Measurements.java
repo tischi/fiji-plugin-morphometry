@@ -4,6 +4,8 @@ import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.skeleton.SkeletonAnalyzer;
 import de.embl.cba.tables.TableUtils;
+import ij.ImagePlus;
+import ij.measure.Calibration;
 import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
@@ -51,6 +53,8 @@ public class Measurements
 	public static final String SEP = "_";
 	public static final String FRAME_UNITS = "Frames";
 	public static final String TIME = "Time";
+	public static final String VOXEL_SPACING = "VoxelSpacing";
+	public static final String FRAME_INTERVAL = "FrameInterval";
 
 	public static String getVolumeName( int numDimensions )
 	{
@@ -71,7 +75,10 @@ public class Measurements
 	}
 
 
-	public static void measurePositions( HashMap< Integer, Map< String, Object > > objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling, double[] calibration )
+	public static void measurePositions(
+			HashMap< Integer, Map< String, Object > > objectMeasurements,
+			ImgLabeling<Integer, IntType> imgLabeling,
+			double[] calibration )
 	{
 		String[] XYZ = new String[]{"X","Y","Z"};
 
@@ -94,7 +101,12 @@ public class Measurements
 			for ( int d = 0; d < position.length; ++d )
 			{
 				if ( calibration != null ) position[ d ] *= calibration[ d ];
-				addMeasurement( objectMeasurements, label, COORDINATE + SEP + XYZ[ d ] + SEP + unit, position[ d ] );
+
+				addMeasurement(
+						objectMeasurements,
+						label,
+						COORDINATE + SEP + XYZ[ d ] + SEP + unit,
+						position[ d ] );
 			}
 		}
 	}
@@ -140,17 +152,13 @@ public class Measurements
 
 		for ( LabelRegion labelRegion : labelRegions )
 		{
-			final RandomAccessibleInterval< BitType > regionSkeleton = Regions.getMaskedAndCropped( skeleton, labelRegion );
+			final RandomAccessibleInterval< BitType > regionSkeleton =
+					Regions.getMaskedAndCropped( skeleton, labelRegion );
 
-			final SkeletonAnalyzer skeletonAnalyzer = new SkeletonAnalyzer( regionSkeleton, opService );
+			final SkeletonAnalyzer skeletonAnalyzer =
+					new SkeletonAnalyzer( regionSkeleton, opService );
 
 			final int label = ( int ) ( labelRegion.getLabel() );
-
-			if ( label == 5 )
-			{
-//				ImageJFunctions.show( regionSkeleton, "skel" );
-//				ImageJFunctions.show( skeletonAnalyzer.getBranchpoints(), "branch" );
-			}
 
 			addMeasurement( objectMeasurements,
 					label,
@@ -166,7 +174,9 @@ public class Measurements
 	}
 
 
-	public static void addMeasurement( HashMap< Integer, Map< String, Object > > objectMeasurements, int objectLabel, String name, Object value )
+	public static void addMeasurement(
+			HashMap< Integer, Map< String, Object > > objectMeasurements,
+			int objectLabel, String name, Object value )
 	{
 		if ( ! objectMeasurements.keySet().contains( objectLabel ) )
 		{
@@ -483,6 +493,55 @@ public class Measurements
 		{
 			long numBoundaryPixels = measureNumBoundaryPixels( labelRegion, imgBoundaryMin, imgBoundaryMax );
 			addMeasurement( objectMeasurements, (int) labelRegion.getLabel(), NUM_BOUNDARY_PIXELS, numBoundaryPixels );
+		}
+	}
+
+	public static void addCalibration(
+			ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimepointList,
+			ImagePlus imagePlus )
+	{
+		final Calibration calibration = imagePlus.getCalibration();
+		final double pixelWidth = calibration.pixelWidth;
+		final double pixelHeight = calibration.pixelHeight;
+		final double pixelDepth = calibration.pixelDepth;
+		final String unit = calibration.getUnit();
+		final double frameInterval = calibration.frameInterval;
+		final String timeUnit = calibration.getTimeUnit();
+
+		for ( int t = 0; t < measurementsTimepointList.size(); ++t )
+		{
+			final HashMap< Integer, Map< String, Object > > measurements =
+					measurementsTimepointList.get( t );
+
+			final Set< Integer > labels = measurements.keySet();
+
+			for( int label : labels )
+			{
+				measurements.get( label ).put(
+						VOXEL_SPACING + SEP + "X",
+						pixelWidth );
+
+				measurements.get( label ).put(
+						VOXEL_SPACING + SEP + "Y",
+						pixelHeight );
+
+				measurements.get( label ).put(
+						VOXEL_SPACING + SEP + "Z",
+						pixelDepth );
+
+				measurements.get( label ).put(
+						VOXEL_SPACING + SEP + "Unit",
+						unit );
+
+				measurements.get( label ).put(
+						FRAME_INTERVAL,
+						frameInterval );
+
+				measurements.get( label ).put(
+						FRAME_INTERVAL + SEP + "Unit",
+						timeUnit );
+			}
+
 		}
 	}
 }

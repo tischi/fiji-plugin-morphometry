@@ -2,6 +2,7 @@ package de.embl.cba.morphometry;
 
 import ij.ImagePlus;
 import ij.io.FileSaver;
+import ij.measure.Calibration;
 import loci.formats.FormatException;
 import loci.plugins.in.ImagePlusReader;
 import loci.plugins.in.ImportProcess;
@@ -57,9 +58,11 @@ public class ImageIO
 	public static < T extends RealType< T > & NativeType< T > >
 	void saveLabels(
 			ArrayList< RandomAccessibleInterval< T > > labelings,
+			Calibration calibration,
 			String outputLabelingsPath )
 	{
 		final ImagePlus labelsImp = Utils.labelingsAsImagePlus( labelings );
+		labelsImp.setCalibration( calibration );
 
 		new FileSaver( labelsImp ).saveAsTiff( outputLabelingsPath );
 

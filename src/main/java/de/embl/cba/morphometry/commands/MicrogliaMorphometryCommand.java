@@ -5,7 +5,6 @@ import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.microglia.MicrogliaMorphometry;
-import de.embl.cba.tables.FileUtils;
 import ij.ImagePlus;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
@@ -17,14 +16,14 @@ import org.scijava.plugin.Plugin;
 
 import javax.swing.*;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static de.embl.cba.tables.TableUtils.addRelativeImagePathColumn;
 import static de.embl.cba.tables.TableUtils.saveTable;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Morphometry>Microglia Morphometry" )
-public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T > > implements Command
+public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType< T > >
+		implements Command
 {
 	public static final String DELIM = "\t";
 
@@ -45,6 +44,7 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 	@Parameter
 	public boolean showIntermediateResults = false;
+	private ImagePlus imagePlus;
 
 
 	public void run()
@@ -55,13 +55,15 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 		intensityFile = new File( labelMaskFile.toString().replace( "-labelMasks",  "" ) );
 
-		final ImagePlus imagePlus = ImageIO.openWithBioFormats( labelMaskFile.toString() );
+		imagePlus = ImageIO.openWithBioFormats( labelMaskFile.toString() );
 
 		final String dataSetID = imagePlus.getTitle();
 
-		final ArrayList< RandomAccessibleInterval< T > > labelMasks = Utils.get2DImagePlusMovieAsFrameList( imagePlus, 1 );
+		final ArrayList< RandomAccessibleInterval< T > > labelMasks =
+				Utils.get2DImagePlusMovieAsFrameList( imagePlus, 1 );
 
-		final MicrogliaMorphometry microgliaMorphometry = new MicrogliaMorphometry( labelMasks, opService );
+		final MicrogliaMorphometry microgliaMorphometry = new MicrogliaMorphometry(
+				labelMasks, opService );
 
 		microgliaMorphometry.run();
 
@@ -73,32 +75,24 @@ public class MicrogliaMorphometryCommand<T extends RealType<T> & NativeType< T >
 
 	}
 
-	public void fetchFilesFromFolder()
+	public void saveMeasurements( String dataSetID,
+								  MicrogliaMorphometry< T > microgliaMorphometry )
 	{
-		final List< File > fileList = FileUtils.getFileList( inputDirectory, ".*\\.tif", false );
+		final ArrayList< HashMap< Integer, Map< String, Object > > >
+				measurementsTimepointList = microgliaMorphometry.getMeasurementsTimepointList();
 
-		for ( File file : fileList )
-		{
-			if ( file.toString().contains( "-labelMask" ) )
-			{
-				labelMaskFile = file;
-			}
-			else
-			{
-				intensityFile = file;
-			}
-		}
-	}
+		Measurements.addCalibration( measurementsTimepointList, imagePlus );
 
-	public void saveMeasurements( String dataSetID, MicrogliaMorphometry microgliaMorphometry )
-	{
-		final JTable table = Measurements.asTable( microgliaMorphometry.getMeasurementsTimepointList() );
+		final JTable table = Measurements.asTable( measurementsTimepointList );
 
-		final File tableOutputFile = new File( outputDirectory.toString() + File.separator + dataSetID + ".csv" );
+		final File tableOutputFile = new File(
+				outputDirectory.toString() + File.separator + dataSetID + ".csv" );
 
-		addRelativeImagePathColumn( table, outputDirectory, labelMaskFile, "LabelMasks" );
+		addRelativeImagePathColumn( table,
+				outputDirectory, labelMaskFile, "LabelMasks" );
 
-		addRelativeImagePathColumn( table, outputDirectory, intensityFile, "Intensities" );
+		addRelativeImagePathColumn( table,
+				outputDirectory, intensityFile, "Intensities" );
 
 		Logger.log( "Saving results table: " + tableOutputFile );
 		saveTable( table, tableOutputFile );

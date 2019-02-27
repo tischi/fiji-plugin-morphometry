@@ -41,11 +41,15 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 
 	private void performMeasurements( )
 	{
+
+
 		for ( int t = 0; t < labelMaps.size(); ++t )
 		{
-			final HashMap< Integer, Map< String, Object > > measurements = measurementsTimepointList.get( t );
+			final HashMap< Integer, Map< String, Object > > measurements =
+					measurementsTimepointList.get( t );
 
-			final ImgLabeling< Integer, IntType > imgLabeling = Utils.labelMapAsImgLabelingRobert( labelMaps.get( t ) );
+			final ImgLabeling< Integer, IntType > imgLabeling =
+					Utils.labelMapAsImgLabelingRobert( labelMaps.get( t ) );
 
 			Measurements.measurePositions(
 					measurements,

@@ -1,7 +1,7 @@
 package de.embl.cba.morphometry.segmentation;
 
 import de.embl.cba.morphometry.*;
-import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTrackingSettings;
+import de.embl.cba.morphometry.microglia.MicrogliaSettings;
 import de.embl.cba.morphometry.regions.Regions;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
@@ -15,14 +15,14 @@ import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 public class SimpleSegmenterMicroglia< T extends RealType< T > & NativeType< T > >
 {
 
-	final MicrogliaSegmentationAndTrackingSettings settings;
+	final MicrogliaSettings settings;
 	private RandomAccessibleInterval< BitType > mask;
 	final private RandomAccessibleInterval< T > intensity;
 	final private boolean showIntermediateResults;
 
 	public SimpleSegmenterMicroglia(
 			RandomAccessibleInterval< T > intensity,
-			MicrogliaSegmentationAndTrackingSettings settings )
+			MicrogliaSettings settings )
 	{
 		this.intensity = intensity;
 		this.settings = settings;
@@ -41,7 +41,7 @@ public class SimpleSegmenterMicroglia< T extends RealType< T > & NativeType< T >
 
 		final RandomAccessibleInterval< T > image =
 				createRescaledArrayImg( intensity,
-				getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+				getScalingFactors( settings.calibration2D, settings.workingVoxelSize ) );
 
 		if ( showIntermediateResults ) show( image, "image isotropic voxel size", null, workingCalibration, false );
 

@@ -1,6 +1,5 @@
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTracking;
-import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTrackingSettings;
+import de.embl.cba.morphometry.microglia.MicrogliaSettings;
 import de.embl.cba.morphometry.tracking.SemiAutomatedTrackingSplitter;
 import ij.IJ;
 import ij.ImagePlus;
@@ -30,12 +29,11 @@ public class TestTrackingSplitter
 		final ArrayList< RandomAccessibleInterval< T > > masks = Utils.get2DImagePlusMovieAsFrameList( masksAndIntensities.masks, 1 );
 		final ArrayList< RandomAccessibleInterval< T > > intensities = Utils.get2DImagePlusMovieAsFrameList( masksAndIntensities.intensities, 1);
 
-		final MicrogliaSegmentationAndTrackingSettings settings =
-				MicrogliaSegmentationAndTracking.configureSettings(
-						Utils.getCalibration( masksAndIntensities.intensities ),
-						"",
-						false,
-						ij.op());
+		MicrogliaSettings settings = new MicrogliaSettings();
+		settings = MicrogliaSettings.configureSettings( settings );
+		settings.calibration2D = Utils.getCalibration( masksAndIntensities.intensities );
+		settings.showIntermediateResults = false;
+		settings.opService = ij.op();
 
 		final SemiAutomatedTrackingSplitter splitter = new SemiAutomatedTrackingSplitter( Utils.asMasks( masks ), intensities, settings );
 		splitter.run();

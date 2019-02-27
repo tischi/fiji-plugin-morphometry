@@ -4,13 +4,12 @@ import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTracking;
-import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTrackingSettings;
+import de.embl.cba.morphometry.microglia.MicrogliaSettings;
 import ij.ImagePlus;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.integer.IntType;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
@@ -29,7 +28,7 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 	@Parameter
 	public OpService opService;
 
-	MicrogliaSegmentationAndTrackingSettings settings = new MicrogliaSegmentationAndTrackingSettings();
+	MicrogliaSettings settings = new MicrogliaSettings();
 
 	@Parameter( label = "Input time series (must be 2D and single channel)")
 	public File inputIntensitiesFile;
@@ -54,24 +53,27 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 
 	public void run()
 	{
-		setOutputLabelingsPath();
+		setSettings();
 
 		processFile( inputIntensitiesFile );
 	}
 
-	public void setOutputLabelingsPath()
+	public void setSettings()
 	{
-		outputLabelingsPath = outputDirectory + File.separator + inputIntensitiesFile.getName().split( "\\." )[ 0 ] + "-labelMasks.tif";
+		settings.outputLabelingsPath = outputDirectory + File.separator
+			+ inputIntensitiesFile.getName().split( "\\." )[ 0 ] + "-labelMasks.tif";
+		settings.showIntermediateResults = showIntermediateResults;
+		settings.outputDirectory = outputDirectory;
+		settings.opService = opService;
 	}
 
 	private void processFile( File file )
 	{
 		openIntensitiesAsFrameList( file );
 
-		final ArrayList< RandomAccessibleInterval< T > > labelings
-				= computeLabels( intensities, Utils.get2dCalibration( imagePlus ) );
+		final ArrayList< RandomAccessibleInterval< T > > labelings = computeLabels();
 
-		ImageIO.saveLabels( labelings, outputLabelingsPath );
+		ImageIO.saveLabels( labelings, imagePlus.getCalibration(), outputLabelingsPath );
 	}
 
 	private void openIntensitiesAsFrameList( File file )
@@ -92,6 +94,8 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 			return;
 		}
 
+		settings.calibration = imagePlus.getCalibration();
+
 		intensities = Utils.get2DImagePlusMovieAsFrameList(
 				imagePlus,
 				1,
@@ -99,21 +103,17 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 				Math.min( tMaxOneBased, imagePlus.getNFrames() ) );
 	}
 
-	private ArrayList< RandomAccessibleInterval< T > > computeLabels(
-			ArrayList< RandomAccessibleInterval< T > > intensities,
-			double[] calibration )
+	private ArrayList< RandomAccessibleInterval< T > > computeLabels()
 	{
-		final MicrogliaSegmentationAndTracking microgliaSegmentationAndTracking =
-				new MicrogliaSegmentationAndTracking(
-						intensities,
-						calibration,
-						outputLabelingsPath,
-						showIntermediateResults,
-						opService );
+		final MicrogliaSegmentationAndTracking microgliaST =
+				new MicrogliaSegmentationAndTracking( intensities, settings );
 
-		microgliaSegmentationAndTracking.run();
+		microgliaST.run();
 
-		return (ArrayList< RandomAccessibleInterval< T > > ) microgliaSegmentationAndTracking.getLabelings();
+		final ArrayList< RandomAccessibleInterval< T > > labelings
+				= microgliaST.getLabelings();
+
+		return labelings;
 	}
 
 }
