@@ -17,6 +17,7 @@ import net.imglib2.roi.labeling.LabelRegionCursor;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.view.Views;
@@ -279,11 +280,11 @@ public class Measurements
 		return numBoundaryPixels;
 	}
 
-	public static < T extends RealType< T > & NativeType< T > >
-	long measureSizeInPixels( RandomAccessibleInterval< IntType > labeling,
+	public static < I extends IntegerType< I >  >
+	long measureSizeInPixels( RandomAccessibleInterval< I > labeling,
 							  int label )
 	{
-		final Cursor< IntType > labelCursor = Views.iterable( labeling ).localizingCursor();
+		final Cursor< I > labelCursor = Views.iterable( labeling ).localizingCursor();
 		long size = 0;
 
 		while ( labelCursor.hasNext() )

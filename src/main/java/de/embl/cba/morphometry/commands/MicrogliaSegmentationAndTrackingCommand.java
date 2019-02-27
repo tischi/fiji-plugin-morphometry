@@ -30,11 +30,14 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 
 	MicrogliaSettings settings = new MicrogliaSettings();
 
-	@Parameter( label = "Input time series (must be 2D and single channel)")
-	public File inputIntensitiesFile;
+	@Parameter( label = "Input time series (single channel 2D+t)")
+	public File intensitiesFile;
 
-//	@Parameter( label = "Channel to be segmented and tracked", min = "1")
-//	public long microgliaChannelIndexOneBased = settings.microgliaChannelIndexOneBased;
+	@Parameter( label = "Proceed from existing segmentation")
+	public boolean proceedFromExisting;
+
+	@Parameter( label = "Existing segmentation (2D+t label mask)", required = false )
+	public File segmentationFile;
 
 	@Parameter( label = "Output directory", style = "directory" )
 	public File outputDirectory;
@@ -49,19 +52,17 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 	public boolean showIntermediateResults = settings.showIntermediateResults;
 	private ImagePlus imagePlus;
 	private ArrayList< RandomAccessibleInterval< T > > intensities;
-	private String outputLabelingsPath;
 
 	public void run()
 	{
 		setSettings();
-
-		processFile( inputIntensitiesFile );
+		processFile( intensitiesFile );
 	}
 
 	public void setSettings()
 	{
 		settings.outputLabelingsPath = outputDirectory + File.separator
-			+ inputIntensitiesFile.getName().split( "\\." )[ 0 ] + "-labelMasks.tif";
+			+ intensitiesFile.getName().split( "\\." )[ 0 ] + "-labelMasks.tif";
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.outputDirectory = outputDirectory;
 		settings.opService = opService;
@@ -73,7 +74,10 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 
 		final ArrayList< RandomAccessibleInterval< T > > labelings = computeLabels();
 
-		ImageIO.saveLabels( labelings, imagePlus.getCalibration(), outputLabelingsPath );
+		ImageIO.saveLabels(
+				labelings,
+				imagePlus.getCalibration(),
+				settings.outputLabelingsPath );
 	}
 
 	private void openIntensitiesAsFrameList( File file )
@@ -105,8 +109,24 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 
 	private ArrayList< RandomAccessibleInterval< T > > computeLabels()
 	{
+
 		final MicrogliaSegmentationAndTracking microgliaST =
-				new MicrogliaSegmentationAndTracking( intensities, settings );
+				new MicrogliaSegmentationAndTracking(
+						intensities,
+						settings );
+
+		if ( proceedFromExisting )
+		{
+
+			final ImagePlus labelsImp
+					= ImageIO.openWithBioFormats( segmentationFile.getAbsolutePath() );
+			final ArrayList< RandomAccessibleInterval< T > > labelings
+					= Utils.get2DImagePlusMovieAsFrameList(
+					labelsImp,
+					1 );
+
+			microgliaST.setLabelings( labelings );
+		}
 
 		microgliaST.run();
 

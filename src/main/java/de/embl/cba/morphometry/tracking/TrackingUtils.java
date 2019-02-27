@@ -56,13 +56,14 @@ public class TrackingUtils
 		return maxOverlapLabel;
 	}
 
-	public static HashMap< Integer, Long > computeRegionOverlaps(
-			RandomAccessibleInterval< IntType > previousLabeling,
+	public static < T extends RealType< T > >
+	HashMap< Integer, Long > computeRegionOverlaps(
+			RandomAccessibleInterval< T > previousLabeling,
 			LabelRegion region )
 	{
 		final HashMap< Integer, Long > overlaps = new HashMap<>();
 
-		final RandomAccess< IntType > previousLabelsAccess = previousLabeling.randomAccess();
+		final RandomAccess< T > previousLabelsAccess = previousLabeling.randomAccess();
 		final LabelRegionCursor currentRegionCursor = region.cursor();
 
 		while ( currentRegionCursor.hasNext() )
@@ -70,7 +71,7 @@ public class TrackingUtils
 			currentRegionCursor.fwd();
 			previousLabelsAccess.setPosition( currentRegionCursor );
 
-			final int label = previousLabelsAccess.get().getInteger();
+			final int label = (int) previousLabelsAccess.get().getRealDouble();
 
 			if ( label != 0 )
 			{
@@ -89,11 +90,15 @@ public class TrackingUtils
 	{
 		final HashSet< Integer > newObjectIds = new HashSet<>();
 
-		final LabelRegions< Integer > currentRegions = new LabelRegions( Utils.asImgLabeling( currentMask, ConnectedComponents.StructuringElement.FOUR_CONNECTED ) );
+		final LabelRegions< Integer > currentRegions = new LabelRegions(
+				Utils.asImgLabeling(
+						currentMask,
+						ConnectedComponents.StructuringElement.FOUR_CONNECTED ) );
 
 		final LabelingAndMaxIndex labelingAndMaxIndex = new LabelingAndMaxIndex();
 
-		labelingAndMaxIndex.labeling = ArrayImgs.ints( Intervals.dimensionsAsLongArray( currentMask ) );
+		labelingAndMaxIndex.labeling =
+				ArrayImgs.ints( Intervals.dimensionsAsLongArray( currentMask ) );
 
 		for ( LabelRegion< Integer > region : currentRegions )
 		{

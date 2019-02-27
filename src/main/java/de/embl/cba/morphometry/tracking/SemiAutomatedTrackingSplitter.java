@@ -12,12 +12,14 @@ import ij.ImagePlus;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
+import net.imglib2.ops.parse.token.Int;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegionCursor;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 
@@ -37,79 +39,75 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 	private long minimalObjectSizeInPixels;
 	private static Point intensitiesImpLocation;
 	private TrackingSplitterManualCorrectionUI trackingSplitterManualCorrectionUI;
+	private RandomAccessibleInterval< IntType > previousLabeling;
 
-	public SemiAutomatedTrackingSplitter( ArrayList< RandomAccessibleInterval< BitType > > masks,
-										  ArrayList< RandomAccessibleInterval< T > > intensities,
-										  MicrogliaSettings settings )
+	public SemiAutomatedTrackingSplitter(
+			ArrayList< RandomAccessibleInterval< BitType > > masks,
+			ArrayList< RandomAccessibleInterval< T > > intensities,
+			MicrogliaSettings settings )
 	{
 		this.masks = masks;
 		this.intensities = intensities;
 		this.settings = settings;
 
-		minimalObjectSizeInPixels = ( long ) ( settings.minimalTrackingSplittingObjectArea / Math.pow( settings.workingVoxelSize, masks.get( 0 ).numDimensions() ) );
+		setMinimalObjectSize( settings, masks.get( 0 ).numDimensions() );
 
 		this.labelings = new ArrayList();
-		this.intensitiesImp = Utils.listOf2DImagesAsImagePlusMovie( intensities, Constants.INTENSITIES );
+		this.intensitiesImp =
+				Utils.listOf2DImagesAsImagePlusMovie( intensities, Constants.INTENSITIES );
+	}
+
+	public void setMinimalObjectSize( MicrogliaSettings settings, int numDimensions )
+	{
+		minimalObjectSizeInPixels = ( long ) ( settings.minimalTrackingSplittingObjectArea
+				/ Math.pow( settings.workingVoxelSize, numDimensions ) );
 	}
 
 
 	public void run()
 	{
 
-		int tMin = 0;
+		int tMin = labelings == null ? 0 : labelings.size();
 		int tMax = masks.size() - 1;
-		int t = tMin;
 
-		/**
-		 * Process first time-point
-		 */
-
-		final ShapeAndIntensitySplitter splitter =
-				new ShapeAndIntensitySplitter( masks.get( t ), intensities.get( t ), settings );
-		splitter.run();
-		labelings.add( Utils.asImgLabeling(
-				splitter.getSplitMask(),
-				ConnectedComponents.StructuringElement.FOUR_CONNECTED ).getIndexImg() );
-
-		/**
-		 * Allow user to manually correct
-		 */
-
-		if ( settings.manualSegmentationCorrectionOfFirstFrame )
-		{
-			manuallyCorrectLabelings( t );
-		}
-
-		maxIndex = Utils.getNumObjects( labelings.get( tMin ) );
-
-		boolean showSplittingAttempts = false;
-
-		/**
-		 * Process subsequent time-points
-		 */
-
-		RandomAccessibleInterval< IntType > previousLabeling = labelings.get( tMin );
-
-		for ( t = tMin + 1; t <= tMax; ++t )
+		for ( int t = tMin; t <= tMax; ++t )
 		{
 			Logger.log( "Processing frame " + ( t + 1 ) );
 
-			RandomAccessibleInterval< BitType > mask =
-					splitCurrentMaskBasedOnPreviousLabeling( t, previousLabeling );
+			if ( t == 0 )
+			{
+				final RandomAccessibleInterval splitMask = getSplitMask( t );
 
-			final LabelingAndMaxIndex labelingAndMaxIndex =
-					TrackingUtils.getMaximalOverlapBasedLabeling( previousLabeling, mask, maxIndex );
+				final ImgLabeling imgLabeling = Utils.asImgLabeling(
+						splitMask,
+						ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
-			labelings.add( labelingAndMaxIndex.labeling );
+				labelings.add( imgLabeling.getIndexImg() );
+			}
+			else
+			{
 
-			if ( settings.manualSegmentationCorrectionOfAllFrames )
+				previousLabeling = labelings.get( t - 1  );
+				maxIndex = Algorithms.getMaximumValue( previousLabeling ).intValue();
+
+				RandomAccessibleInterval< BitType > mask =
+						splitCurrentMaskBasedOnPreviousLabeling( t, previousLabeling );
+
+				final LabelingAndMaxIndex labelingAndMaxIndex =
+						TrackingUtils.getMaximalOverlapBasedLabeling(
+								previousLabeling,
+								mask,
+								maxIndex );
+
+				labelings.add( labelingAndMaxIndex.labeling );
+			}
+
+
+			if ( settings.manualSegmentationCorrection )
 			{
 				manuallyCorrectLabelings( t );
 			}
 
-			previousLabeling = labelings.get( t );
-
-			maxIndex = Algorithms.getMaximumValue( labelings.get( t ) ).intValue();
 
 			if( trackingSplitterManualCorrectionUI.isStopped() )
 			{
@@ -117,6 +115,14 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 			}
 
 		}
+	}
+
+	public RandomAccessibleInterval getSplitMask( int t )
+	{
+		final ShapeAndIntensitySplitter splitter =
+				new ShapeAndIntensitySplitter( masks.get( t ), intensities.get( t ), settings );
+		splitter.run();
+		return splitter.getSplitMask();
 	}
 
 	public RandomAccessibleInterval< BitType > splitCurrentMaskBasedOnPreviousLabeling(
@@ -332,13 +338,13 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 		return previousIntensitySum;
 	}
 
-	public HashMap< Integer, Long > computeOverlaps(
-			RandomAccessibleInterval< IntType > previousLabeling,
+	public < I extends IntegerType< I > >  HashMap< Integer, Long > computeOverlaps(
+			RandomAccessibleInterval< I > previousLabeling,
 			LabelRegion region )
 	{
 		final HashMap< Integer, Long > overlaps = new HashMap<>();
 
-		final RandomAccess< IntType > previousLabelsAccess = previousLabeling.randomAccess();
+		final RandomAccess< I > previousLabelsAccess = previousLabeling.randomAccess();
 		final LabelRegionCursor cursor = region.cursor();
 
 		while ( cursor.hasNext() )
@@ -374,5 +380,8 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 		return labelings;
 	}
 
-
+	public void setLabelings( ArrayList< RandomAccessibleInterval< IntType > > labelings )
+	{
+		this.labelings = labelings;
+	}
 }

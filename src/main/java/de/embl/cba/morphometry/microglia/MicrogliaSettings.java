@@ -50,8 +50,7 @@ public class MicrogliaSettings<T extends RealType<T> & NativeType< T > >
 	public double minimalOverlapFraction = 0.05;
 	public double minimalSumIntensityRatio = 0.5;
 	public double maximalSumIntensityRatio = 1.5;
-	public boolean manualSegmentationCorrectionOfFirstFrame = true;
-	public boolean manualSegmentationCorrectionOfAllFrames = true;
+	public boolean manualSegmentationCorrection = true;
 
 	public String outputLabelingsPath;
 

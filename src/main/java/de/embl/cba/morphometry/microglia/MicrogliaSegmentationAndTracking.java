@@ -6,17 +6,19 @@ import de.embl.cba.morphometry.tracking.SemiAutomatedTrackingSplitter;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.IntType;
 
 import java.util.ArrayList;
 
 public class MicrogliaSegmentationAndTracking< T extends RealType< T > & NativeType< T > >
 {
 	private final MicrogliaSettings settings;
-	private final ArrayList< RandomAccessibleInterval< T  > > intensities;
+	private final ArrayList< RandomAccessibleInterval< T > > intensities;
 	private ArrayList< RandomAccessibleInterval< T > > labelings;
 
-	public MicrogliaSegmentationAndTracking( ArrayList< RandomAccessibleInterval< T  > > intensities,
-											 MicrogliaSettings settings )
+	public MicrogliaSegmentationAndTracking(
+			ArrayList< RandomAccessibleInterval< T  > > intensities,
+			MicrogliaSettings settings )
 	{
 		this.intensities = intensities;
 		this.settings = MicrogliaSettings.configureSettings( settings );
@@ -25,7 +27,6 @@ public class MicrogliaSegmentationAndTracking< T extends RealType< T > & NativeT
 	public void run()
 	{
 		ArrayList< RandomAccessibleInterval< T > > masks = createBinaryMasks( intensities );
-
 		labelings = splitTouchingObjectsAndTrack( intensities, masks );
 	}
 
@@ -44,11 +45,20 @@ public class MicrogliaSegmentationAndTracking< T extends RealType< T > & NativeT
 		return masks;
 	}
 
-	private ArrayList< RandomAccessibleInterval< T > > splitTouchingObjectsAndTrack( ArrayList< RandomAccessibleInterval< T > > intensities, ArrayList< RandomAccessibleInterval< T > > masks )
+	private ArrayList< RandomAccessibleInterval< T > > splitTouchingObjectsAndTrack(
+			ArrayList< RandomAccessibleInterval< T > > intensities,
+			ArrayList< RandomAccessibleInterval< T > > masks )
 	{
 		final SemiAutomatedTrackingSplitter splitter =
 				new SemiAutomatedTrackingSplitter( masks, intensities, settings );
+
+		if ( labelings != null )
+		{
+			splitter.setLabelings( labelings );
+		}
+
 		splitter.run();
+
 		return splitter.getLabelings();
 	}
 
@@ -57,5 +67,8 @@ public class MicrogliaSegmentationAndTracking< T extends RealType< T > & NativeT
 		return labelings;
 	}
 
-
+	public void setLabelings( ArrayList< RandomAccessibleInterval < T > > labelings )
+	{
+		this.labelings = labelings;
+	}
 }

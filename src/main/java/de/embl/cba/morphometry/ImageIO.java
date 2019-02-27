@@ -45,16 +45,6 @@ public class ImageIO
 
 	}
 
-	public static void saveImages( String inputPath, ArrayList< ImagePlus > imps )
-	{
-		for ( ImagePlus imp : imps )
-		{
-			final String outputPath = inputPath + "-" + imp.getTitle() + ".tif";
-			FileSaver fileSaver = new FileSaver( imp );
-			fileSaver.saveAsTiff( outputPath );
-		}
-	}
-
 	public static < T extends RealType< T > & NativeType< T > >
 	void saveLabels(
 			ArrayList< RandomAccessibleInterval< T > > labelings,

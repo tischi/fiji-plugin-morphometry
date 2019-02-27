@@ -25,6 +25,7 @@ import net.imglib2.loops.LoopBuilder;
 import net.imglib2.roi.labeling.*;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
@@ -823,17 +824,18 @@ public class Algorithms
 		return sortedLocalMaxima;
 	}
 
-	public static < T extends RealType< T > & NativeType< T > >
+	public static < I extends IntegerType< I > >
 	RandomAccessibleInterval< IntType > createOverlapLabeling(
 			RandomAccessibleInterval< BitType > currentObjectMask,
-			RandomAccessibleInterval< IntType > previousLabeling,
+			RandomAccessibleInterval< I > previousLabeling,
 			ArrayList< Integer > previousLabels )
 	{
-		RandomAccessibleInterval< IntType > overlapLabeling = ArrayImgs.ints( Intervals.dimensionsAsLongArray( currentObjectMask ) );
+		RandomAccessibleInterval< IntType > overlapLabeling =
+				ArrayImgs.ints( Intervals.dimensionsAsLongArray( currentObjectMask ) );
 		overlapLabeling = Transforms.getWithAdjustedOrigin( currentObjectMask, overlapLabeling );
 
 		final RandomAccess< IntType > overlapLabelingAccess = overlapLabeling.randomAccess();
-		final RandomAccess< IntType > previousLabelingAccess = previousLabeling.randomAccess();
+		final RandomAccess< I > previousLabelingAccess = previousLabeling.randomAccess();
 		final Cursor< BitType > maskCursor = Views.iterable( currentObjectMask ).cursor();
 
 //		overlapLabelingAccess.setPosition( new int[]{28,3} );
