@@ -869,11 +869,13 @@ public class Algorithms
 	}
 
 	private static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< BitType > positionsAsBinaryImage( int numPositions,
-														  RandomAccessibleInterval< T > maskedAndCropped,
-														  ArrayList< PositionAndValue > positions )
+	RandomAccessibleInterval< BitType > positionsAsBinaryImage(
+			int numPositions,
+			RandomAccessibleInterval< T > maskedAndCropped,
+			ArrayList< PositionAndValue > positions )
 	{
-		RandomAccessibleInterval< BitType > binaryImage = ArrayImgs.bits( Intervals.dimensionsAsLongArray(  maskedAndCropped ) );
+		RandomAccessibleInterval< BitType > binaryImage =
+				ArrayImgs.bits( Intervals.dimensionsAsLongArray(  maskedAndCropped ) );
 		binaryImage = Transforms.getWithAdjustedOrigin( maskedAndCropped, binaryImage );
 
 		final RandomAccess< BitType > randomAccess = binaryImage.randomAccess();

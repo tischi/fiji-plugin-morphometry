@@ -318,7 +318,7 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 				- DrosophilaRegistrationSettings.drosophilaWidth / 2.0;
 
 		Logger.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
-		Logger.log( "Approximate axial embryo center coordinate [um]: " + axialEmbryoCenter );
+		Logger.log( "Approximate axial embryo center coordinate [um]: " + axialEmbryoCenter.coordinate );
 
 		/**
 		 *  Refractive index corrections

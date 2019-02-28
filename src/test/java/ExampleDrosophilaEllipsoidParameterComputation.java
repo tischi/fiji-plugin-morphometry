@@ -26,7 +26,8 @@ public class ExampleDrosophilaEllipsoidParameterComputation
 		final OpService opService = ij.op();
 
 		final String inputPath =
-				ExampleDrosophilaEllipsoidParameterComputation.class.getResource(  "drosophila/test01_TR1_1_W0001_P0002_T0001.zip" ).getFile().toString();
+				ExampleDrosophilaEllipsoidParameterComputation.class.getResource(
+						"drosophila/test01_TR1_1_W0001_P0002_T0001.zip" ).getFile().toString();
 
 		final ImagePlus imagePlus = openWithBioFormats( inputPath );
 

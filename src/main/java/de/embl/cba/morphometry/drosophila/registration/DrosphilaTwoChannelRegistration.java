@@ -286,9 +286,14 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 		 *  Compute approximate axial embryo center and coverslip coordinate
 		 */
 
-		final CoordinatesAndValues averageSvbIntensitiesAlongZ = Utils.computeAverageIntensitiesAlongAxis( isotropicCh1, 2, settings.registrationResolution );
+		final CoordinatesAndValues averageSvbIntensitiesAlongZ =
+				Utils.computeAverageIntensitiesAlongAxis( isotropicCh1, 2, settings.registrationResolution );
 
-		if ( settings.showIntermediateResults ) Plots.plot( averageSvbIntensitiesAlongZ.coordinates, averageSvbIntensitiesAlongZ.values, "z [um]", "average intensities" );
+		if ( settings.showIntermediateResults )
+			Plots.plot(
+					averageSvbIntensitiesAlongZ.coordinates,
+					averageSvbIntensitiesAlongZ.values,
+					"z [um]", "average intensities" );
 
 		final double embryoCenterPosition =
 				CurveAnalysis.maximum( averageSvbIntensitiesAlongZ ).coordinate;
