@@ -218,7 +218,9 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 
 		// embryoMask = Algorithms.open( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
 
-		if ( settings.showIntermediateResults ) show( embryoMask, "embryo mask - processed", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults )
+			show( embryoMask, "embryo mask - processed",
+					null, registrationCalibration, false );
 
 		return true;
 	}
@@ -231,15 +233,11 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 		 *  - TODO: find some more scientific method to determine threshold...
 		 */
 
-		final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( intensityCorrectedChannel1 ) );
-		final double huang = opService.threshold().huang( histogram ).getRealDouble();
-//		final double otsu = opService.threshold().otsu( histogram ).getRealDouble();
-//		final double yen = opService.threshold().yen( histogram ).getRealDouble();
+		final double huang = Algorithms.huangThreshold( intensityCorrectedChannel1 );
 
 		double thresholdAfterIntensityCorrection = huang;
 
 		Logger.log( "Threshold (after intensity correction): " + thresholdAfterIntensityCorrection );
-
 
 		/**
 		 * Create mask
@@ -247,7 +245,9 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 
 		mask = Algorithms.createMask( intensityCorrectedChannel1, thresholdAfterIntensityCorrection );
 
-		if ( settings.showIntermediateResults ) show( mask, "binary mask", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults )
+			show( mask, "binary mask", null,
+					registrationCalibration, false );
 
 
 		/**
@@ -275,7 +275,8 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 
 		Logger.log( "Offset and threshold..." );
 
-		final IntensityHistogram downscaledSvbIntensityHistogram = new IntensityHistogram( isotropicCh1, 65535.0, 5.0 );
+		final IntensityHistogram downscaledSvbIntensityHistogram =
+				new IntensityHistogram( isotropicCh1, 65535.0, 5.0 );
 
 		CoordinateAndValue intensityHistogramMode = downscaledSvbIntensityHistogram.getMode();
 
@@ -287,7 +288,8 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 		 */
 
 		final CoordinatesAndValues averageSvbIntensitiesAlongZ =
-				Utils.computeAverageIntensitiesAlongAxis( isotropicCh1, 2, settings.registrationResolution );
+				Utils.computeAverageIntensitiesAlongAxis(
+						isotropicCh1, 2, settings.registrationResolution );
 
 		if ( settings.showIntermediateResults )
 			Plots.plot(
@@ -337,12 +339,20 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 
 		Logger.log( "Down-sampling to registration resolution..." );
 
-		isotropicCh1 = createRescaledArrayImg( ch1, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
-		isotropicCh2 = createRescaledArrayImg( ch2, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+		isotropicCh1 = createRescaledArrayImg(
+				ch1,
+				getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+
+		isotropicCh2 = createRescaledArrayImg(
+				ch2,
+				getScalingFactors( correctedCalibration, settings.registrationResolution ) );
 
 		registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 
-		if ( settings.showIntermediateResults ) show( isotropicCh1, "isotropic sampled at registration resolution", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults )
+			show( isotropicCh1,
+					"isotropic sampled at registration resolution",
+					null, registrationCalibration, false );
 	}
 
 	public < T extends RealType< T > & NativeType< T > > void refractiveIndexScalingCorrection( RandomAccessibleInterval< T > svb, double[] inputCalibration )

@@ -102,8 +102,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final RandomAccessibleInterval< BitType > segmentedDna = segmentDna( dna, dnaThreshold );
 
-		// TODO: also add Elliposid vector lengths to measurements
-
 		final EllipsoidVectors ellipsoidVectors = determineDnaAxes( segmentedDna );
 
 		computeDnaAlignmentTransformAndAlignImages(
@@ -113,7 +111,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final ProfileAndRadius dnaLateralProfileAndRadius = measureDnaLateralExtend( dnaAlignedDna );
 
-		// TODO: right now we use the lateral threshold, but we could also use the axially determined one...
 		dnaVolumeMask = measureDnaVolume( dna, dnaLateralProfileAndRadius );
 
 		measureDnaHole( dnaLateralProfileAndRadius );

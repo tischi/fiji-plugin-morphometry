@@ -219,7 +219,8 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 				Intervals.dimensionsAsLongArray( labeling ) );
 
 		if ( settings.showIntermediateResults )
-			show( Utils.copyAsArrayImg( embryoMask ), "embryo mask", null, registrationCalibration, false );
+			show( Utils.copyAsArrayImg( embryoMask ),
+					"embryo mask", null, registrationCalibration, false );
 
 		/**
 		 * Process main embryo mask
@@ -248,19 +249,10 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 	{
 		/**
 		 *  Compute threshold
-		 *  - TODO: How does Huang work?
-		 *  - TODO: find some more scientific method to determine threshold...
 		 */
 
-		final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( intensityCorrected ) );
-		final double huang = opService.threshold().huang( histogram ).getRealDouble();
-//		final double otsu = opService.threshold().otsu( histogram ).getRealDouble();
-//		final double yen = opService.threshold().yen( histogram ).getRealDouble();
-
-		double thresholdAfterIntensityCorrection = huang;
-
+		double thresholdAfterIntensityCorrection = Algorithms.huangThreshold( intensityCorrected );;
 		Logger.log( "Threshold (after intensity correction): " + thresholdAfterIntensityCorrection );
-
 
 		/**
 		 * Create mask
@@ -268,23 +260,31 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 
 		mask = Algorithms.createMask( intensityCorrected, thresholdAfterIntensityCorrection );
 
-		if ( settings.showIntermediateResults ) show( mask, "binary mask", null, registrationCalibration, false );
-
-
 		/**
 		 * Process mask
 		 * - remove small objects
 		 * - close holes
 		 */
 
-		Regions.removeSmallRegionsInMask( mask, settings.minimalObjectSize, settings.registrationResolution );
+		Regions.removeSmallRegionsInMask( mask, settings.minimalObjectSize,
+				settings.registrationResolution );
 
 		for ( int d = 0; d < 3; ++d )
 		{
 			mask = Algorithms.fillHoles3Din2D( mask, d, opService );
 		}
 
-		if ( settings.showIntermediateResults ) show( mask, "small objects removed and holes closed", null, registrationCalibration, false );
+		/**
+		 * Show intermediate results
+		 */
+
+		if ( settings.showIntermediateResults )
+			show( mask, "binary mask", null,
+					registrationCalibration, false );
+
+		if ( settings.showIntermediateResults )
+			show( mask, "small objects removed and holes closed", null,
+					registrationCalibration, false );
 
 	}
 

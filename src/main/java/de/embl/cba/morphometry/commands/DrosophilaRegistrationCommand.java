@@ -197,7 +197,8 @@ public class DrosophilaRegistrationCommand < T extends RealType< T > & NativeTyp
 	{
 		// 3D image stack
 		//
-		final RandomAccessibleInterval< T > registeredWithImagePlusDimensionOrder = Utils.copyAsArrayImg( Views.permute( registeredImages, 2, 3 ) );
+		final RandomAccessibleInterval< T > registeredWithImagePlusDimensionOrder =
+				Utils.copyAsArrayImg( Views.permute( registeredImages, 2, 3 ) );
 		final ImagePlus registered = ImageJFunctions.wrap( registeredWithImagePlusDimensionOrder, "transformed" );
 		registered.getCalibration().setUnit( "micrometer" );
 		registered.getCalibration().pixelWidth = settings.outputResolution;

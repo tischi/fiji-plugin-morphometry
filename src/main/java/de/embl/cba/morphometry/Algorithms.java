@@ -7,6 +7,7 @@ import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.ops.OpService;
+import net.imagej.ops.threshold.huang.ComputeHuangThreshold;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
@@ -18,6 +19,8 @@ import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
+import net.imglib2.histogram.Histogram1d;
+import net.imglib2.histogram.Real1dBinMapper;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.display.imagej.ImageJFunctions;
@@ -32,6 +35,8 @@ import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
+import net.imglib2.util.Pair;
+import net.imglib2.util.ValuePair;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
@@ -77,7 +82,7 @@ public class Algorithms
 		return point;
 	}
 
-	public static < T extends RealType< T > & NativeType< T > >
+	public static < T extends RealType< T > >
 	Double getMaximumValue( RandomAccessibleInterval< T > rai )
 	{
 		Cursor< T > cursor = Views.iterable( rai ).localizingCursor();
@@ -95,6 +100,26 @@ public class Algorithms
 
 		return maxValue;
 	}
+
+	public static < T extends RealType< T > >
+	Pair< Double, Double > getMinMaxValues( RandomAccessibleInterval< T > rai )
+	{
+		Cursor< T > cursor = Views.iterable( rai ).localizingCursor();
+
+		double maxValue = - Double.MAX_VALUE;
+		double minValue = Double.MAX_VALUE;
+
+		while ( cursor.hasNext() )
+		{
+			final double value = cursor.next().getRealDouble();
+
+			if ( value > maxValue ) maxValue = value;
+			if ( value < minValue ) minValue = value;
+		}
+
+		return new ValuePair<>( minValue, maxValue );
+	}
+
 
 	public static < T extends RealType< T > & NativeType< T > >
 	boolean isCenterLargest( T center, Neighborhood< T > neighborhood )
@@ -1167,5 +1192,41 @@ public class Algorithms
 		}
 
 		return radialProfileOld;
+	}
+
+	public static < T extends RealType< T > > Histogram1d< T >
+	histogram( RandomAccessibleInterval< T > rai, int numBins )
+	{
+		final Pair< Double, Double > minMaxValues = getMinMaxValues( rai );
+
+		final Real1dBinMapper< T > tReal1dBinMapper =
+				new Real1dBinMapper<>( minMaxValues.getA(),
+						minMaxValues.getB(),
+						numBins,
+						false );
+
+		final Histogram1d<T> histogram1d = new Histogram1d<>( tReal1dBinMapper );
+
+		histogram1d.countData( Views.iterable(  rai ) );
+
+		return histogram1d;
+	}
+
+	public static < T extends RealType< T > >
+	double huangThreshold( RandomAccessibleInterval< T > rai )
+	{
+		final Histogram1d< T > histogram =
+				histogram( rai, 256 );
+
+		final T type = Views.iterable( rai ).firstElement().createVariable();
+		final ComputeHuangThreshold< T > huangThreshold = new ComputeHuangThreshold<>();
+		final long bin = huangThreshold.computeBin( histogram );
+		histogram.getCenterValue( bin, type );
+
+//		final double huang = opService.threshold().huang( histogram ).getRealDouble();
+//		final double otsu = opService.threshold().otsu( histogram ).getRealDouble();
+//		final double yen = opService.threshold().yen( histogram ).getRealDouble();
+
+		return type.getRealDouble();
 	}
 }
