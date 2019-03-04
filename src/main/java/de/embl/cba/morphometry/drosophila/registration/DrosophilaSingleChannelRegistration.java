@@ -55,7 +55,7 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 	private RandomAccessibleInterval< T > intensityCorrected;
 	private RandomAccessibleInterval< BitType > mask;
 	private RandomAccessibleInterval< BitType > yawAlignedMask;
-	private RandomAccessibleInterval yawAlignedIntensities;
+	private RandomAccessibleInterval yawAlignedIntensity;
 	private CoordinateAndValue axialEmbryoCenter;
 	private EllipsoidMLJ ellipsoidParameters;
 
@@ -106,9 +106,18 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		registration.preConcatenate(
 				EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters ) );
 
-		yawAlignedMask = Utils.copyAsArrayImg( Transforms.createTransformedView( embryoMask, registration, new NearestNeighborInterpolatorFactory() ) );
+		final RandomAccessibleInterval transformedView =
+				Transforms.createTransformedView(
+						embryoMask, registration, new NearestNeighborInterpolatorFactory() );
 
-		yawAlignedIntensities = Utils.copyAsArrayImg( Transforms.createTransformedView( isotropic, registration ) );
+		yawAlignedMask = Utils.copyAsArrayImg( transformedView );
+
+		yawAlignedIntensity = Utils.copyAsArrayImg(
+				Transforms.createTransformedView( isotropic, registration ) );
+
+		if ( settings.showIntermediateResults )
+			show( yawAlignedIntensity, "yaw aligned intensities",
+					Transforms.origin(), registrationCalibration, false );
 	}
 
 	private void computeEllipsoidParameters()
@@ -125,35 +134,42 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 
 	private void rollTransform()
 	{
-		/**
-		 *  Roll transform
-		 */
 
-		final AffineTransform3D rollTransform = computeIntensityBasedRollTransform( yawAndOrientationAlignedIntensity );
+		final AffineTransform3D rollTransform =
+				computeIntensityBasedRollTransform( yawAndOrientationAlignedIntensity );
 
-		rollTransform.rotate( X, Math.PI ); // this changes whether the found structure should be at the top or bottom
+		// changes whether the found structure should be at the top or bottom
+		rollTransform.rotate( X, Math.PI );
 
 		registration = registration.preConcatenate( rollTransform  );
 
 		if ( settings.showIntermediateResults )
-			show( Transforms.createTransformedView( intensityCorrected, registration ), "aligned at registration resolution", Transforms.origin(), registrationCalibration, false );
+			show( Transforms.createTransformedView( intensityCorrected, registration ),
+					"aligned at registration resolution",
+					Transforms.origin(), registrationCalibration, false );
 	}
 
 	private void orientLongAxis()
 	{
-		/**
-		 *  Long axis orientation
-		 */
-
 		Logger.log( "Computing long axis orientation..." );
 
-		final AffineTransform3D orientationTransform = computeFlippingTransform( yawAlignedMask, yawAlignedIntensities, settings.registrationResolution );
+		final AffineTransform3D flippingTransform =
+				computeFlippingTransform(
+						yawAlignedMask,
+						yawAlignedIntensity,
+						settings.registrationResolution );
 
-		registration = registration.preConcatenate( orientationTransform );
+		registration = registration.preConcatenate( flippingTransform );
 
-		yawAndOrientationAlignedIntensity = Utils.copyAsArrayImg( Transforms.createTransformedView( yawAlignedIntensities, registration, new NearestNeighborInterpolatorFactory() ) );
+		yawAndOrientationAlignedIntensity = Utils.copyAsArrayImg(
+				Transforms.createTransformedView(
+						yawAlignedIntensity,
+						flippingTransform,
+						new NearestNeighborInterpolatorFactory() ) );
 
-		if ( settings.showIntermediateResults ) show( yawAndOrientationAlignedIntensity, "long axis aligned and oriented", Transforms.origin(), registrationCalibration, false );
+		if ( settings.showIntermediateResults )
+			show( yawAndOrientationAlignedIntensity, "long axis aligned and oriented",
+					Transforms.origin(), registrationCalibration, false );
 
 
 	}
@@ -515,7 +531,10 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		return seedsLabelImg;
 	}
 
-	private AffineTransform3D computeFlippingTransform( RandomAccessibleInterval yawAlignedMask, RandomAccessibleInterval yawAlignedIntensities, double calibration )
+	private AffineTransform3D computeFlippingTransform(
+			RandomAccessibleInterval yawAlignedMask,
+			RandomAccessibleInterval yawAlignedIntensities,
+			double calibration )
 	{
 		final CoordinatesAndValues coordinatesAndValues =
 				Utils.computeAverageIntensitiesAlongAxisWithinMask(
@@ -546,14 +565,17 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 			double blurSigma,
 			double[] registrationCalibration )
 	{
-		final RandomAccessibleInterval< T > longAxisProjection = Utils.createAverageProjectionAlongAxis(
-				rai,
-				X,
-				xMin,
-				xMax,
-				settings.registrationResolution );
+		final RandomAccessibleInterval< T > longAxisProjection =
+				Utils.createAverageProjectionAlongAxis(
+					rai,
+					X,
+					xMin,
+					xMax,
+					settings.registrationResolution );
 
-		if ( settings.showIntermediateResults ) show( longAxisProjection, "channel2 projection", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults )
+			show( longAxisProjection, "long axis projection", null,
+					registrationCalibration, false );
 
 		final RandomAccessibleInterval< T > blurred = Utils.createBlurredRai(
 				longAxisProjection,

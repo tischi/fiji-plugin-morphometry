@@ -194,8 +194,8 @@ public abstract class CurveAnalysis
 		}
 
 		final CoordinateAndValue coordinateAndValue = new CoordinateAndValue();
-		coordinateAndValue.coordinate = maxLoc;
 		coordinateAndValue.value = max;
+		coordinateAndValue.coordinate = maxLoc;
 
 		return coordinateAndValue;
 	}

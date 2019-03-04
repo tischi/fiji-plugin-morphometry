@@ -641,7 +641,8 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	ArrayList< RandomAccessibleInterval< BitType > > labelMapsAsMasks( ArrayList< RandomAccessibleInterval< T > > labelMaps )
+	ArrayList< RandomAccessibleInterval< BitType > >
+	labelMapsAsMasks( ArrayList< RandomAccessibleInterval< T > > labelMaps )
 	{
 		final ArrayList< RandomAccessibleInterval< BitType > > masks = new ArrayList<>();
 
