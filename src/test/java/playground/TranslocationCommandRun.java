@@ -1,3 +1,5 @@
+package playground;
+
 import de.embl.cba.morphometry.commands.TranslocationCommand;
 import ij.IJ;
 import ij.plugin.frame.RoiManager;
@@ -11,7 +13,7 @@ public class TranslocationCommandRun
 		ij.ui().showUI();
 
 		IJ.open( TranslocationCommandTest.class.getResource(
-						"translocation/test01.zip" ).getFile() );
+				"translocation/test01.zip" ).getFile() );
 
 		final RoiManager rm = new RoiManager();
 		rm.runCommand( "open", TranslocationCommandTest.class.getResource( "translocation/test01-rois.zip" ).getFile() );

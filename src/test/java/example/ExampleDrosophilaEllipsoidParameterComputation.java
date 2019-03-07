@@ -1,3 +1,5 @@
+package example;
+
 import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
@@ -27,12 +29,11 @@ public class ExampleDrosophilaEllipsoidParameterComputation
 
 		final String inputPath =
 				ExampleDrosophilaEllipsoidParameterComputation.class.getResource(
-						"drosophila/test01_TR1_1_W0001_P0002_T0001.zip" ).getFile().toString();
+						"../drosophila/test01_TR1_1_W0001_P0002_T0001.zip" ).getFile().toString();
 
 		final ImagePlus imagePlus = openWithBioFormats( inputPath );
 
-		final DrosophilaRegistrationSettings settings =
-				new DrosophilaRegistrationSettings();
+		final DrosophilaRegistrationSettings settings = new DrosophilaRegistrationSettings();
 		settings.onlyComputeEllipsoidParameters = true;
 
 		RandomAccessibleInterval< T > images =

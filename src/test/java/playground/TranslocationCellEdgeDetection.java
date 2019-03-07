@@ -1,3 +1,5 @@
+package playground;
+
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
 import ij.IJ;

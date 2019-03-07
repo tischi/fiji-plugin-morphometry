@@ -1,3 +1,5 @@
+package playground;
+
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.tracking.TrackingSplitterManualCorrectionUI;
 import ij.IJ;

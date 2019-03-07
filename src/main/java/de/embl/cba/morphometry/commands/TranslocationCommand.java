@@ -205,25 +205,27 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 		final SelectableARGBConvertedRealSource argbLabelsSource =
 				new SelectableARGBConvertedRealSource( labelsSource );
 
-		final BdvStackSource< R > labelMasksSource = BdvFunctions.show(
-				argbLabelsSource,
-				labelMasks.size(),
-				BdvOptions.options().is2D() );
+		// TODO: needs other fiji-bdv-vistools dependency
+//		final BdvStackSource< R > labelMasksSource = BdvFunctions.show(
+//				argbLabelsSource,
+//				labelMasks.size(),
+//				BdvOptions.options().is2D() );
+//
+//		final BdvHandle bdvHandle = labelMasksSource.getBdvHandle();
+//
+//		new BdvGrayValuesOverlay( bdvHandle, 25);
+//
+//		new BdvSelectionEventHandler( bdvHandle, argbLabelsSource );
+//
+//		final BdvStackSource< R > intensitiesSource = BdvFunctions.show(
+//				Views.stack( intensities ),
+//				"intensities",
+//				BdvOptions.options().addTo( bdvHandle ).is2D() );
+//
+//		intensitiesSource.setDisplayRange( 0, Algorithms.getMaximumValue( intensities.get( 0 ) ) );
 
-		final BdvHandle bdvHandle = labelMasksSource.getBdvHandle();
-
-		new BdvGrayValuesOverlay( bdvHandle, 25);
-
-		new BdvSelectionEventHandler( bdvHandle, argbLabelsSource );
-
-		final BdvStackSource< R > intensitiesSource = BdvFunctions.show(
-				Views.stack( intensities ),
-				"intensities",
-				BdvOptions.options().addTo( bdvHandle ).is2D() );
-
-		intensitiesSource.setDisplayRange( 0, Algorithms.getMaximumValue( intensities.get( 0 ) ) );
-
-		return bdvHandle;
+//		return bdvHandle;
+		return null;
 	}
 
 

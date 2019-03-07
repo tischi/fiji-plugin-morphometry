@@ -1,3 +1,5 @@
+package playground;
+
 import bdv.util.BdvFunctions;
 import bdv.util.BdvOptions;
 import net.imglib2.Cursor;

@@ -1,3 +1,5 @@
+package playground;
+
 public class TestReplace
 {
 	public static void main( String[] args )

@@ -1,3 +1,5 @@
+package command;
+
 import de.embl.cba.morphometry.commands.SpindleMorphometryCommand;
 import net.imagej.ImageJ;
 

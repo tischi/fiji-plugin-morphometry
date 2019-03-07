@@ -1,3 +1,5 @@
+package playground;
+
 import bdv.util.BdvFunctions;
 import bdv.util.BdvOptions;
 import de.embl.cba.morphometry.skeleton.Skeletons;

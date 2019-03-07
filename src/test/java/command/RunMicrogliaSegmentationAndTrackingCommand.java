@@ -1,3 +1,5 @@
+package command;
+
 import de.embl.cba.morphometry.commands.MicrogliaSegmentationAndTrackingCommand;
 import net.imagej.ImageJ;
 

@@ -12,10 +12,17 @@ public class EllipsoidMLJ
 	public String toString()
 	{
 		String s = "";
-		s += "\nMLJ ellipsoid angles (Phi, Theta, Psi):";
-		s += "\nPhi: " + eulerAnglesInDegrees[ PHI ];
-		s += "\nTheta: " + eulerAnglesInDegrees[ THETA ];
-		s += "\nPsi: " + eulerAnglesInDegrees[ PSI ];
+		s += "\n## MorpholibJ ellipsoid parameters:";
+		s += "\ncenter_X [pixels]: " + center[0];
+		s += "\ncenter_Y [pixels]: " + center[1];
+		s += "\ncenter_Z [pixels]: " + center[2];
+		s += "\nradii_0 [pixels]: " + radii[0];
+		s += "\nradii_1 [pixels]: " + radii[1];
+		s += "\nradii_2 [pixels]: " + radii[2];
+		s += "\nphi [degrees]: " + eulerAnglesInDegrees[ PHI ];
+		s += "\ntheta [degrees]: " + eulerAnglesInDegrees[ THETA ];
+		s += "\npsi [degrees]: " + eulerAnglesInDegrees[ PSI ];
+
 		return s;
 	}
 }

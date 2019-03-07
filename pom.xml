@@ -16,7 +16,6 @@
 	<version>0.4.03</version>
 	<url>https://github.com/tischi/fiji-plugin-morphometry</url>
 
-
 	<distributionManagement>
 		<repository>
 			<id>bintray-tischi-snapshots</id>
@@ -91,7 +90,7 @@
 
 
 	<repositories>
-		<!-- NB: for SciJava dependencies -->
+		<!-- for SciJava dependencies -->
 		<repository>
 			<id>imagej.public</id>
 			<url>https://maven.imagej.net/content/groups/public</url>
@@ -103,7 +102,6 @@
 			<name>bintray</name>
 			<url>https://dl.bintray.com/tischi/snapshots</url>
 		</repository>
-
 	</repositories>
 
 	<dependencies>
@@ -148,7 +146,6 @@
 		<dependency>
 			<groupId>sc.fiji</groupId>
 			<artifactId>bigdataviewer-vistools</artifactId>
-			<version>1.0.0-beta-12</version>
 		</dependency>
 
 		<dependency>

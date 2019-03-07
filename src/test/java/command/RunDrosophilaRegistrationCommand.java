@@ -1,3 +1,5 @@
+package command;
+
 import de.embl.cba.morphometry.commands.DrosophilaRegistrationCommand;
 import net.imagej.ImageJ;
 

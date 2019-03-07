@@ -1,3 +1,5 @@
+package playground;
+
 import net.imglib2.util.LinAlgHelpers;
 
 import static java.lang.Math.acos;

@@ -1,3 +1,5 @@
+package playground;
+
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;

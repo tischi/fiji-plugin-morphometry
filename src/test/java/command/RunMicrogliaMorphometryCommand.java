@@ -1,3 +1,5 @@
+package command;
+
 import de.embl.cba.morphometry.commands.MicrogliaMorphometryCommand;
 import net.imagej.ImageJ;
 
