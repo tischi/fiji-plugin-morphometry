@@ -31,15 +31,17 @@ public class ExampleDrosophilaEllipsoidParameterComputation
 //				ExampleDrosophilaEllipsoidParameterComputation.class.getResource(
 //						"../drosophila/test01_TR1_1_W0001_P0002_T0001.zip" ).getFile().toString();
 
-		final String inputPath = "/Volumes/almf/group/ALMFstuff/Aliaksandr/User_data/Crocker-fly-feedback/03082019_march_test/Bad-center-orientation-estimates/crashed/test03_TR1_1_W0001_P0009_T0001.lsm";
+		final String inputPath =
+				"/Users/tischer/Desktop/tim-crash/test03_TR1_1_W0001_P0012_T0001.lsm";
 
 		final ImagePlus imagePlus = openWithBioFormats( inputPath );
 
 		imagePlus.show();
 
-		final DrosophilaRegistrationSettings settings = new DrosophilaRegistrationSettings();
+		final DrosophilaRegistrationSettings settings =
+				new DrosophilaRegistrationSettings();
 		settings.onlyComputeEllipsoidParameters = true;
-		settings.showIntermediateResults = true;
+//		settings.showIntermediateResults = true;
 
 		RandomAccessibleInterval< T > images =
 				ImageIO.getChannelImages( imagePlus );
@@ -54,7 +56,7 @@ public class ExampleDrosophilaEllipsoidParameterComputation
 
 		if ( ! registration.run( image, calibration ) )
 		{
-			Logger.log( "Could not find embryo." );
+			Logger.log( "Error: Could not segment embryo." );
 		}
 		else
 		{

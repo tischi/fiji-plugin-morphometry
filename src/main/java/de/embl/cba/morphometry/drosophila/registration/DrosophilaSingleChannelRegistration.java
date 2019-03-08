@@ -198,6 +198,24 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 
 		createMask();
 
+		final RandomAccessibleInterval< DoubleType > distances = distanceTransform();
+
+		final ImgLabeling< Integer, IntType > labeling = watershed( distances );
+
+		if ( ! extractCentralEmbryoMask( labeling ) ) return false;
+
+		if ( ! settings.onlyComputeEllipsoidParameters )
+			morphologicalSmoothingOfEmbryoMask();
+
+		if ( settings.showIntermediateResults )
+			show( embryoMask, "morphologically processed embryo mask",
+					null, registrationCalibration, false );
+
+		return true;
+	}
+
+	private RandomAccessibleInterval< DoubleType > distanceTransform()
+	{
 		/**
 		 * Distance transform
 		 * - Note: EUCLIDIAN distances are returned as squared distances
@@ -210,34 +228,23 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		if ( settings.showIntermediateResults )
 			show( distances, "squared distances", null,
 					registrationCalibration, false );
+		return distances;
+	}
 
-
-		/**
-		 * Watershed seeds
-		 * - if local maxima are defined as strictly larger (>) one misses them in case two
-		 *   neighboring pixels in the centre of an object have the same distance value
-		 * - if local maxima are >= and the search radius is only 1 pixel (four-connected) one gets false maxima at the corners objects
-		 *   thus, the search radius should be always >= 2 pixels
-		 * - triangle shaped appendices are an issue because they do not have a
-		 *   maximum in the distance map
-		 * - due to the elongated shape of the embryos there might not be a clear maximum => use also a global threshold
-		 */
+	private ImgLabeling< Integer, IntType > watershed(
+			RandomAccessibleInterval< DoubleType > distances )
+	{
 
 		final ImgLabeling< Integer, IntType > seedsLabelImg = createWatershedSeeds( distances );
 
-		/**
-		 * Watershed
-		 */
+		final ImgLabeling< Integer, IntType > imgLabeling =
+				computeWatershed( mask, distances, seedsLabelImg );
 
-		final ImgLabeling< Integer, IntType > labeling = computeWatershed( mask, distances, seedsLabelImg );
+		return imgLabeling;
+	}
 
-		if ( settings.showIntermediateResults )
-			show( watershedLabelImg, "watershed",
-					null, registrationCalibration, false );
-
-		/**
-		 * Get main embryo
-		 */
+	private boolean extractCentralEmbryoMask( ImgLabeling< Integer, IntType > labeling )
+	{
 
 		Logger.log( "Extract central embryo..." );
 
@@ -259,21 +266,15 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 			show( Utils.copyAsArrayImg( embryoMask ),
 					"embryo mask", null, registrationCalibration, false );
 
-		/**
-		 * Process main embryo mask
-		 * - TODO: put the currently hard-coded values into settings
-		 */
+		return true;
+	}
 
+	private void morphologicalSmoothingOfEmbryoMask()
+	{
 		Logger.log( "Smooth by morphological closing (slow)..." );
 		embryoMask = Algorithms.close( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
 
 		// embryoMask = Algorithms.open( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
-
-		if ( settings.showIntermediateResults )
-			show( embryoMask, "morphologically processed embryo mask",
-					null, registrationCalibration, false );
-
-		return true;
 	}
 
 	private double[] getApproximateEmbryoCenter( ImgLabeling< Integer, IntType > labeling )
@@ -424,13 +425,21 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 			show( image, "corrected calibration", null, correctedCalibration, false );
 	}
 
-	private ImgLabeling< Integer, IntType > computeWatershed( RandomAccessibleInterval< BitType > mask, RandomAccessibleInterval< DoubleType > distances, ImgLabeling< Integer, IntType > seedsLabelImg )
+	private ImgLabeling< Integer, IntType > computeWatershed(
+			RandomAccessibleInterval< BitType > mask,
+			RandomAccessibleInterval< DoubleType > distances,
+			ImgLabeling< Integer, IntType > seedsLabelImg )
 	{
+
 		Logger.log( "Watershed..." );
 
-		// prepare result label image
 		watershedLabelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( mask ) );
-		final ImgLabeling< Integer, IntType > watershedLabeling = new ImgLabeling<>( watershedLabelImg );
+		final ImgLabeling< Integer, IntType > watershedLabeling =
+				new ImgLabeling<>( watershedLabelImg );
+
+		if ( settings.showIntermediateResults )
+			show( watershedLabelImg, "watershed",
+					null, registrationCalibration, false );
 
 		opService.image().watershed(
 				watershedLabeling,
@@ -440,6 +449,7 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 				false );
 
 		Utils.applyMask( watershedLabelImg, mask );
+
 		return watershedLabeling;
 	}
 
@@ -497,7 +507,9 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 					)
 				);
 
-		if ( settings.showIntermediateResults ) show( alignedMask, "aligned mask at output resolution", Transforms.origin(), resolution );
+		if ( settings.showIntermediateResults )
+			show( alignedMask, "aligned mask at output resolution",
+					Transforms.origin(), resolution );
 
 		return alignedMask;
 	}
@@ -518,35 +530,33 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		return intensityBasedRollTransform;
 	}
 
-	private < T extends RealType< T > & NativeType< T > >
-	double getThreshold( RandomAccessibleInterval< T > downscaled )
-	{
-
-		double threshold = 0;
-
-		if ( settings.thresholdModality.equals( DrosophilaRegistrationSettings.HUANG_AUTO_THRESHOLD ) )
-		{
-			final Histogram1d< T > histogram = opService.image().histogram( Views.iterable( downscaled ) );
-
-			double huang = opService.threshold().huang( histogram ).getRealDouble();
-			double yen = opService.threshold().yen( histogram ).getRealDouble();
-
-			threshold = huang;
-		}
-		else
-		{
-			threshold= settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
-		}
-		return threshold;
-	}
-
-	private ImgLabeling< Integer, IntType > createWatershedSeeds( RandomAccessibleInterval< DoubleType > distance )
+	private ImgLabeling< Integer, IntType > createWatershedSeeds(
+			RandomAccessibleInterval< DoubleType > distance )
 	{
 		Logger.log( "Seeds for watershed...");
 
-		double globalDistanceThreshold = Math.pow( settings.watershedSeedsGlobalDistanceThreshold / settings.registrationResolution, 2 );
-		double localMaximaDistanceThreshold = Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold / settings.registrationResolution, 2 );
-		int localMaximaSearchRadius = (int) ( settings.watershedSeedsLocalMaximaSearchRadius / settings.registrationResolution );
+		/**
+		 * Watershed seeds
+		 * - if local maxima are defined as strictly larger (>) one misses them in case two
+		 *   neighboring pixels in the centre of an object have the same distance value
+		 * - if local maxima are >= and the search radius is
+		 * only 1 pixel (four-connected) one gets false maxima at the corners objects
+		 *   thus, the search radius should be always >= 2 pixels
+		 * - triangle shaped appendices are an issue because they do not have a
+		 *   maximum in the distance map
+		 * - due to the elongated shape of the embryos there
+		 * might not be a clear maximum => use also a global threshold
+		 */
+
+		double globalDistanceThreshold =
+				Math.pow( settings.watershedSeedsGlobalDistanceThreshold
+						/ settings.registrationResolution, 2 );
+		double localMaximaDistanceThreshold =
+				Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold
+						/ settings.registrationResolution, 2 );
+		int localMaximaSearchRadius =
+				(int) ( settings.watershedSeedsLocalMaximaSearchRadius
+						/ settings.registrationResolution );
 
 		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createWatershedSeeds(
 				distance,
@@ -554,9 +564,15 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 				globalDistanceThreshold,
 				localMaximaDistanceThreshold );
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = Utils.asImgLabeling( seeds, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+		final ImgLabeling< Integer, IntType > seedsLabelImg =
+				Utils.asImgLabeling( seeds,
+						ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
-		if ( settings.showIntermediateResults ) show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, Utils.as3dDoubleArray( settings.registrationResolution ), false );
+		if ( settings.showIntermediateResults )
+			show( Utils.asIntImg( seedsLabelImg ), "watershed seeds",
+					null,
+					Utils.as3dDoubleArray( settings.registrationResolution ),
+					false );
 
 		return seedsLabelImg;
 	}
