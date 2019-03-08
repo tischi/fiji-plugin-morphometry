@@ -14,8 +14,6 @@ import static java.lang.Math.exp;
 
 public abstract class RefractiveIndexMismatchCorrections
 {
-
-
 	public static double getIntensityCorrectionFactor(
 			long z,
 			RefractiveIndexMismatchCorrectionSettings settings )
@@ -40,7 +38,7 @@ public abstract class RefractiveIndexMismatchCorrections
 		=> correction = 1 / exp( - ( z - 10 ) / d );
 		 */
 
-		double generalIntensityScaling = 0.3; // TODO: what to use here?
+		double generalIntensityScaling = 1.0; // TODO: what to use here?
 
 		double zInMicrometer = z * settings.pixelCalibrationMicrometer - settings.coverslipPositionMicrometer;
 

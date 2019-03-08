@@ -27,9 +27,11 @@ public class ExampleDrosophilaEllipsoidParameterComputation
 
 		final OpService opService = ij.op();
 
-		final String inputPath =
-				ExampleDrosophilaEllipsoidParameterComputation.class.getResource(
-						"../drosophila/test01_TR1_1_W0001_P0002_T0001.zip" ).getFile().toString();
+//		final String inputPath =
+//				ExampleDrosophilaEllipsoidParameterComputation.class.getResource(
+//						"../drosophila/test01_TR1_1_W0001_P0002_T0001.zip" ).getFile().toString();
+
+		final String inputPath = "/Volumes/almf/group/ALMFstuff/Aliaksandr/User_data/Crocker-fly-feedback/03082019_march_test/Bad-center-orientation-estimates/crashed/test03_TR1_1_W0001_P0009_T0001.lsm";
 
 		final ImagePlus imagePlus = openWithBioFormats( inputPath );
 
@@ -37,6 +39,7 @@ public class ExampleDrosophilaEllipsoidParameterComputation
 
 		final DrosophilaRegistrationSettings settings = new DrosophilaRegistrationSettings();
 		settings.onlyComputeEllipsoidParameters = true;
+		settings.showIntermediateResults = true;
 
 		RandomAccessibleInterval< T > images =
 				ImageIO.getChannelImages( imagePlus );
@@ -49,13 +52,17 @@ public class ExampleDrosophilaEllipsoidParameterComputation
 
 		final double[] calibration = Utils.getCalibration( imagePlus );
 
-		registration.run( image, calibration );
-
-		final double[] centre = registration.getElliposidCentreInInputImagePixelUnits();
-		final double[] angles = registration.getElliposidEulerAnglesInDegrees();
-
-		Logger.log( "Centre: " + centre[ 0 ] + ", " + centre[ 1 ] + ", " + centre[ 2 ] );
-		Logger.log( "Angles: " + angles[ 0 ] + ", " + angles[ 1 ] + ", " + angles[ 2 ] );
+		if ( ! registration.run( image, calibration ) )
+		{
+			Logger.log( "Could not find embryo." );
+		}
+		else
+		{
+			final double[] centre = registration.getElliposidCentreInInputImagePixelUnits();
+			final double[] angles = registration.getElliposidEulerAnglesInDegrees();
+			Logger.log( "Centre: " + centre[ 0 ] + ", " + centre[ 1 ] + ", " + centre[ 2 ] );
+			Logger.log( "Angles: " + angles[ 0 ] + ", " + angles[ 1 ] + ", " + angles[ 2 ] );
+		}
 	}
 
 

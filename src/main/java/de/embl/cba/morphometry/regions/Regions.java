@@ -156,7 +156,8 @@ public abstract class Regions
 			double sizeInCalibratedUnits,
 			double calibration )
 	{
-		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+		final ImgLabeling< Integer, IntType > imgLabeling =
+				Utils.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		long minimalObjectSize = ( long ) ( sizeInCalibratedUnits / Math.pow( calibration, imgLabeling.numDimensions() ) );
 

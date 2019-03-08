@@ -69,7 +69,7 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		this.opService = opService;
 	}
 
-	public void run( RandomAccessibleInterval< T > image, double[] inputCalibration )
+	public boolean run( RandomAccessibleInterval< T > image, double[] inputCalibration )
 	{
 		this.inputCalibration = inputCalibration;
 
@@ -84,11 +84,11 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 
 		refractiveIndexIntensityCorrection();
 
-		if ( ! segmentEmbryo() ) return;
+		if ( ! segmentEmbryo() ) return false;
 
 		computeEllipsoidParameters();
 
-		if ( settings.onlyComputeEllipsoidParameters ) return;
+		if ( settings.onlyComputeEllipsoidParameters ) return true;
 
 		applyYawAlignmentToImageAndMask();
 
@@ -97,6 +97,8 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		rollTransform();
 
 		transformAtRegistrationResolution = registration;
+
+		return true;
 
 	}
 
@@ -206,7 +208,8 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		final RandomAccessibleInterval< DoubleType > distances = Algorithms.computeSquaredDistances( mask );
 
 		if ( settings.showIntermediateResults )
-			show( distances, "squared distances", null, registrationCalibration, false );
+			show( distances, "squared distances", null,
+					registrationCalibration, false );
 
 
 		/**
@@ -229,7 +232,8 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		final ImgLabeling< Integer, IntType > labeling = computeWatershed( mask, distances, seedsLabelImg );
 
 		if ( settings.showIntermediateResults )
-			show( watershedLabelImg, "watershed", null, registrationCalibration, false );
+			show( watershedLabelImg, "watershed",
+					null, registrationCalibration, false );
 
 		/**
 		 * Get main embryo
@@ -260,12 +264,14 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		 * - TODO: put the currently hard-coded values into settings
 		 */
 
+		Logger.log( "Smooth by morphological closing (slow)..." );
 		embryoMask = Algorithms.close( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
 
 		// embryoMask = Algorithms.open( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
 
 		if ( settings.showIntermediateResults )
-			show( embryoMask, "embryo mask - processed", null, registrationCalibration, false );
+			show( embryoMask, "morphologically processed embryo mask",
+					null, registrationCalibration, false );
 
 		return true;
 	}
@@ -293,30 +299,31 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 
 		mask = Algorithms.createMask( intensityCorrected, thresholdAfterIntensityCorrection );
 
+		if ( settings.showIntermediateResults )
+			show( Utils.copyAsArrayImg( mask ), "binary mask", null,
+					registrationCalibration, false );
 		/**
 		 * Process mask
 		 * - remove small objects
 		 * - close holes
 		 */
 
-		Regions.removeSmallRegionsInMask( mask, settings.minimalObjectSize,
+		Regions.removeSmallRegionsInMask(
+				mask,
+				settings.minimalObjectSize,
 				settings.registrationResolution );
+
+		if ( settings.showIntermediateResults )
+			show( Utils.copyAsArrayImg( mask ), "small regions removed", null,
+					registrationCalibration, false );
 
 		for ( int d = 0; d < 3; ++d )
 		{
 			mask = Algorithms.fillHoles3Din2D( mask, d, opService );
 		}
 
-		/**
-		 * Show intermediate results
-		 */
-
 		if ( settings.showIntermediateResults )
-			show( mask, "binary mask", null,
-					registrationCalibration, false );
-
-		if ( settings.showIntermediateResults )
-			show( mask, "small objects removed and holes closed", null,
+			show( mask, "small regions removed and holes closed", null,
 					registrationCalibration, false );
 
 	}
@@ -329,11 +336,11 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 
 		Logger.log( "Offset and threshold..." );
 
-		final IntensityHistogram histogram = new IntensityHistogram( isotropic, 65535.0, 5.0 );
+		final IntensityHistogram histogram = new IntensityHistogram( isotropic, 65535.0, 1.0 );
 
 		CoordinateAndValue histogramMode = histogram.getMode();
 
-		Logger.log( "Intensity offset: " + histogramMode.coordinate );
+		Logger.log( "Intensity offset: " + (int) histogramMode.coordinate );
 
 
 		/**
@@ -344,7 +351,8 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 				Utils.computeAverageIntensitiesAlongAxis( isotropic, 2, settings.registrationResolution );
 
 		if ( settings.showIntermediateResults )
-			Plots.plot( averageIntensitiesAlongZ.coordinates, averageIntensitiesAlongZ.values, "z [um]", "average intensities" );
+			Plots.plot( averageIntensitiesAlongZ.coordinates, averageIntensitiesAlongZ.values,
+					"z [um]", "average intensities" );
 
 		axialEmbryoCenter = CurveAnalysis.maximum( averageIntensitiesAlongZ );
 		coverslipPosition = axialEmbryoCenter.coordinate
@@ -360,7 +368,7 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		Logger.log( "Refractive index intensity correction..." );
 
 		final RefractiveIndexMismatchCorrectionSettings correctionSettings = new RefractiveIndexMismatchCorrectionSettings();
-		correctionSettings.intensityOffset = histogramMode.coordinate;
+		correctionSettings.intensityOffset = Math.floor( histogramMode.coordinate );
 		correctionSettings.intensityDecayLengthMicrometer = settings.refractiveIndexIntensityCorrectionDecayLength;
 		correctionSettings.coverslipPositionMicrometer = coverslipPosition;
 		correctionSettings.pixelCalibrationMicrometer = settings.registrationResolution;
@@ -368,7 +376,11 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		intensityCorrected = Utils.copyAsArrayImg( isotropic );
 		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrected, correctionSettings );
 
-		if ( settings.showIntermediateResults ) show( intensityCorrected, "intensity corrected channel 1", null, registrationCalibration, false );
+		if ( settings.showIntermediateResults )
+			show( intensityCorrected,
+					"intensity corrected",
+					null, registrationCalibration,
+					false );
 	}
 
 	private void createIsotropicImage( RandomAccessibleInterval< T > image )
