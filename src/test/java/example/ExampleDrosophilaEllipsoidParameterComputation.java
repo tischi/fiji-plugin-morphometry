@@ -33,6 +33,8 @@ public class ExampleDrosophilaEllipsoidParameterComputation
 
 		final ImagePlus imagePlus = openWithBioFormats( inputPath );
 
+		imagePlus.show();
+
 		final DrosophilaRegistrationSettings settings = new DrosophilaRegistrationSettings();
 		settings.onlyComputeEllipsoidParameters = true;
 
@@ -49,13 +51,11 @@ public class ExampleDrosophilaEllipsoidParameterComputation
 
 		registration.run( image, calibration );
 
-		final EllipsoidMLJ ellipsoidParameters = registration.getEllipsoidParameters();
+		final double[] centre = registration.getElliposidCentreInInputImagePixelUnits();
+		final double[] angles = registration.getElliposidEulerAnglesInDegrees();
 
-		Logger.log( ellipsoidParameters.toString() );
-
-		final AffineTransform3D alignmentTransform =
-				EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters );
-
+		Logger.log( "Centre: " + centre[ 0 ] + ", " + centre[ 1 ] + ", " + centre[ 2 ] );
+		Logger.log( "Angles: " + angles[ 0 ] + ", " + angles[ 1 ] + ", " + angles[ 2 ] );
 	}
 
 

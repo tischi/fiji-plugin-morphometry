@@ -28,6 +28,7 @@ import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -58,6 +59,7 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 	private RandomAccessibleInterval yawAlignedIntensity;
 	private CoordinateAndValue axialEmbryoCenter;
 	private EllipsoidMLJ ellipsoidParameters;
+	private double[] inputCalibration;
 
 	public DrosophilaSingleChannelRegistration(
 			final DrosophilaRegistrationSettings settings,
@@ -69,6 +71,8 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 
 	public void run( RandomAccessibleInterval< T > image, double[] inputCalibration )
 	{
+		this.inputCalibration = inputCalibration;
+
 		if ( settings.showIntermediateResults )
 			show( image, "input image", null, inputCalibration, false );
 
@@ -96,10 +100,23 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 
 	}
 
-	public EllipsoidMLJ getEllipsoidParameters()
+	public double[] getElliposidEulerAnglesInDegrees()
 	{
-		return ellipsoidParameters;
+		return ellipsoidParameters.eulerAnglesInDegrees;
 	}
+
+	public double[] getElliposidCentreInInputImagePixelUnits()
+	{
+		final double[] center = ellipsoidParameters.center;
+
+		for ( int d = 0; d < 3; d++ )
+			center[ d ] = center[ d ] * settings.registrationResolution / inputCalibration[ d ];
+
+		center[ 2 ] /= settings.refractiveIndexAxialCalibrationCorrectionFactor;
+
+		return center;
+	}
+
 
 	private void applyYawAlignmentToImageAndMask()
 	{
@@ -366,7 +383,8 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 
 		Logger.log( "Down-sampling to registration resolution..." );
 
-		isotropic = createRescaledArrayImg( image, getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+		isotropic = createRescaledArrayImg( image,
+				getScalingFactors( correctedCalibration, settings.registrationResolution ) );
 		registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 
 		if ( settings.showIntermediateResults )
