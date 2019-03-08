@@ -32,7 +32,7 @@ public class ExampleDrosophilaEllipsoidParameterComputation
 //						"../drosophila/test01_TR1_1_W0001_P0002_T0001.zip" ).getFile().toString();
 
 		final String inputPath =
-				"/Users/tischer/Desktop/tim-crash/test03_TR1_1_W0001_P0012_T0001.lsm";
+				"/Users/tischer/Desktop/tim-wrong/test03_TR1_1_W0001_P0003_T0001.lsm";
 
 		final ImagePlus imagePlus = openWithBioFormats( inputPath );
 

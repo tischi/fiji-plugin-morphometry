@@ -42,8 +42,33 @@ public class TestDrosophilaRegistration < T extends RealType< T > & NativeType< 
 				ImageIO.getChannelImages( imagePlus );
 
 		runTest( opService, actualCentre, actualAngle, calibration, images );
-
 	}
+
+	@Test
+	public void testRegistration001()
+	{
+		final ImageJ ij = new ImageJ();
+
+		final OpService opService = ij.op();
+
+		final String filePath = "../drosophila/tests/low_res_x58_y69_z38_yaw-54.zip";
+		final double[] actualCentre = { 58.0, 69.0, 38.0 };
+		final int actualAngle = -54;
+
+		final String inputPath =
+				TestDrosophilaRegistration.class.getResource(
+						filePath )
+						.getFile().toString();
+
+		final ImagePlus imagePlus = openWithBioFormats( inputPath );
+		final double[] calibration = Utils.getCalibration( imagePlus );
+
+		RandomAccessibleInterval< T > images =
+				ImageIO.getChannelImages( imagePlus );
+
+		runTest( opService, actualCentre, actualAngle, calibration, images );
+	}
+
 
 	public void runTest(
 			OpService opService,
