@@ -8,6 +8,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.ops.OpService;
 import net.imagej.ops.threshold.huang.ComputeHuangThreshold;
+import net.imagej.ops.threshold.yen.ComputeYenThreshold;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
@@ -277,6 +278,7 @@ public class Algorithms
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
 	{
+		Logger.log( "Computing mask..." );
 		RandomAccessibleInterval< BitType > mask =
 				Converters.convert( downscaled, ( i, o )
 						-> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
@@ -1213,7 +1215,7 @@ public class Algorithms
 	}
 
 	public static < T extends RealType< T > >
-	double huangThreshold( RandomAccessibleInterval< T > rai )
+	double thresholdHuang( RandomAccessibleInterval< T > rai )
 	{
 		final Histogram1d< T > histogram =
 				histogram( rai, 256 );
@@ -1221,6 +1223,23 @@ public class Algorithms
 		final T type = Views.iterable( rai ).firstElement().createVariable();
 		final ComputeHuangThreshold< T > huangThreshold = new ComputeHuangThreshold<>();
 		final long bin = huangThreshold.computeBin( histogram );
+		histogram.getCenterValue( bin, type );
+
+//		final double huang = opService.threshold().huang( histogram ).getRealDouble();
+//		final double otsu = opService.threshold().otsu( histogram ).getRealDouble();
+//		final double yen = opService.threshold().yen( histogram ).getRealDouble();
+
+		return type.getRealDouble();
+	}
+
+
+	public static < T extends RealType< T > >
+	double thresholdYen( RandomAccessibleInterval< T > rai )
+	{
+		final Histogram1d< T > histogram = histogram( rai, 256 );
+		final T type = Views.iterable( rai ).firstElement().createVariable();
+		final ComputeYenThreshold< T > computeYenThreshold = new ComputeYenThreshold<>();
+		final long bin = computeYenThreshold.computeBin( histogram );
 		histogram.getCenterValue( bin, type );
 
 //		final double huang = opService.threshold().huang( histogram ).getRealDouble();

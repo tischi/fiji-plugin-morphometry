@@ -45,8 +45,6 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 	final PlatynereisRegistrationSettings settings;
 	final OpService opService;
 
-	private RandomAccessibleInterval< BitType > embryoMask;
-	private double coverslipPosition;
 	private AffineTransform3D transformAtRegistrationResolution;
 	private Img< IntType > watershedLabelImg;
 	private AffineTransform3D registration;
@@ -82,16 +80,14 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		downsampleToRegistrationResolution( image );
 
 		if ( ! segmentPlaty() ) return false;
+
+		computeEllipsoidParameters();
+
+		applyEllipsoidAlignmentToImageAndMask();
 //
-//		computeEllipsoidParameters();
+		orientLongAxis();
 //
-//		if ( settings.onlyComputeEllipsoidParameters ) return true;
-//
-//		applyYawAlignmentToImageAndMask();
-//
-//		orientLongAxis();
-//
-//		rollTransform();
+		rollTransform();
 //
 //		transformAtRegistrationResolution = registration;
 
@@ -116,15 +112,16 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		return center;
 	}
 
-
-	private void applyYawAlignmentToImageAndMask()
+	private void applyEllipsoidAlignmentToImageAndMask()
 	{
+		Logger.log( "Transform image using Ellipsoid parameters..." );
+
 		registration.preConcatenate(
 				EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters ) );
 
 		final RandomAccessibleInterval transformedView =
 				Transforms.createTransformedView(
-						embryoMask, registration, new NearestNeighborInterpolatorFactory() );
+						mask, registration, new NearestNeighborInterpolatorFactory() );
 
 		yawAlignedMask = Utils.copyAsArrayImg( transformedView );
 
@@ -132,7 +129,11 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 				Transforms.createTransformedView( isotropic, registration ) );
 
 		if ( settings.showIntermediateResults )
-			show( yawAlignedIntensity, "yaw aligned intensities",
+			show( yawAlignedMask, "aligned mask",
+					Transforms.origin(), registrationCalibration, false );
+
+		if ( settings.showIntermediateResults )
+			show( yawAlignedIntensity, "aligned intensities",
 					Transforms.origin(), registrationCalibration, false );
 	}
 
@@ -145,7 +146,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 		Logger.log( "Fit ellipsoid..." );
 
-		ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( embryoMask );
+		ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( mask );
 	}
 
 	private void rollTransform()
@@ -194,19 +195,6 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 	{
 		createMask();
 
-//		final RandomAccessibleInterval< DoubleType > distances = distanceTransform();
-//
-//		final ImgLabeling< Integer, IntType > labeling = watershed( distances );
-//
-//		if ( ! extractCentralEmbryoMask( labeling ) ) return false;
-//
-//		if ( ! settings.onlyComputeEllipsoidParameters )
-//			morphologicalSmoothingOfEmbryoMask();
-//
-//		if ( settings.showIntermediateResults )
-//			show( embryoMask, "morphologically processed embryo mask",
-//					null, registrationCalibration, false );
-
 		return true;
 	}
 
@@ -239,62 +227,20 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		return imgLabeling;
 	}
 
-	private boolean extractCentralEmbryoMask( ImgLabeling< Integer, IntType > labeling )
-	{
-
-		Logger.log( "Extract central embryo..." );
-
-		final double[] center = getApproximateEmbryoCenter( labeling );
-
-		final Set< LabelRegion< Integer > > centralRegions =
-				Regions.getCentralRegions(
-						labeling,
-						center,
-						(int) ( settings.centralRegionDistance / settings.registrationResolution ) );
-
-		if ( centralRegions.size() == 0 ) return false;
-
-		embryoMask = Algorithms.createMaskFromLabelRegions(
-				centralRegions,
-				Intervals.dimensionsAsLongArray( labeling ) );
-
-		if ( settings.showIntermediateResults )
-			show( Utils.copyAsArrayImg( embryoMask ),
-					"embryo mask", null, registrationCalibration, false );
-
-		return true;
-	}
-
-	private void morphologicalSmoothingOfEmbryoMask()
-	{
-		Logger.log( "Smooth by morphological closing (slow)..." );
-		embryoMask = Algorithms.close( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
-
-		// embryoMask = Algorithms.open( embryoMask, ( int ) ( 20.0 / settings.registrationResolution ) );
-	}
-
-	private double[] getApproximateEmbryoCenter( ImgLabeling< Integer, IntType > labeling )
-	{
-		return new double[]{
-					labeling.dimension( 0 ) / 2.0 ,
-					labeling.dimension( 1 ) / 2.0,
-					axialEmbryoCenter.coordinate / settings.registrationResolution };
-	}
-
 	private void createMask()
 	{
 		/**
 		 *  Compute threshold
 		 */
 
-		double threshold = Algorithms.huangThreshold( image );
+		double threshold = Algorithms.thresholdYen( isotropic );
 		Logger.log( "Threshold: " + threshold );
 
 		/**
 		 * Create mask
 		 */
 
-		mask = Algorithms.createMask( image, threshold );
+		mask = Algorithms.createMask( isotropic, threshold );
 
 		if ( settings.showIntermediateResults )
 			show( Utils.copyAsArrayImg( mask ), "binary mask", null,
@@ -314,70 +260,14 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 			show( Utils.copyAsArrayImg( mask ), "small regions removed", null,
 					registrationCalibration, false );
 
-		for ( int d = 0; d < 3; ++d )
-		{
-			mask = Algorithms.fillHoles3Din2D( mask, d, opService );
-		}
+//		Logger.log( "Fill holes..." );
+//		for ( int d = 0; d < 3; ++d )
+//			mask = Algorithms.fillHoles3Din2D( mask, d, opService );
 
 		if ( settings.showIntermediateResults )
 			show( mask, "small regions removed and holes closed", null,
 					registrationCalibration, false );
 
-	}
-
-	private void refractiveIndexIntensityCorrection()
-	{
-		/**
-		 *  Compute intensity offset (for refractive index mismatch corrections)
-		 */
-
-		Logger.log( "Offset and threshold..." );
-
-		final IntensityHistogram histogram = new IntensityHistogram( isotropic, 65535.0, 1.0 );
-
-		CoordinateAndValue histogramMode = histogram.getMode();
-
-		Logger.log( "Intensity offset: " + (int) histogramMode.coordinate );
-
-
-		/**
-		 *  Compute approximate axial embryo center and coverslip coordinate
-		 */
-
-		final CoordinatesAndValues averageIntensitiesAlongZ =
-				Utils.computeAverageIntensitiesAlongAxis( isotropic, 2, settings.registrationResolution );
-
-		if ( settings.showIntermediateResults )
-			Plots.plot( averageIntensitiesAlongZ.coordinates, averageIntensitiesAlongZ.values,
-					"z [um]", "average intensities" );
-
-		axialEmbryoCenter = CurveAnalysis.maximum( averageIntensitiesAlongZ );
-		coverslipPosition = axialEmbryoCenter.coordinate
-				- PlatynereisRegistrationSettings.platyLength / 2.0;
-
-		Logger.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
-		Logger.log( "Approximate axial embryo center coordinate [um]: " + axialEmbryoCenter.coordinate );
-
-		/**
-		 *  Refractive index corrections
-		 */
-
-		Logger.log( "Refractive index intensity correction..." );
-
-		final RefractiveIndexMismatchCorrectionSettings correctionSettings = new RefractiveIndexMismatchCorrectionSettings();
-		correctionSettings.intensityOffset = Math.floor( histogramMode.coordinate );
-		correctionSettings.intensityDecayLengthMicrometer = settings.refractiveIndexIntensityCorrectionDecayLength;
-		correctionSettings.coverslipPositionMicrometer = coverslipPosition;
-		correctionSettings.pixelCalibrationMicrometer = settings.registrationResolution;
-
-		image = Utils.copyAsArrayImg( isotropic );
-		RefractiveIndexMismatchCorrections.correctIntensity( image, correctionSettings );
-
-		if ( settings.showIntermediateResults )
-			show( image,
-					"intensity corrected",
-					null, registrationCalibration,
-					false );
 	}
 
 	private void downsampleToRegistrationResolution( RandomAccessibleInterval< T > image )
@@ -429,12 +319,6 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		return watershedLabeling;
 	}
 
-
-	public double getCoverslipPosition()
-	{
-		return coverslipPosition;
-	}
-
 	public Img< IntType > getWatershedLabelImg()
 	{
 		return watershedLabelImg;
@@ -463,7 +347,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 		Logger.log( "Creating aligned mask..." );
 
-		final RandomAccessibleInterval< BitType > dilatedMask = Algorithms.dilate( embryoMask, 2 );
+		final RandomAccessibleInterval< BitType > dilatedMask = Algorithms.dilate( mask, 2 );
 
 		AffineTransform3D transform = transformAtRegistrationResolution.copy()
 				.preConcatenate( Transforms.getScalingTransform( settings.registrationResolution, resolution ) );

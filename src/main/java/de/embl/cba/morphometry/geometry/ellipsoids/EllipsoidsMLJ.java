@@ -46,7 +46,24 @@ public abstract class EllipsoidsMLJ
 		return ellipsoidParameters;
 	}
 
-	public static double[] computeMoments( double[] sumSquares, double[] center, long numPixels )
+	public static
+	AffineTransform3D createAlignmentTransform( EllipsoidMLJ ellipsoidParameters )
+	{
+		AffineTransform3D translation = new AffineTransform3D();
+		translation.translate( ellipsoidParameters.center  );
+		translation = translation.inverse();
+
+		AffineTransform3D rotation = new AffineTransform3D();
+		rotation.rotate( Z, - toRadians( ellipsoidParameters.eulerAnglesInDegrees[ PHI ] ) );
+		rotation.rotate( Y, - toRadians( ellipsoidParameters.eulerAnglesInDegrees[ THETA ] ) );
+		rotation.rotate( X, - toRadians( ellipsoidParameters.eulerAnglesInDegrees[ PSI ] ) );
+
+		AffineTransform3D combinedTransform = translation.preConcatenate( rotation );
+
+		return combinedTransform;
+	}
+
+	private static double[] computeMoments( double[] sumSquares, double[] center, long numPixels )
 	{
 		double[] moments = new double[ 6 ];
 
@@ -62,7 +79,8 @@ public abstract class EllipsoidsMLJ
 		return moments;
 	}
 
-	public static long computeSumsAndSumSquares( RandomAccessibleInterval< BitType > binaryImg, double[] sums, double[] sumSquares )
+	private static long computeSumsAndSumSquares( RandomAccessibleInterval< BitType > binaryImg,
+												  double[] sums, double[] sumSquares )
 	{
 
 		Cursor< BitType > cursor = Views.iterable( binaryImg ).localizingCursor();
@@ -102,7 +120,7 @@ public abstract class EllipsoidsMLJ
 	}
 
 
-	public static double[] computeCenter( double[] sum, long n )
+	private static double[] computeCenter( double[] sum, long n )
 	{
 		double[] center = new double[ 3 ];
 
@@ -115,7 +133,7 @@ public abstract class EllipsoidsMLJ
 	}
 
 
-	public static Matrix getMomentsMatrix( double[] moments )
+	private static Matrix getMomentsMatrix( double[] moments )
 	{
 		// run run parameters for each region
 		Matrix matrix = new Matrix( 3, 3 );
@@ -184,20 +202,5 @@ public abstract class EllipsoidsMLJ
 	}
 
 
-	public static
-	AffineTransform3D createAlignmentTransform( EllipsoidMLJ ellipsoidParameters )
-	{
-		AffineTransform3D translation = new AffineTransform3D();
-		translation.translate( ellipsoidParameters.center  );
-		translation = translation.inverse();
 
-		AffineTransform3D rotation = new AffineTransform3D();
-		rotation.rotate( Z, - toRadians( ellipsoidParameters.eulerAnglesInDegrees[ PHI ] ) );
-		rotation.rotate( Y, - toRadians( ellipsoidParameters.eulerAnglesInDegrees[ THETA ] ) );
-		rotation.rotate( X, - toRadians( ellipsoidParameters.eulerAnglesInDegrees[ PSI ] ) );
-
-		AffineTransform3D combinedTransform = translation.preConcatenate( rotation );
-
-		return combinedTransform;
-	}
 }

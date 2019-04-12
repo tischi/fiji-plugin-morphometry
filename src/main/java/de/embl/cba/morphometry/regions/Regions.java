@@ -1,6 +1,7 @@
 package de.embl.cba.morphometry.regions;
 
 import de.embl.cba.morphometry.Algorithms;
+import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.transforms.utils.Transforms;
 import net.imglib2.Cursor;
@@ -156,6 +157,7 @@ public abstract class Regions
 			double sizeInCalibratedUnits,
 			double calibration )
 	{
+		Logger.log( "Remove small regions..." );
 		final ImgLabeling< Integer, IntType > imgLabeling =
 				Utils.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 

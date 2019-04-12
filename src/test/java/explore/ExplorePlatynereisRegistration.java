@@ -29,6 +29,7 @@ public class ExplorePlatynereisRegistration
 
 		final PlatynereisRegistrationSettings settings = new PlatynereisRegistrationSettings();
 		settings.showIntermediateResults = true;
+		settings.registrationResolution = 8;
 
 		final PlatynereisRegistration< R > registration = new PlatynereisRegistration<>( settings, opService );
 

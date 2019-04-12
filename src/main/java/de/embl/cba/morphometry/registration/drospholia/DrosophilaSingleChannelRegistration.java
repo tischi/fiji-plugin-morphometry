@@ -288,7 +288,7 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		 *  Compute threshold
 		 */
 
-		double thresholdAfterIntensityCorrection = Algorithms.huangThreshold( intensityCorrected );;
+		double thresholdAfterIntensityCorrection = Algorithms.thresholdHuang( intensityCorrected );;
 		Logger.log( "Threshold (after intensity correction): " + thresholdAfterIntensityCorrection );
 
 		/**

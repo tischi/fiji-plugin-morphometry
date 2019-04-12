@@ -233,7 +233,7 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 		 *  - TODO: find some more scientific method to determine threshold...
 		 */
 
-		final double huang = Algorithms.huangThreshold( intensityCorrectedChannel1 );
+		final double huang = Algorithms.thresholdHuang( intensityCorrectedChannel1 );
 
 		double thresholdAfterIntensityCorrection = huang;
 
