@@ -1,4 +1,4 @@
-package de.embl.cba.morphometry.drosophila.registration;
+package de.embl.cba.morphometry.registration.platynereis;
 
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
@@ -10,10 +10,12 @@ import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCo
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
 import net.imagej.ops.OpService;
-import net.imglib2.*;
+import net.imglib2.FinalInterval;
+import net.imglib2.Point;
+import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.RealPoint;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
-import net.imglib2.histogram.Histogram1d;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
@@ -26,34 +28,32 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
-import net.imglib2.view.Views;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import static de.embl.cba.morphometry.Constants.*;
+import static de.embl.cba.morphometry.Constants.X;
+import static de.embl.cba.morphometry.Constants.Z;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 import static java.lang.Math.toRadians;
 
 
-public class DrosophilaSingleChannelRegistration< T extends RealType< T > & NativeType< T > >
+public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > >
 {
-	final DrosophilaRegistrationSettings settings;
+	final PlatynereisRegistrationSettings settings;
 	final OpService opService;
 
 	private RandomAccessibleInterval< BitType > embryoMask;
 	private double coverslipPosition;
 	private AffineTransform3D transformAtRegistrationResolution;
 	private Img< IntType > watershedLabelImg;
-	private double[] correctedCalibration;
 	private AffineTransform3D registration;
 	private double[] registrationCalibration;
 	private RandomAccessibleInterval< BitType > yawAndOrientationAlignedIntensity;
 	private RandomAccessibleInterval< T > isotropic;
-	private RandomAccessibleInterval< T > intensityCorrected;
+	private RandomAccessibleInterval< T > image;
 	private RandomAccessibleInterval< BitType > mask;
 	private RandomAccessibleInterval< BitType > yawAlignedMask;
 	private RandomAccessibleInterval yawAlignedIntensity;
@@ -61,8 +61,8 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 	private EllipsoidMLJ ellipsoidParameters;
 	private double[] inputCalibration;
 
-	public DrosophilaSingleChannelRegistration(
-			final DrosophilaRegistrationSettings settings,
+	public PlatynereisRegistration(
+			final PlatynereisRegistrationSettings settings,
 			final OpService opService )
 	{
 		this.settings = settings;
@@ -72,31 +72,28 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 	public boolean run( RandomAccessibleInterval< T > image, double[] inputCalibration )
 	{
 		this.inputCalibration = inputCalibration;
+		this.image = image;
 
 		if ( settings.showIntermediateResults )
 			show( image, "input image", null, inputCalibration, false );
 
 		registration = new AffineTransform3D();
 
-		refractiveIndexScalingCorrection( image, inputCalibration );
+		downsampleToRegistrationResolution( image );
 
-		createIsotropicImage( image );
-
-		refractiveIndexIntensityCorrection();
-
-		if ( ! segmentEmbryo() ) return false;
-
-		computeEllipsoidParameters();
-
-		if ( settings.onlyComputeEllipsoidParameters ) return true;
-
-		applyYawAlignmentToImageAndMask();
-
-		orientLongAxis();
-
-		rollTransform();
-
-		transformAtRegistrationResolution = registration;
+		if ( ! segmentPlaty() ) return false;
+//
+//		computeEllipsoidParameters();
+//
+//		if ( settings.onlyComputeEllipsoidParameters ) return true;
+//
+//		applyYawAlignmentToImageAndMask();
+//
+//		orientLongAxis();
+//
+//		rollTransform();
+//
+//		transformAtRegistrationResolution = registration;
 
 		return true;
 
@@ -163,7 +160,7 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		registration = registration.preConcatenate( rollTransform  );
 
 		if ( settings.showIntermediateResults )
-			show( Transforms.createTransformedView( intensityCorrected, registration ),
+			show( Transforms.createTransformedView( image, registration ),
 					"aligned at registration resolution",
 					Transforms.origin(), registrationCalibration, false );
 	}
@@ -193,23 +190,22 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 
 	}
 
-	private boolean segmentEmbryo()
+	private boolean segmentPlaty()
 	{
-
 		createMask();
 
-		final RandomAccessibleInterval< DoubleType > distances = distanceTransform();
-
-		final ImgLabeling< Integer, IntType > labeling = watershed( distances );
-
-		if ( ! extractCentralEmbryoMask( labeling ) ) return false;
-
-		if ( ! settings.onlyComputeEllipsoidParameters )
-			morphologicalSmoothingOfEmbryoMask();
-
-		if ( settings.showIntermediateResults )
-			show( embryoMask, "morphologically processed embryo mask",
-					null, registrationCalibration, false );
+//		final RandomAccessibleInterval< DoubleType > distances = distanceTransform();
+//
+//		final ImgLabeling< Integer, IntType > labeling = watershed( distances );
+//
+//		if ( ! extractCentralEmbryoMask( labeling ) ) return false;
+//
+//		if ( ! settings.onlyComputeEllipsoidParameters )
+//			morphologicalSmoothingOfEmbryoMask();
+//
+//		if ( settings.showIntermediateResults )
+//			show( embryoMask, "morphologically processed embryo mask",
+//					null, registrationCalibration, false );
 
 		return true;
 	}
@@ -291,14 +287,14 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		 *  Compute threshold
 		 */
 
-		double thresholdAfterIntensityCorrection = Algorithms.huangThreshold( intensityCorrected );;
-		Logger.log( "Threshold (after intensity correction): " + thresholdAfterIntensityCorrection );
+		double threshold = Algorithms.huangThreshold( image );
+		Logger.log( "Threshold: " + threshold );
 
 		/**
 		 * Create mask
 		 */
 
-		mask = Algorithms.createMask( intensityCorrected, thresholdAfterIntensityCorrection );
+		mask = Algorithms.createMask( image, threshold );
 
 		if ( settings.showIntermediateResults )
 			show( Utils.copyAsArrayImg( mask ), "binary mask", null,
@@ -357,7 +353,7 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 
 		axialEmbryoCenter = CurveAnalysis.maximum( averageIntensitiesAlongZ );
 		coverslipPosition = axialEmbryoCenter.coordinate
-				- DrosophilaRegistrationSettings.drosophilaWidth / 2.0;
+				- PlatynereisRegistrationSettings.platyLength / 2.0;
 
 		Logger.log( "Approximate coverslip coordinate [um]: " + coverslipPosition );
 		Logger.log( "Approximate axial embryo center coordinate [um]: " + axialEmbryoCenter.coordinate );
@@ -374,17 +370,17 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		correctionSettings.coverslipPositionMicrometer = coverslipPosition;
 		correctionSettings.pixelCalibrationMicrometer = settings.registrationResolution;
 
-		intensityCorrected = Utils.copyAsArrayImg( isotropic );
-		RefractiveIndexMismatchCorrections.correctIntensity( intensityCorrected, correctionSettings );
+		image = Utils.copyAsArrayImg( isotropic );
+		RefractiveIndexMismatchCorrections.correctIntensity( image, correctionSettings );
 
 		if ( settings.showIntermediateResults )
-			show( intensityCorrected,
+			show( image,
 					"intensity corrected",
 					null, registrationCalibration,
 					false );
 	}
 
-	private void createIsotropicImage( RandomAccessibleInterval< T > image )
+	private void downsampleToRegistrationResolution( RandomAccessibleInterval< T > image )
 	{
 		/**
 		 *  Down-sampling to registration resolution
@@ -397,32 +393,12 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		Logger.log( "Down-sampling to registration resolution..." );
 
 		isotropic = createRescaledArrayImg( image,
-				getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+				getScalingFactors( inputCalibration, settings.registrationResolution ) );
+
 		registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 
 		if ( settings.showIntermediateResults )
 			show( isotropic, "isotropic sampled at registration resolution", null, registrationCalibration, false );
-	}
-
-
-	private < T extends RealType< T > & NativeType< T > >
-	void refractiveIndexScalingCorrection(
-			RandomAccessibleInterval< T > image, double[] inputCalibration )
-	{
-		/**
-		 *  Axial calibration correction due to refractive index mismatch
-		 *  - We are using an NA 0.8 air lens imaging into water/embryo (1.33 < NA < 1.51)
-		 *  - Complicated topic: http://www.bio.brandeis.edu/marderlab/axial%20shift.pdf
-		 *  - We assume axial compression by factor ~1.6
-		 */
-
-		Logger.log( "Refractive index scaling correction..." );
-
-		correctedCalibration = RefractiveIndexMismatchCorrections.getAxiallyCorrectedCalibration(
-				inputCalibration, settings.refractiveIndexAxialCalibrationCorrectionFactor );
-
-		if ( settings.showIntermediateResults )
-			show( image, "corrected calibration", null, correctedCalibration, false );
 	}
 
 	private ImgLabeling< Integer, IntType > computeWatershed(
@@ -453,11 +429,6 @@ public class DrosophilaSingleChannelRegistration< T extends RealType< T > & Nati
 		return watershedLabeling;
 	}
 
-
-	public double[] getCorrectedCalibration()
-	{
-		return correctedCalibration;
-	}
 
 	public double getCoverslipPosition()
 	{

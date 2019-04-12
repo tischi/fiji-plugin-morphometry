@@ -1,4 +1,4 @@
-package de.embl.cba.morphometry.drosophila.registration;
+package de.embl.cba.morphometry.registration.drospholia;
 
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CentroidsParameters;

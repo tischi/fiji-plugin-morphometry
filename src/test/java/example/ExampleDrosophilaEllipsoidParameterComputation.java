@@ -3,15 +3,12 @@ package example;
 import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.drosophila.registration.DrosophilaRegistrationSettings;
-import de.embl.cba.morphometry.drosophila.registration.DrosophilaSingleChannelRegistration;
-import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
-import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidsMLJ;
+import de.embl.cba.morphometry.registration.drospholia.DrosophilaRegistrationSettings;
+import de.embl.cba.morphometry.registration.drospholia.DrosophilaSingleChannelRegistration;
 import ij.ImagePlus;
 import net.imagej.ImageJ;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 
