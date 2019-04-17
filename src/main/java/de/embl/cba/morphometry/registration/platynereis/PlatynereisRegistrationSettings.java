@@ -45,15 +45,16 @@ public class PlatynereisRegistrationSettings
 
 	public double minimalObjectSize = 0.5 * platyWidth * platyHeight * platyLength;
 
-	public double projectionXMin = +20.0;
-	public double projectionXMax = +80.0;
-	public double projectionBlurSigma = 20.0;
+	public double projectionXMin = -8.0;
+	public double projectionXMax = +8.0;
+	public double projectionBlurSigma = 8.0;
 	public double finalProjectionMinDistanceToCenter = 60;
 	public String rollAngleComputationMethod = INTENSITY;
 	public double watershedSeedsLocalMaximaSearchRadius = 2 * registrationResolution;
 	public String yawTransformComputationMethod;
 	public double centralRegionDistance = platyLength * 0.5;
 	public boolean onlyComputeEllipsoidParameters = false;
+	public double brainWidth = 16;
 
 	public FinalInterval getOutputImageInterval()
 	{

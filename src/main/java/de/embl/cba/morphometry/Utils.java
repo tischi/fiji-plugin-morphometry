@@ -105,7 +105,10 @@ public class Utils
 
 	public static < T extends RealType< T > & NativeType< T > >
 	CoordinatesAndValues computeAverageIntensitiesAlongAxis(
-			RandomAccessibleInterval< T > rai, double maxAxisDist, int axis, double calibration )
+			RandomAccessibleInterval< T > rai,
+			double maxAxisDist,
+			int axis,
+			double calibration )
 	{
 		final CoordinatesAndValues coordinatesAndValues = new CoordinatesAndValues();
 

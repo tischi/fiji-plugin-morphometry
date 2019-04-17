@@ -18,18 +18,29 @@ public class ExplorePlatynereisRegistration
 		final ImageJ ij = new ImageJ();
 		final OpService opService = ij.op();
 
-		String imageDataFolder = "/Users/tischer/Desktop/Hamburg_020_3_2_2k_Rec";
 		String imageDataExtension = ".png";
 
+//		String imageDataFolder = "/Volumes/cba/exchange/Kimberly/Low_res/020_3_2__w7";
+//		final double[] calibration = new double[]{1.0, 1.0, 1.0};
+
+		String imageDataFolder = "/Volumes/cba/exchange/Kimberly/Low_res/038_2__w2";
+		final double[] calibration = new double[]{1.0, 1.0, 1.0};
+
+//		String imageDataFolder = "/Volumes/cba/exchange/Kimberly/Low_res/PLATY3A";
+//		final double[] calibration = new double[]{0.70022, 0.70022, 0.70022};
+
+//		String imageDataFolder = "/Volumes/cba/exchange/Kimberly/Low_res/PLATY3B";
+//		final double[] calibration = new double[]{0.70022, 0.70022, 0.70022};
+
 		final ImagePlus imagePlus = FolderOpener.open( imageDataFolder, " file=(.*." + imageDataExtension + ")" );
-		final double[] calibration = new double[]{1.0, 1.0, 1.0}; // TODO: get this information from somewhere
 
 		final RandomAccessibleInterval< R > channelImages = ImageIO.getChannelImages( imagePlus );
 		RandomAccessibleInterval< R > image = ImageIO.getChannelImage( channelImages, 0 );
 
 		final PlatynereisRegistrationSettings settings = new PlatynereisRegistrationSettings();
 		settings.showIntermediateResults = true;
-		settings.registrationResolution = 8;
+		settings.registrationResolution = 8; // micrometer
+
 
 		final PlatynereisRegistration< R > registration = new PlatynereisRegistration<>( settings, opService );
 

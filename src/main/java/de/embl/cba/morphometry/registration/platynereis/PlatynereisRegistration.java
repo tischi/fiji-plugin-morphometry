@@ -5,8 +5,6 @@ import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.CurveAnalysis;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidsMLJ;
-import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
-import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
 import net.imagej.ops.OpService;
@@ -21,7 +19,6 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
-import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
@@ -30,11 +27,10 @@ import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.Intervals;
 
 import java.util.List;
-import java.util.Set;
 
-import static de.embl.cba.morphometry.Constants.X;
-import static de.embl.cba.morphometry.Constants.Z;
+import static de.embl.cba.morphometry.Constants.*;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
+import static de.embl.cba.transforms.utils.Scalings.createResampledArrayImg;
 import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 import static java.lang.Math.toRadians;
@@ -77,19 +73,19 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 		registration = new AffineTransform3D();
 
-		downsampleToRegistrationResolution( image );
+		downSampleToRegistrationResolution( image );
 
 		if ( ! segmentPlaty() ) return false;
 
 		computeEllipsoidParameters();
 
 		applyEllipsoidAlignmentToImageAndMask();
-//
+
 		orientLongAxis();
-//
+
 		rollTransform();
-//
-//		transformAtRegistrationResolution = registration;
+
+		transformAtRegistrationResolution = registration;
 
 		return true;
 
@@ -161,7 +157,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		registration = registration.preConcatenate( rollTransform  );
 
 		if ( settings.showIntermediateResults )
-			show( Transforms.createTransformedView( image, registration ),
+			show( Transforms.createTransformedView( isotropic, registration ),
 					"aligned at registration resolution",
 					Transforms.origin(), registrationCalibration, false );
 	}
@@ -172,8 +168,8 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 		final AffineTransform3D flippingTransform =
 				computeFlippingTransform(
-						yawAlignedMask,
 						yawAlignedIntensity,
+						yawAlignedMask,
 						settings.registrationResolution );
 
 		registration = registration.preConcatenate( flippingTransform );
@@ -270,7 +266,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 	}
 
-	private void downsampleToRegistrationResolution( RandomAccessibleInterval< T > image )
+	private void downSampleToRegistrationResolution( RandomAccessibleInterval< T > image )
 	{
 		/**
 		 *  Down-sampling to registration resolution
@@ -282,13 +278,15 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 		Logger.log( "Down-sampling to registration resolution..." );
 
-		isotropic = createRescaledArrayImg( image,
-				getScalingFactors( inputCalibration, settings.registrationResolution ) );
+		// this is without the blurring
+		isotropic = createResampledArrayImg( image, getScalingFactors( inputCalibration, settings.registrationResolution ) );
 
 		registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 
 		if ( settings.showIntermediateResults )
-			show( isotropic, "isotropic sampled at registration resolution", null, registrationCalibration, false );
+			show( isotropic,
+					"isotropic sampled at registration resolution",
+					null, registrationCalibration, false );
 	}
 
 	private ImgLabeling< Integer, IntType > computeWatershed(
@@ -375,12 +373,13 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 	{
 		Logger.log( "Computing intensity based roll transform" );
 
-		final AffineTransform3D intensityBasedRollTransform = computeIntensityBasedRollTransform(
-				image,
-				settings.projectionXMin,
-				settings.projectionXMax,
-				settings.projectionBlurSigma,
-				registrationCalibration );
+		final AffineTransform3D intensityBasedRollTransform =
+				computeIntensityBasedRollTransform(
+					image,
+					settings.projectionXMin,
+					settings.projectionXMax,
+					settings.projectionBlurSigma,
+					registrationCalibration );
 
 		return intensityBasedRollTransform;
 	}
@@ -433,13 +432,24 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 	}
 
 	private AffineTransform3D computeFlippingTransform(
-			RandomAccessibleInterval yawAlignedMask,
 			RandomAccessibleInterval yawAlignedIntensities,
+			RandomAccessibleInterval< BitType > yawAlignedMask,
 			double calibration )
 	{
+//
+//		final CoordinatesAndValues coordinatesAndValues =
+//				Utils.computeAverageIntensitiesAlongAxisWithinMask(
+//						yawAlignedIntensities,
+//						yawAlignedMask,
+//						X,
+//						calibration );
+
 		final CoordinatesAndValues coordinatesAndValues =
-				Utils.computeAverageIntensitiesAlongAxisWithinMask(
-						yawAlignedIntensities, yawAlignedMask, X, calibration );
+				Utils.computeAverageIntensitiesAlongAxis(
+						yawAlignedIntensities,
+						100.0,
+						X,
+						calibration );
 
 		if ( settings.showIntermediateResults )
 			Plots.plot(
@@ -487,9 +497,17 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		final List< RealPoint > realPoints = Utils.asRealPointList( maximum );
 		realPoints.add( new RealPoint( new double[]{ 0, 0 } ) );
 
-		if ( settings.showIntermediateResults ) show( blurred, "perpendicular projection - blurred ", realPoints, Utils.as2dDoubleArray( settings.registrationResolution ), false );
+		if ( settings.showIntermediateResults )
+			show( blurred, "perpendicular projection - blurred ",
+					realPoints, Utils.as2dDoubleArray( settings.registrationResolution ), false );
 
-		final AffineTransform3D xAxisRollTransform = createXAxisRollTransform( maximum );
+		// take the position of the maximum and create a roll transform such that this
+		// maximum is oriented in the yz plane
+//		final AffineTransform3D xAxisRollTransform = createXAxisRollTransform( maximum );
+
+		// just flip depending on where the maximum is along the y-axis
+		AffineTransform3D xAxisRollTransform = new AffineTransform3D();
+		if ( maximum.getDoublePosition( Y ) > 0 ) xAxisRollTransform.rotate( X, toRadians( 180.0D ) );
 
 		return xAxisRollTransform;
 	}
