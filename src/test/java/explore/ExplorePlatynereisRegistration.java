@@ -23,11 +23,11 @@ public class ExplorePlatynereisRegistration
 //		String imageDataFolder = "/Volumes/cba/exchange/Kimberly/Low_res/020_3_2__w7";
 //		final double[] calibration = new double[]{1.0, 1.0, 1.0};
 
-		String imageDataFolder = "/Volumes/cba/exchange/Kimberly/Low_res/038_2__w2";
-		final double[] calibration = new double[]{1.0, 1.0, 1.0};
+//		String imageDataFolder = "/Volumes/cba/exchange/Kimberly/Low_res/038_2__w2";
+//		final double[] calibration = new double[]{1.0, 1.0, 1.0};
 
-//		String imageDataFolder = "/Volumes/cba/exchange/Kimberly/Low_res/PLATY3A";
-//		final double[] calibration = new double[]{0.70022, 0.70022, 0.70022};
+		String imageDataFolder = "/Volumes/cba/exchange/Kimberly/Low_res/PLATY3A";
+		final double[] calibration = new double[]{0.70022, 0.70022, 0.70022};
 
 //		String imageDataFolder = "/Volumes/cba/exchange/Kimberly/Low_res/PLATY3B";
 //		final double[] calibration = new double[]{0.70022, 0.70022, 0.70022};

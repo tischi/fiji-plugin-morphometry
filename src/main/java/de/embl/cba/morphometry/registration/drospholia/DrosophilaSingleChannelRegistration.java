@@ -36,7 +36,7 @@ import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 import static java.lang.Math.toRadians;
 
 
-public class DrosophilaSingleChannelRegistration< T extends RealType< T > & NativeType< T > >
+public class  DrosophilaSingleChannelRegistration< T extends RealType< T > & NativeType< T > >
 {
 	final DrosophilaRegistrationSettings settings;
 	final OpService opService;

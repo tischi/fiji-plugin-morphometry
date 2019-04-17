@@ -69,7 +69,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		this.image = image;
 
 		if ( settings.showIntermediateResults )
-			show( image, "input image", null, inputCalibration, false );
+//			show( image, "input image", null, inputCalibration, false );
 
 		registration = new AffineTransform3D();
 
@@ -317,10 +317,6 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		return watershedLabeling;
 	}
 
-	public Img< IntType > getWatershedLabelImg()
-	{
-		return watershedLabelImg;
-	}
 
 	public AffineTransform3D getRegistrationTransform( double[] inputCalibration, double outputResolution )
 	{

@@ -67,13 +67,9 @@ public class ImageIO
 		int numChannels = imagePlus.getNChannels();
 
 		if ( numChannels == 1 )
-		{
 			images = Views.addDimension( images, 0 ,0 );
-		}
 		else
-		{
 			images = Views.permute( images, Utils.imagePlusChannelDimension, 3 );
-		}
 
 		return images;
 	}

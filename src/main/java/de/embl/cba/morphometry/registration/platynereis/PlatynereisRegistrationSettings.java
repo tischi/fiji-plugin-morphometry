@@ -25,8 +25,8 @@ public class PlatynereisRegistrationSettings
 	public double refractiveIndexAxialCalibrationCorrectionFactor = 1.6;
 	public double refractiveIndexIntensityCorrectionDecayLength = 170; //170;
 
-	public double registrationResolution = 4.0;
-	public double outputResolution = 0.7;
+	public double registrationResolution = 8.0;
+	public double outputResolution = 1.0;
 
 	public double rollAngleMinDistanceToAxis = 0;
 	public double rollAngleMinDistanceToCenter = platyWidth / 2.0 * 0.5;

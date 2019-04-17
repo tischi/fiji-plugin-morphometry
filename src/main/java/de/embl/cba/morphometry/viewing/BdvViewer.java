@@ -43,13 +43,9 @@ public class BdvViewer
 		final BdvSource bdvSource;
 
 		if ( rai.numDimensions() ==  2 )
-		{
 			bdvSource = BdvFunctions.show( rai, title, BdvOptions.options().is2D().sourceTransform( calibration ) );
-		}
 		else
-		{
 			bdvSource = BdvFunctions.show( rai, title, BdvOptions.options().sourceTransform( calibration ) );
-		}
 
 		bdv = bdvSource.getBdvHandle();
 
