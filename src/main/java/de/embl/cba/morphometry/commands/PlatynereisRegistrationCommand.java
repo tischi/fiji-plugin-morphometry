@@ -2,11 +2,6 @@ package de.embl.cba.morphometry.commands;
 
 import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
-import de.embl.cba.morphometry.Projection;
-import de.embl.cba.morphometry.Utils;
-import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrectionSettings;
-import de.embl.cba.morphometry.refractiveindexmismatch.RefractiveIndexMismatchCorrections;
-import de.embl.cba.morphometry.registration.drospholia.DrosophilaSingleChannelRegistration;
 import de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistration;
 import de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistrationSettings;
 import de.embl.cba.transforms.utils.Transforms;
@@ -17,9 +12,7 @@ import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
-import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
-import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
 import org.scijava.app.StatusService;
@@ -31,8 +24,6 @@ import org.scijava.ui.UIService;
 
 import java.io.File;
 import java.util.ArrayList;
-
-import static de.embl.cba.morphometry.Constants.Z;
 
 
 @Plugin(type = Command.class, menuPath = "Plugins>Registration>EMBL>Platynereis Registration" )
@@ -52,9 +43,6 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 
 	@Parameter
 	public StatusService statusService;
-
-	@Parameter( required = false )
-	public ImagePlus imagePlus;
 
 	PlatynereisRegistrationSettings settings = new PlatynereisRegistrationSettings();
 
@@ -82,10 +70,14 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 
 	public void run()
 	{
-		setSettingsFromUI();
-		final double[] calibration = new double[]{ inputResolution, inputResolution, inputResolution };
+		setSettings();
 
-		// Open images
+		final double[] calibration = new double[]{
+				inputResolution,
+				inputResolution,
+				inputResolution };
+
+		// Open image
 		//
 		final ImagePlus imagePlus = FolderOpener.open( inputDirectory.getAbsolutePath(),
 				" file=(.*" + fileNameEndsWith + ")" );
@@ -99,7 +91,7 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 
 		// Apply registration
 		//
-		Logger.log( "Creating registered images..." );
+		Logger.log( "Creating registered image..." );
 		ArrayList< RandomAccessibleInterval< R > > registeredImages =
 				Transforms.transformAllChannels(
 						channelImages,
@@ -117,14 +109,18 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 		Logger.log( "Done!" );
 	}
 
-	public void saveRegisteredImage( String outputFilePathStump, RandomAccessibleInterval< R > registeredImages )
+	public void saveRegisteredImage( String outputFilePathStump, RandomAccessibleInterval< R > registeredImage )
 	{
-		// 3D image stack
-		//
-		final RandomAccessibleInterval< R > registeredWithImagePlusDimensionOrder =
-				Utils.copyAsArrayImg( Views.permute( registeredImages, 2, 3 ) );
 
-		final ImagePlus registered = ImageJFunctions.wrap( registeredWithImagePlusDimensionOrder, "transformed" );
+		// make 5D XYCZT
+		registeredImage =
+				Views.permute(
+						Views.addDimension(
+								Views.addDimension( registeredImage, 0 , 0 ),
+								0 , 0 ),
+						2 ,3 );
+
+		final ImagePlus registered = ImageJFunctions.wrap( registeredImage, "transformed" );
 		registered.getCalibration().setUnit( "micrometer" );
 		registered.getCalibration().pixelWidth = settings.outputResolution;
 		registered.getCalibration().pixelHeight = settings.outputResolution;
@@ -136,7 +132,7 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 	}
 
 
-	public void setSettingsFromUI()
+	public void setSettings()
 	{
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.registrationResolution = registrationResolution;

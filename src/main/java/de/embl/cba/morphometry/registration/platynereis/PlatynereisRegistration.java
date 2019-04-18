@@ -12,8 +12,6 @@ import net.imglib2.FinalInterval;
 import net.imglib2.Point;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealPoint;
-import net.imglib2.algorithm.labeling.ConnectedComponents;
-import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
@@ -31,7 +29,6 @@ import java.util.List;
 import static de.embl.cba.morphometry.Constants.*;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static de.embl.cba.transforms.utils.Scalings.createResampledArrayImg;
-import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 import static java.lang.Math.toRadians;
 
@@ -68,7 +65,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		this.inputCalibration = inputCalibration;
 		this.image = image;
 
-		if ( settings.showIntermediateResults )
+//		if ( settings.showIntermediateResults )
 //			show( image, "input image", null, inputCalibration, false );
 
 		registration = new AffineTransform3D();
@@ -89,23 +86,6 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 		return true;
 
-	}
-
-	public double[] getElliposidEulerAnglesInDegrees()
-	{
-		return ellipsoidParameters.eulerAnglesInDegrees;
-	}
-
-	public double[] getElliposidCentreInInputImagePixelUnits()
-	{
-		final double[] center = ellipsoidParameters.center;
-
-		for ( int d = 0; d < 3; d++ )
-			center[ d ] = center[ d ] * settings.registrationResolution / inputCalibration[ d ];
-
-		center[ 2 ] /= settings.refractiveIndexAxialCalibrationCorrectionFactor;
-
-		return center;
 	}
 
 	private void applyEllipsoidAlignmentToImageAndMask()
@@ -211,19 +191,17 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		return distances;
 	}
 
-	private ImgLabeling< Integer, IntType > watershed(
-			RandomAccessibleInterval< DoubleType > distances )
+	private void createMask()
 	{
+		binarise();
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = createWatershedSeeds( distances );
+		removeSmallRegionsFromMask();
 
-		final ImgLabeling< Integer, IntType > imgLabeling =
-				computeWatershed( mask, distances, seedsLabelImg );
+//		fillHolesInMask();
 
-		return imgLabeling;
 	}
 
-	private void createMask()
+	private void binarise()
 	{
 		/**
 		 *  Compute threshold
@@ -241,12 +219,10 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		if ( settings.showIntermediateResults )
 			show( Utils.copyAsArrayImg( mask ), "binary mask", null,
 					registrationCalibration, false );
-		/**
-		 * Process mask
-		 * - remove small objects
-		 * - close holes
-		 */
+	}
 
+	private void removeSmallRegionsFromMask()
+	{
 		Regions.removeSmallRegionsInMask(
 				mask,
 				settings.minimalObjectSize,
@@ -255,15 +231,17 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		if ( settings.showIntermediateResults )
 			show( Utils.copyAsArrayImg( mask ), "small regions removed", null,
 					registrationCalibration, false );
+	}
 
-//		Logger.log( "Fill holes..." );
-//		for ( int d = 0; d < 3; ++d )
-//			mask = Algorithms.fillHoles3Din2D( mask, d, opService );
+	private void fillHolesInMask()
+	{
+		Logger.log( "Fill holes..." );
+		for ( int d = 0; d < 3; ++d )
+			mask = Algorithms.fillHoles3Din2D( mask, d, opService );
 
 		if ( settings.showIntermediateResults )
 			show( mask, "small regions removed and holes closed", null,
 					registrationCalibration, false );
-
 	}
 
 	private void downSampleToRegistrationResolution( RandomAccessibleInterval< T > image )
@@ -380,52 +358,6 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		return intensityBasedRollTransform;
 	}
 
-	private ImgLabeling< Integer, IntType > createWatershedSeeds(
-			RandomAccessibleInterval< DoubleType > distance )
-	{
-		Logger.log( "Seeds for watershed...");
-
-		/**
-		 * Watershed seeds
-		 * - if local maxima are defined as strictly larger (>) one misses them in case two
-		 *   neighboring pixels in the centre of an object have the same distance value
-		 * - if local maxima are >= and the search radius is
-		 * only 1 pixel (four-connected) one gets false maxima at the corners objects
-		 *   thus, the search radius should be always >= 2 pixels
-		 * - triangle shaped appendices are an issue because they do not have a
-		 *   maximum in the distance map
-		 * - due to the elongated shape of the embryos there
-		 * might not be a clear maximum => use also a global threshold
-		 */
-
-		double globalDistanceThreshold =
-				Math.pow( settings.watershedSeedsGlobalDistanceThreshold
-						/ settings.registrationResolution, 2 );
-		double localMaximaDistanceThreshold =
-				Math.pow( settings.watershedSeedsLocalMaximaDistanceThreshold
-						/ settings.registrationResolution, 2 );
-		int localMaximaSearchRadius =
-				(int) ( settings.watershedSeedsLocalMaximaSearchRadius
-						/ settings.registrationResolution );
-
-		final RandomAccessibleInterval< BitType >  seeds = Algorithms.createWatershedSeeds(
-				distance,
-				new HyperSphereShape( localMaximaSearchRadius ),
-				globalDistanceThreshold,
-				localMaximaDistanceThreshold );
-
-		final ImgLabeling< Integer, IntType > seedsLabelImg =
-				Utils.asImgLabeling( seeds,
-						ConnectedComponents.StructuringElement.FOUR_CONNECTED );
-
-		if ( settings.showIntermediateResults )
-			show( Utils.asIntImg( seedsLabelImg ), "watershed seeds",
-					null,
-					Utils.as3dDoubleArray( settings.registrationResolution ),
-					false );
-
-		return seedsLabelImg;
-	}
 
 	private AffineTransform3D computeFlippingTransform(
 			RandomAccessibleInterval yawAlignedIntensities,

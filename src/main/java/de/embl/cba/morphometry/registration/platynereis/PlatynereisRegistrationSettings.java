@@ -4,12 +4,6 @@ import net.imglib2.FinalInterval;
 
 public class PlatynereisRegistrationSettings
 {
-	public static final String MANUAL_THRESHOLD = "Manual threshold";
-	public static final String HUANG_AUTO_THRESHOLD = "Huang auto threshold";
-	public static final String CENTROID_SHAPE_BASED_ROLL_TRANSFORM = "Shape - Centroids";
-	public static final String PROJECTION_SHAPE_BASED_ROLL_TRANSFORM = "Shape - Projection";
-	public static final String MOMENTS = "Moments";
-	public static final String INTENSITY =  "Intensity";
 
 	// all spatial values are in micrometer
 
@@ -17,44 +11,24 @@ public class PlatynereisRegistrationSettings
 	public static double platyHeight = 80;
 	public static double platyLength = 280;
 
-	public int alignmentChannelIndexOneBased = 2;
-	public int secondaryChannelIndexOneBased = 2;
-
 	public boolean showIntermediateResults = false;
-
-	public double refractiveIndexAxialCalibrationCorrectionFactor = 1.6;
-	public double refractiveIndexIntensityCorrectionDecayLength = 170; //170;
 
 	public double registrationResolution = 8.0;
 	public double outputResolution = 1.0;
 
-	public double rollAngleMinDistanceToAxis = 0;
-	public double rollAngleMinDistanceToCenter = platyWidth / 2.0 * 0.5;
-	public double rollAngleMaxDistanceToCenter = platyWidth / 2.0 - 10.0;
-
-	public double watershedSeedsGlobalDistanceThreshold = platyLength / 3.0;
-	public double watershedSeedsLocalMaximaDistanceThreshold = 0.0;
-
-	public String thresholdModality = MANUAL_THRESHOLD;
 	public double thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 
 	public static double[] outputImageSize =
-			new double[]{ platyWidth * 1.5,
-					platyLength * 1.5,
-					platyLength * 1.5};
+			new double[]{
+					platyLength * 2.0,
+					platyWidth * 2.0,
+					platyHeight * 2.0};
 
 	public double minimalObjectSize = 0.5 * platyWidth * platyHeight * platyLength;
 
 	public double projectionXMin = -8.0;
 	public double projectionXMax = +8.0;
 	public double projectionBlurSigma = 8.0;
-	public double finalProjectionMinDistanceToCenter = 60;
-	public String rollAngleComputationMethod = INTENSITY;
-	public double watershedSeedsLocalMaximaSearchRadius = 2 * registrationResolution;
-	public String yawTransformComputationMethod;
-	public double centralRegionDistance = platyLength * 0.5;
-	public boolean onlyComputeEllipsoidParameters = false;
-	public double brainWidth = 16;
 
 	public FinalInterval getOutputImageInterval()
 	{
