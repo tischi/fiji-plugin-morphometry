@@ -368,7 +368,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	{
 		Logger.log( "Creating aligned images..." );
 
-		dnaAxesAlignmentTransform = Ellipsoids3DImageSuite.createAlignmentTransform( ellipsoidVectors );
+		dnaAxesAlignmentTransform = Ellipsoids3DImageSuite.createShortestAxisAlignmentTransform( ellipsoidVectors );
 
 		dnaAlignedTubulin = Utils.copyAsArrayImg(
 				Transforms.createTransformedView( tubulin,

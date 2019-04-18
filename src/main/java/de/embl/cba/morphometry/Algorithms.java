@@ -1090,13 +1090,13 @@ public class Algorithms
 	public static < R extends RealType< R > & NativeType< R > >
 	RandomAccessibleInterval< R > erode(
 			RandomAccessibleInterval< R > image,
-			int radius )
+			int radiusPixels )
 	{
 		final RandomAccessibleInterval< R > morphed = Utils.createEmptyCopy( image );
 
-		if ( radius > 0 )
+		if ( radiusPixels > 0 )
 		{
-			Shape shape = new HyperSphereShape( radius );
+			Shape shape = new HyperSphereShape( radiusPixels );
 			Erosion.erode( Views.extendBorder( image ), Views.iterable( morphed ), shape, 1 );
 		}
 

@@ -20,7 +20,7 @@ public class PlatynereisRegistrationSettings
 
 	public static double[] outputImageSize =
 			new double[]{
-					platyLength * 2.0,
+					platyLength * 1.5,
 					platyWidth * 2.0,
 					platyHeight * 2.0};
 
@@ -29,6 +29,7 @@ public class PlatynereisRegistrationSettings
 	public double projectionXMin = -8.0;
 	public double projectionXMax = +8.0;
 	public double projectionBlurSigma = 8.0;
+	public boolean invertImage = false;
 
 	public FinalInterval getOutputImageInterval()
 	{

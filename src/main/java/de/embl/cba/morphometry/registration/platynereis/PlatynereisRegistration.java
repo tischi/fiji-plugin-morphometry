@@ -4,16 +4,17 @@ import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.CurveAnalysis;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidMLJ;
+import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidVectors;
+import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidsMLJ;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
+import ij.ImagePlus;
 import net.imagej.ops.OpService;
-import net.imglib2.FinalInterval;
-import net.imglib2.Point;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.RealPoint;
+import net.imglib2.*;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
@@ -49,7 +50,6 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 	private RandomAccessibleInterval< BitType > yawAlignedMask;
 	private RandomAccessibleInterval yawAlignedIntensity;
 	private CoordinateAndValue axialEmbryoCenter;
-	private EllipsoidMLJ ellipsoidParameters;
 	private double[] inputCalibration;
 
 	public PlatynereisRegistration(
@@ -70,13 +70,16 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 		registration = new AffineTransform3D();
 
-		downSampleToRegistrationResolution( image );
+		isotropic = downSampleToRegistrationResolution( image );
+
+		if ( settings.invertImage )
+			isotropic = Utils.copyAsArrayImg( Utils.invertedView( isotropic ) );
 
 		if ( ! segmentPlaty() ) return false;
 
-		computeEllipsoidParameters();
+		final AffineTransform3D ellipsoidFittingBasedTransformation = computeEllipsoidFittingBasedTransformation( this.mask );
 
-		applyEllipsoidAlignmentToImageAndMask();
+		applyAlignmentToImageAndMask( ellipsoidFittingBasedTransformation );
 
 		orientLongAxis();
 
@@ -88,12 +91,11 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 	}
 
-	private void applyEllipsoidAlignmentToImageAndMask()
+	private void applyAlignmentToImageAndMask( AffineTransform3D alignmentTransform )
 	{
 		Logger.log( "Transform image using Ellipsoid parameters..." );
 
-		registration.preConcatenate(
-				EllipsoidsMLJ.createAlignmentTransform( ellipsoidParameters ) );
+		registration.preConcatenate( alignmentTransform );
 
 		final RandomAccessibleInterval transformedView =
 				Transforms.createTransformedView(
@@ -113,7 +115,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 					Transforms.origin(), registrationCalibration, false );
 	}
 
-	private void computeEllipsoidParameters()
+	private AffineTransform3D computeEllipsoidFittingBasedTransformation( RandomAccessibleInterval< BitType > mask )
 	{
 		/**
 		 * Compute ellipsoid (probably mainly yaw) alignment
@@ -122,7 +124,14 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 		Logger.log( "Fit ellipsoid..." );
 
-		ellipsoidParameters = EllipsoidsMLJ.computeParametersFromBinaryImage( mask );
+		final ImagePlus imagePlus = ImageJFunctions.wrap( Utils.get3DRaiAs5DRaiWithImagePlusDimensionOrder( mask  ), "mask" );
+		final EllipsoidVectors ellipsoidVectors = Ellipsoids3DImageSuite.fitEllipsoid( imagePlus );
+		final AffineTransform3D imageSuiteTransform = Ellipsoids3DImageSuite.createAlignmentTransform( ellipsoidVectors );
+
+		final EllipsoidMLJ ellipsoidMLJ = EllipsoidsMLJ.computeParametersFromBinaryImage( mask );
+		final AffineTransform3D mljTransform = EllipsoidsMLJ.createAlignmentTransform( ellipsoidMLJ );
+
+		return imageSuiteTransform;
 	}
 
 	private void rollTransform()
@@ -193,15 +202,23 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 	private void createMask()
 	{
-		binarise();
+		mask = binarise();
 
-		removeSmallRegionsFromMask();
+		open( mask );
+
+		removeSmallRegions( mask );
 
 //		fillHolesInMask();
 
 	}
 
-	private void binarise()
+	private void open( RandomAccessibleInterval< BitType > mask )
+	{
+		this.mask = Algorithms.erode( mask, 1 );
+		this.mask = Algorithms.dilate( this.mask, 1 );
+	}
+
+	private RandomAccessibleInterval< BitType > binarise()
 	{
 		/**
 		 *  Compute threshold
@@ -219,9 +236,11 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		if ( settings.showIntermediateResults )
 			show( Utils.copyAsArrayImg( mask ), "binary mask", null,
 					registrationCalibration, false );
+
+		return mask;
 	}
 
-	private void removeSmallRegionsFromMask()
+	private void removeSmallRegions( RandomAccessibleInterval< BitType > mask )
 	{
 		Regions.removeSmallRegionsInMask(
 				mask,
@@ -229,7 +248,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 				settings.registrationResolution );
 
 		if ( settings.showIntermediateResults )
-			show( Utils.copyAsArrayImg( mask ), "small regions removed", null,
+			show( Utils.copyAsArrayImg( this.mask ), "small regions removed", null,
 					registrationCalibration, false );
 	}
 
@@ -244,7 +263,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 					registrationCalibration, false );
 	}
 
-	private void downSampleToRegistrationResolution( RandomAccessibleInterval< T > image )
+	private RandomAccessibleInterval< T > downSampleToRegistrationResolution( RandomAccessibleInterval< T > image )
 	{
 		/**
 		 *  Down-sampling to registration resolution
@@ -265,7 +284,10 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 			show( isotropic,
 					"isotropic sampled at registration resolution",
 					null, registrationCalibration, false );
+
+		return isotropic;
 	}
+
 
 	private ImgLabeling< Integer, IntType > computeWatershed(
 			RandomAccessibleInterval< BitType > mask,

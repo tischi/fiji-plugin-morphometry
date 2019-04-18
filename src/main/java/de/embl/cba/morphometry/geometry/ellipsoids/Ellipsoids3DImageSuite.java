@@ -27,7 +27,7 @@ public abstract class Ellipsoids3DImageSuite
 	}
 
 
-	public static AffineTransform3D createAlignmentTransform( EllipsoidVectors ellipsoidVectors )
+	public static AffineTransform3D createShortestAxisAlignmentTransform( EllipsoidVectors ellipsoidVectors )
 	{
 		AffineTransform3D translation = new AffineTransform3D();
 		translation.translate( ellipsoidVectors.center  );
@@ -42,6 +42,28 @@ public abstract class Ellipsoids3DImageSuite
 		return combinedTransform;
 	}
 
+
+	public static AffineTransform3D createAlignmentTransform( EllipsoidVectors ellipsoidVectors )
+	{
+		AffineTransform3D transform3D = new AffineTransform3D();
+		transform3D.translate( ellipsoidVectors.center  );
+		transform3D = transform3D.inverse();
+
+		final double[] xAxis = new double[]{ 1, 0, 0 };
+		final double[] longestAxis = ellipsoidVectors.longestAxis.getArray();
+		AffineTransform3D longAxisRotation = Transforms.getRotationTransform3D( xAxis, longestAxis );
+		transform3D = transform3D.preConcatenate( longAxisRotation );
+
+		final double[] zAxis = new double[]{ 0, 0, 1 };
+		final double[] shortestAxis = ellipsoidVectors.shortestAxis.getArray();
+		final double[] shortestAxisInLongestAxisAlignedCoordinateSystem = new double[ 3 ];
+		longAxisRotation.apply( shortestAxis, shortestAxisInLongestAxisAlignedCoordinateSystem );
+
+		AffineTransform3D shortAxisRotation = Transforms.getRotationTransform3D( zAxis, shortestAxisInLongestAxisAlignedCoordinateSystem );
+		transform3D = transform3D.preConcatenate( shortAxisRotation );
+
+		return transform3D;
+	}
 
 
 

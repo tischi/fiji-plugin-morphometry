@@ -1302,4 +1302,17 @@ public class Utils
 		for ( int i = 0; i < values.length; i++ ) copy[ i ] = values[ i ];
 		return copy;
 	}
+
+	public static < R extends RealType< R > & NativeType< R > >
+	RandomAccessibleInterval< R > get3DRaiAs5DRaiWithImagePlusDimensionOrder( RandomAccessibleInterval< R > registeredImage )
+	{
+		// make 5D XYCZT
+		registeredImage =
+				Views.permute(
+						Views.addDimension(
+								Views.addDimension( registeredImage, 0 , 0 ),
+								0 , 0 ),
+						2 ,3 );
+		return registeredImage;
+	}
 }
