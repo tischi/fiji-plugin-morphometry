@@ -395,6 +395,7 @@ public class  DrosophilaSingleChannelRegistration< T extends RealType< T > & Nat
 
 		isotropic = createRescaledArrayImg( image,
 				getScalingFactors( correctedCalibration, settings.registrationResolution ) );
+
 		registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 
 		if ( settings.showIntermediateResults )

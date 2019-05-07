@@ -715,6 +715,7 @@ public class Utils
 	RandomAccessibleInterval< T > invertedView( RandomAccessibleInterval< T > input )
 	{
 		final double maximum = Algorithms.getMaximumValue( input );
+		Logger.log( "Inverting image; maximum value is: " + maximum );
 
 		final RandomAccessibleInterval< T > inverted = Converters.convert( input, ( i, o ) -> {
 			o.setReal( ( int ) ( maximum - i.getRealDouble() ) );

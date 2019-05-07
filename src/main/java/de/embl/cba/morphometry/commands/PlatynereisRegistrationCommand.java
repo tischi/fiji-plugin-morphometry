@@ -29,20 +29,9 @@ import java.util.ArrayList;
 @Plugin(type = Command.class, menuPath = "Plugins>Registration>EMBL>Platynereis Registration" )
 public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeType< R > > implements Command
 {
-	@Parameter
-	public UIService uiService;
-
-	@Parameter
-	public DatasetService datasetService;
-
-	@Parameter
-	public LogService logService;
 
 	@Parameter
 	public OpService opService;
-
-	@Parameter
-	public StatusService statusService;
 
 	PlatynereisRegistrationSettings settings = new PlatynereisRegistrationSettings();
 
@@ -64,13 +53,11 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 	@Parameter ( label = "Invert image (pixels of interest are dark)" )
 	public boolean invertImage;
 
-	@Parameter
+	@Parameter ( label = "Output resolution [micrometer]")
 	public double outputResolution = settings.outputResolution;
 
-	@Parameter
+	@Parameter ( label = "Registration resolution [micrometer]")
 	public double registrationResolution = settings.registrationResolution;
-
-
 
 
 	public void run()
@@ -84,6 +71,7 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 
 		// Open image
 		//
+		Logger.log( "Opening image: " + inputDirectory.getAbsolutePath() );
 		final ImagePlus imagePlus = FolderOpener.open( inputDirectory.getAbsolutePath(),
 				" file=(.*" + fileNameEndsWith + ")" );
 		final RandomAccessibleInterval< R > channelImages = ImageIO.getChannelImages( imagePlus );
@@ -91,6 +79,7 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 
 		// Find registration
 		//
+		Logger.log( "Registering..." );
 		final PlatynereisRegistration< R > registration = new PlatynereisRegistration<>( settings, opService );
 		registration.run( image, calibration );
 

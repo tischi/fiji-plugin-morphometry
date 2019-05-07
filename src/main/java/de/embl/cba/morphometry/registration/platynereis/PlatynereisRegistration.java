@@ -8,7 +8,9 @@ import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidVectors;
 import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
 import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidsMLJ;
 import de.embl.cba.morphometry.regions.Regions;
+import de.embl.cba.transforms.utils.Scalings;
 import de.embl.cba.transforms.utils.Transforms;
+import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
@@ -30,6 +32,7 @@ import java.util.List;
 import static de.embl.cba.morphometry.Constants.*;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static de.embl.cba.transforms.utils.Scalings.createResampledArrayImg;
+import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 import static java.lang.Math.toRadians;
 
@@ -72,8 +75,9 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 		isotropic = downSampleToRegistrationResolution( image );
 
-		if ( settings.invertImage )
-			isotropic = Utils.copyAsArrayImg( Utils.invertedView( isotropic ) );
+//		isotropic = downSampleUsingImageJ1( image );
+
+		if ( settings.invertImage ) invertImage();
 
 		if ( ! segmentPlaty() ) return false;
 
@@ -89,6 +93,37 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 		return true;
 
+	}
+
+	public RandomAccessibleInterval< T >  downSampleUsingImageJ1( RandomAccessibleInterval< T > image )
+	{
+		Logger.log( "Down-sampling to registration resolution: " + settings.registrationResolution + " micrometer" );
+		final double[] scalingFactors = getScalingFactors( inputCalibration, settings.registrationResolution );
+		Logger.log( "Scaling factor X: " + scalingFactors[ 0 ] );
+		Logger.log( "Scaling factor Y: " + scalingFactors[ 1 ] );
+		Logger.log( "Scaling factor Z: " + scalingFactors[ 2 ] );
+
+		final ImagePlus imp = ImageJFunctions.wrap( image, "" );
+
+		IJ.run( imp, "Scale...",
+				"x=" + scalingFactors[ 0 ] +
+						"y=" + scalingFactors[ 1 ] +
+						"z=" + scalingFactors[ 2 ] + " interpolation=Bilinear average process create" );
+
+		imp.close();
+
+		final ImagePlus downScaled = IJ.getImage();
+
+		return ImageJFunctions.wrapReal( downScaled );
+	}
+
+	public void invertImage()
+	{
+		isotropic = Utils.copyAsArrayImg( Utils.invertedView( isotropic ) );
+		if ( settings.showIntermediateResults )
+			show( isotropic,
+					"inverted image",
+					null, registrationCalibration, false );
 	}
 
 	private void applyAlignmentToImageAndMask( AffineTransform3D alignmentTransform )
@@ -267,16 +302,17 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 	{
 		/**
 		 *  Down-sampling to registration resolution
-		 *  - Speeds up calculations ( pow(3) effect in 3D! )
-		 *  - Reduces noise
-		 *  - Fills "holes" in staining
-		 *  - TODO: bug: during down-sampling saturated pixels become zero
 		 */
 
-		Logger.log( "Down-sampling to registration resolution..." );
+		Logger.log( "Down-sampling to registration resolution: " + settings.registrationResolution + " micrometer" );
 
-		// this is without the blurring
-		isotropic = createResampledArrayImg( image, getScalingFactors( inputCalibration, settings.registrationResolution ) );
+		final double[] scalingFactors = getScalingFactors( inputCalibration, settings.registrationResolution );
+
+		Logger.log( "Scaling factor X: " + scalingFactors[ 0 ] );
+		Logger.log( "Scaling factor Y: " + scalingFactors[ 1 ] );
+		Logger.log( "Scaling factor Z: " + scalingFactors[ 2 ] );
+
+		isotropic = Scalings.createRescaledCellImg( image, scalingFactors );
 
 		registrationCalibration = Utils.as3dDoubleArray( settings.registrationResolution );
 

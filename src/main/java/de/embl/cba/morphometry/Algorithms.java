@@ -86,17 +86,16 @@ public class Algorithms
 	public static < T extends RealType< T > >
 	Double getMaximumValue( RandomAccessibleInterval< T > rai )
 	{
-		Cursor< T > cursor = Views.iterable( rai ).localizingCursor();
+		Cursor< T > cursor = Views.iterable( rai ).cursor();
 
 		double maxValue = Double.MIN_VALUE;
 
+		double value;
 		while ( cursor.hasNext() )
 		{
-			final double value = cursor.next().getRealDouble();
+			value = cursor.next().getRealDouble();
 			if ( value > maxValue )
-			{
 				maxValue = value;
-			}
 		}
 
 		return maxValue;
