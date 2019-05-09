@@ -3,7 +3,7 @@ package de.embl.cba.morphometry.measurements;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.skeleton.SkeletonAnalyzer;
-import de.embl.cba.tables.TableUtils;
+import de.embl.cba.tables.Tables;
 import ij.ImagePlus;
 import ij.measure.Calibration;
 import net.imagej.ops.OpService;
@@ -390,12 +390,12 @@ public class Measurements
 	{
 		final ArrayList< HashMap< Integer, Map< String, Object > > > timepoints = new ArrayList<>();
 		timepoints.add( objectMeasurements );
-		return TableUtils.createJTableFromStringList( measurementsAsTableRowsStringList( timepoints, "\t" ), "\t" );
+		return Tables.createJTableFromStringList( measurementsAsTableRowsStringList( timepoints, "\t" ), "\t" );
 	}
 
 	public static JTable asTable( ArrayList< HashMap< Integer, Map< String, Object > > > timepoints )
 	{
-		return TableUtils.createJTableFromStringList( measurementsAsTableRowsStringList( timepoints, "\t" ), "\t" );
+		return Tables.createJTableFromStringList( measurementsAsTableRowsStringList( timepoints, "\t" ), "\t" );
 	}
 
 	public static ArrayList< String > measurementsAsTableRowsStringList(

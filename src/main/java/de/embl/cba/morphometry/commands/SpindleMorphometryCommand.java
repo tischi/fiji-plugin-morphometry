@@ -5,7 +5,8 @@ import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.spindle.SpindleMorphometry;
 import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
-import de.embl.cba.tables.TableUtils;
+import de.embl.cba.tables.Tables;
+import de.embl.cba.tables.Tables;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.ops.OpService;
@@ -127,7 +128,8 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		final File tableOutputFile = new File( getOutputDirectory() + "measurements.txt" );
 
 		Logger.log( "Saving " + tableOutputFile );
-		TableUtils.saveTable( jTable, tableOutputFile );
+
+		Tables.saveTable( jTable, tableOutputFile );
 	}
 
 	private String getOutputDirectory()

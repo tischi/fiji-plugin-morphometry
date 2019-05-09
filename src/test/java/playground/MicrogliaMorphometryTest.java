@@ -4,7 +4,7 @@ import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.microglia.MicrogliaMorphometry;
-import de.embl.cba.tables.TableUtils;
+import de.embl.cba.tables.Tables;
 import ij.ImagePlus;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
@@ -38,7 +38,7 @@ public class MicrogliaMorphometryTest
 
 		final JTable jTable = Measurements.asTable( measurements );
 
-		TableUtils.saveTable( jTable, new File( "/Users/tischer/Documents/fiji-plugin-morphometry/src/test/resources/microglia/MAX_5C-crop-t1-3-measurements.csv" ) );
+		Tables.saveTable( jTable, new File( "/Users/tischer/Documents/fiji-plugin-morphometry/src/test/resources/microglia/MAX_5C-crop-t1-3-measurements.csv" ) );
 
 	}
 }

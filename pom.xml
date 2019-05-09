@@ -13,7 +13,7 @@
 
 	<groupId>de.embl.cba</groupId>
 	<artifactId>fiji-plugin-morphometry</artifactId>
-	<version>0.4.08</version>
+	<version>0.4.09</version>
 	<url>https://github.com/tischi/fiji-plugin-morphometry</url>
 
 	<distributionManagement>
@@ -198,13 +198,13 @@
 		<dependency>
 			<groupId>de.embl.cba</groupId>
 			<artifactId>table-utils</artifactId>
-			<version>0.2.02</version>
+			<version>0.3.07</version>
 		</dependency>
 
 		<dependency>
 			<groupId>de.embl.cba</groupId>
 			<artifactId>bdv-utils</artifactId>
-			<version>0.2.04</version>
+			<version>0.2.14</version>
 		</dependency>
 
 		<dependency>

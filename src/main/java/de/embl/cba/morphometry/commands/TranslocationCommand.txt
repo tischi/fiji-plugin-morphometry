@@ -10,7 +10,7 @@ import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.translocation.MembraneTranslocationComputer;
 import de.embl.cba.morphometry.translocation.TranslocationResult;
-import de.embl.cba.tables.TableUtils;
+import de.embl.cba.tables.Tables;
 import de.embl.cba.tables.objects.ObjectTablePanel;
 import ij.ImagePlus;
 import ij.io.FileSaver;
@@ -85,7 +85,7 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 
 		new FileSaver( labelMasksImp ).saveAsTiff( outputPathStump  + "-labels.tif" );
 
-		TableUtils.saveTable( objectTablePanel.getTable(), new File( outputPathStump + "-table.csv") );
+		Tables.saveTable( objectTablePanel.getTable(), new File( outputPathStump + "-table.csv") );
 
 	}
 

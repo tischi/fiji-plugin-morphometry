@@ -18,8 +18,8 @@ import javax.swing.*;
 import java.io.File;
 import java.util.*;
 
-import static de.embl.cba.tables.TableUtils.addRelativeImagePathColumn;
-import static de.embl.cba.tables.TableUtils.saveTable;
+import static de.embl.cba.tables.Tables.addRelativeImagePathColumn;
+import static de.embl.cba.tables.Tables.saveTable;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Morphometry>Microglia Morphometry" )
 public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType< T > >
