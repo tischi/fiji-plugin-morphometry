@@ -68,7 +68,7 @@ public abstract class Regions
 		return largestRegion;
 	}
 
-	public static RandomAccessibleInterval< BitType > labelRegionAsMask( LabelRegion labelRegion )
+	public static RandomAccessibleInterval< BitType > getLabelRegionAsMask( LabelRegion labelRegion )
 	{
 		RandomAccessibleInterval< BitType > rai = ArrayImgs.bits( Intervals.dimensionsAsLongArray( labelRegion ) );
 		rai = Transforms.getWithAdjustedOrigin( labelRegion, rai  );

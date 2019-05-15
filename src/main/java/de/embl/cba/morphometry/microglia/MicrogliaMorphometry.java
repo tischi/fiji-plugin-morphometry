@@ -32,17 +32,13 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 
 	public void run()
 	{
-		createSkeletons( );
-
+		createSkeletons();
 		measurementsTimepointList = Measurements.initMeasurements( labelMaps.size() );
-
-		performMeasurements( );
+		performMeasurements();
 	}
 
 	private void performMeasurements( )
 	{
-
-
 		for ( int t = 0; t < labelMaps.size(); ++t )
 		{
 			final HashMap< Integer, Map< String, Object > > measurements =
@@ -72,12 +68,17 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 					measurements,
 					imgLabeling );
 
-			// TODO: move to skeletonAnalyzer?
 			Measurements.measureSkeletons(
 					measurements,
 					imgLabeling,
 					skeletons.get( t ),
 					opService );
+
+			Measurements.measureGeodesicDistanceFeatures(
+					measurements,
+					imgLabeling );
+
+
 
 			// Form factor could be calculated later, e.g. in R
 

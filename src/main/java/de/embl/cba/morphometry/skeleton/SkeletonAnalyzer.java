@@ -7,15 +7,19 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
 
+import java.util.ArrayList;
+
 public class SkeletonAnalyzer< R extends RealType< R > >
 {
 
 	final RandomAccessibleInterval< BitType > skeleton;
 	final OpService opService;
 
-	double skeletonLength;
+	double totalSkeletonLength;
 	long numBranchPoints;
 	private RandomAccessibleInterval<BitType> branchpoints;
+	private long longestBranchLength;
+	private ArrayList< Long > branchLengths;
 
 	public SkeletonAnalyzer( RandomAccessibleInterval< BitType > skeleton, OpService opService )
 	{
@@ -28,13 +32,14 @@ public class SkeletonAnalyzer< R extends RealType< R > >
 
 	private void run()
 	{
-		measureLength();
+		totalSkeletonLength = measureSum( skeleton );
 
-		branchpoints = measureBranchpoints();
+		branchpoints = detectBranchpoints();
 
+		branchLengths = Skeletons.branchLengths( skeleton );
 	}
 
-	private RandomAccessibleInterval< BitType > measureBranchpoints()
+	private RandomAccessibleInterval< BitType > detectBranchpoints()
 	{
 		RandomAccessibleInterval< BitType > branchpoints = Skeletons.branchpoints( skeleton );
 
@@ -43,9 +48,29 @@ public class SkeletonAnalyzer< R extends RealType< R > >
 		return branchpoints;
 	}
 
-	public void measureLength()
+
+	public long getNumBranches()
 	{
-		skeletonLength = measureSum( skeleton );
+		return branchLengths.size();
+	}
+
+
+	public double getAverageBranchLength()
+	{
+		double avg = 0;
+
+		for ( long length : branchLengths )
+			avg += length;
+
+		avg /= branchLengths.size();
+
+		return avg;
+	}
+
+
+	public long getLongestBranchLength()
+	{
+		return branchLengths.get( 0 );
 	}
 
 	public long getNumBranchPoints()
@@ -58,7 +83,7 @@ public class SkeletonAnalyzer< R extends RealType< R > >
 		return branchpoints;
 	}
 
-	public double getSkeletonLength() { return skeletonLength; }
+	public double getTotalSkeletonLength() { return totalSkeletonLength; }
 
 	public static long measureSum( RandomAccessibleInterval< BitType > rai )
 	{
@@ -67,9 +92,7 @@ public class SkeletonAnalyzer< R extends RealType< R > >
 		long sum = 0;
 
 		while ( cursor.hasNext() )
-		{
 			sum += cursor.next().getRealDouble();
-		}
 
 		return sum;
 	}

@@ -10,6 +10,7 @@ import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.geom.real.Polygon2D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
@@ -21,6 +22,8 @@ import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.view.Views;
+
+import inra.ijpb.measure.region2d.GeodesicDiameter;
 
 import javax.swing.*;
 import java.io.File;
@@ -48,8 +51,10 @@ public class Measurements
 	public static final String NUM_BOUNDARY_PIXELS = "NumBoundaryPixels";
 
 	public static final String GLOBAL_BACKGROUND_INTENSITY = "GlobalBackgroundIntensity";
-	public static final String SKELETON_LENGTH = "SkeletonLength";
-	public static final String SKELETON_NUMBER_OF_BRANCHPOINTS = "SkeletonNumBranchPoints";
+	public static final String SKELETON_TOTAL_LENGTH = "SkeletonTotalLength";
+	public static final String SKELETON_NUMBER_BRANCH_POINTS = "SkeletonNumBranchPoints";
+	public static final String SKELETON_AVG_BRANCH_LENGTH = "SkeletonAvgBranchLength";
+	public static final String SKELETON_LONGEST_BRANCH_LENGTH = "SkeletonLongestBranchLength";
 
 	public static final String SEP = "_";
 	public static final String FRAME_UNITS = "Frames";
@@ -132,7 +137,7 @@ public class Measurements
 		{
 			final int label = ( int ) ( labelRegion.getLabel() );
 
-			final RandomAccessibleInterval< BitType > mask = Regions.labelRegionAsMask( labelRegion );
+			final RandomAccessibleInterval< BitType > mask = Regions.getLabelRegionAsMask( labelRegion );
 
 			// See: https://forum.image.sc/t/measure-surface-perimeter-in-imglib2/21213
 
@@ -152,26 +157,83 @@ public class Measurements
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 
 		for ( LabelRegion labelRegion : labelRegions )
-		{
-			final RandomAccessibleInterval< BitType > regionSkeleton =
-					Regions.getMaskedAndCropped( skeleton, labelRegion );
+			measureSkeleton( objectMeasurements, skeleton, opService, labelRegion );
 
-			final SkeletonAnalyzer skeletonAnalyzer =
-					new SkeletonAnalyzer( regionSkeleton, opService );
+	}
 
-			final int label = ( int ) ( labelRegion.getLabel() );
+	public static void measureSkeleton(
+			HashMap< Integer, Map< String, Object > > objectMeasurements,
+			RandomAccessibleInterval< BitType > skeleton,
+			OpService opService,
+			LabelRegion labelRegion )
+	{
+		final RandomAccessibleInterval< BitType > regionSkeleton =
+				Regions.getMaskedAndCropped( skeleton, labelRegion );
 
-			addMeasurement( objectMeasurements,
-					label,
-					 SKELETON_LENGTH + SEP + PIXEL_UNITS,
-					skeletonAnalyzer.getSkeletonLength() );
+		final SkeletonAnalyzer skeletonAnalyzer =
+				new SkeletonAnalyzer( regionSkeleton, opService );
 
-			addMeasurement( objectMeasurements,
-					label,
-					SKELETON_NUMBER_OF_BRANCHPOINTS + SEP + PIXEL_UNITS,
-					skeletonAnalyzer.getNumBranchPoints() );
+		final int label = ( int ) ( labelRegion.getLabel() );
 
-		}
+		addMeasurement( objectMeasurements,
+				label,
+				 SKELETON_TOTAL_LENGTH + SEP + PIXEL_UNITS,
+				skeletonAnalyzer.getTotalSkeletonLength() );
+
+		addMeasurement( objectMeasurements,
+				label,
+				SKELETON_NUMBER_BRANCH_POINTS + SEP + PIXEL_UNITS,
+				skeletonAnalyzer.getNumBranchPoints() );
+
+		addMeasurement( objectMeasurements,
+				label,
+				SKELETON_AVG_BRANCH_LENGTH + SEP + PIXEL_UNITS,
+				skeletonAnalyzer.getAverageBranchLength() );
+
+		addMeasurement( objectMeasurements,
+				label,
+				SKELETON_LONGEST_BRANCH_LENGTH + SEP + PIXEL_UNITS,
+				skeletonAnalyzer.getLongestBranchLength() );
+
+
+	}
+
+	public static void measureGeodesicDistanceFeatures(
+			HashMap<Integer, Map<String, Object>> objectMeasurements,
+			ImgLabeling<Integer, IntType> imgLabeling )
+	{
+		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+
+		for ( LabelRegion labelRegion : labelRegions )
+			measureGeodesicDistanceFeatures( objectMeasurements, labelRegion );
+
+	}
+
+	public static void measureGeodesicDistanceFeatures(
+			HashMap< Integer, Map< String, Object > > objectMeasurements,
+			LabelRegion labelRegion )
+	{
+		final int label = ( int ) ( labelRegion.getLabel() );
+
+		final RandomAccessibleInterval< BitType > mask =
+				Regions.getLabelRegionAsMask( labelRegion );
+
+		final Calibration calibration = new Calibration();
+
+		final GeodesicDiameter.Result[] results = GeodesicDiameter.geodesicDiameters(
+				ImageJFunctions.wrap( mask, "" ).getProcessor(),
+				new int[]{ 1 },
+				calibration );
+
+		addMeasurement( objectMeasurements,
+				label,
+				"GeodesicDiameter" + SEP + PIXEL_UNITS,
+				results[ 0 ].diameter );
+
+		addMeasurement( objectMeasurements,
+				label,
+				"LargestInscribedCircleRadius" + SEP + PIXEL_UNITS,
+				results[ 0 ].innerRadius );
 	}
 
 
@@ -359,7 +421,10 @@ public class Measurements
 
 	}
 
-	public static void addGlobalBackgroundMeasurement( HashMap<Integer, Map<String, Object>> objectMeasurements, ImgLabeling<Integer, IntType> imgLabeling, double offset )
+	public static void addGlobalBackgroundMeasurement(
+			HashMap<Integer, Map<String, Object>> objectMeasurements,
+			ImgLabeling<Integer, IntType> imgLabeling,
+			double offset )
 	{
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
@@ -473,14 +538,17 @@ public class Measurements
 		for ( LabelRegion labelRegion : labelRegions )
 		{
 			long sum = measureSumIntensity( imageRandomAccess, labelRegion );
-			addMeasurement( objectMeasurements, (int) labelRegion.getLabel(), SUM_INTENSITY + SEP + channel, sum );
+			addMeasurement( objectMeasurements,
+					(int) labelRegion.getLabel(),
+					SUM_INTENSITY + SEP + channel, sum );
 		}
 	}
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	void measureNumBoundaryPixels( HashMap< Integer, Map< String, Object > > objectMeasurements,
-								   ImgLabeling< Integer, IntType > imgLabeling )
+	void measureNumBoundaryPixels(
+			HashMap< Integer, Map< String, Object > > objectMeasurements,
+			ImgLabeling< Integer, IntType > imgLabeling )
 	{
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 
@@ -492,8 +560,11 @@ public class Measurements
 
 		for ( LabelRegion labelRegion : labelRegions )
 		{
-			long numBoundaryPixels = measureNumBoundaryPixels( labelRegion, imgBoundaryMin, imgBoundaryMax );
-			addMeasurement( objectMeasurements, (int) labelRegion.getLabel(), NUM_BOUNDARY_PIXELS, numBoundaryPixels );
+			long numBoundaryPixels =
+					measureNumBoundaryPixels( labelRegion, imgBoundaryMin, imgBoundaryMax );
+
+			addMeasurement( objectMeasurements,
+					(int) labelRegion.getLabel(), NUM_BOUNDARY_PIXELS, numBoundaryPixels );
 		}
 	}
 

@@ -63,6 +63,7 @@ public class DrosophilaRegistrationCommand < T extends RealType< T > & NativeTyp
 	@Parameter( choices = { FROM_DIRECTORY, CURRENT_IMAGE })
 	public String inputModality = FROM_DIRECTORY;
 
+
 	@Parameter( style = "directory" )
 	public File inputDirectory;
 

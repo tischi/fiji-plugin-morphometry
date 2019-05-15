@@ -5,7 +5,7 @@ import net.imagej.ImageJ;
 
 import java.io.File;
 
-public class RunHeadlessPlatynereisRegistrationCommand
+public class PlatynereisRegistrationCommandKimberly
 {
 	public static void main(final String... args)
 	{
