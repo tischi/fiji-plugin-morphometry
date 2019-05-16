@@ -73,10 +73,9 @@ public class Algorithms
 		}
 
 
-		for ( int d = 0; d < rai.numDimensions(); ++d )
-		{
-			maxLoc[ d ] *= calibration[ d ];
-		}
+		if ( calibration != null )
+			for ( int d = 0; d < rai.numDimensions(); ++d )
+				maxLoc[ d ] *= calibration[ d ];
 		
 		Point point = new Point( maxLoc );
 
@@ -812,18 +811,21 @@ public class Algorithms
 			OpService opService )
 	{
 
-		RandomAccessibleInterval< BitType > skeletons = ArrayImgs.bits( Intervals.dimensionsAsLongArray( imgLabeling ) );
+		RandomAccessibleInterval< BitType > skeletons =
+				ArrayImgs.bits( Intervals.dimensionsAsLongArray( imgLabeling ) );
 		skeletons = Transforms.getWithAdjustedOrigin( imgLabeling.getSource(), skeletons );
 
 		final LabelRegions< IntType > labelRegions = new LabelRegions( imgLabeling );
 
 		for ( LabelRegion< IntType > labelRegion : labelRegions )
 		{
-			RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Regions.getLabelRegionAsMask( labelRegion ) );
+			RandomAccessibleInterval< BitType > labelRegionMask =
+					Views.zeroMin( Regions.getLabelRegionAsMask( labelRegion ) );
 
 			labelRegionMask = Algorithms.close(  labelRegionMask, closingRadius );
 
-			final RandomAccessibleInterval skeleton = opService.morphology().thinGuoHall( labelRegionMask );
+			final RandomAccessibleInterval skeleton =
+					opService.morphology().thinGuoHall( labelRegionMask );
 
 			drawSkeleton( skeletons, skeleton, Intervals.minAsLongArray( labelRegion ) );
 		}
@@ -1030,17 +1032,27 @@ public class Algorithms
 			RandomAccessibleInterval< BitType > mask,
 			int closingRadius )
 	{
-		// TODO: Bug(?!) in imglib2 Closing.close makes enlargement necessary, otherwise one gets weird results at boundaries
-		RandomAccessibleInterval< BitType > morphed = ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
-		morphed = Views.translate( morphed, Intervals.minAsLongArray( mask ) );
-		final RandomAccessibleInterval< BitType > enlargedMask = Utils.getEnlargedRai( mask, closingRadius );
-		final RandomAccessibleInterval< BitType > enlargedMorphed = Utils.getEnlargedRai( morphed, closingRadius );
+		if ( closingRadius <= 0 ) return mask;
 
-		if ( closingRadius > 0 )
-		{
-			Shape closingShape = new HyperSphereShape( closingRadius );
-			Closing.close( Views.extendZero( enlargedMask ), Views.iterable( enlargedMorphed ), closingShape, 1 );
-		}
+		// TODO: Bug(?!) in imglib2 Closing.close makes enlargement necessary, otherwise one gets weird results at boundaries
+
+		RandomAccessibleInterval< BitType > morphed =
+				ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+
+		morphed = Views.translate( morphed, Intervals.minAsLongArray( mask ) );
+
+		final RandomAccessibleInterval< BitType > enlargedMask =
+				Utils.getEnlargedRai( mask, closingRadius );
+		final RandomAccessibleInterval< BitType > enlargedMorphed =
+				Utils.getEnlargedRai( morphed, closingRadius );
+
+		Shape closingShape = new HyperSphereShape( closingRadius );
+		Closing.close(
+				Views.extendZero( enlargedMask ),
+				Views.iterable( enlargedMorphed ),
+				closingShape,
+				1 );
+
 
 		return Views.interval( enlargedMorphed, mask );
 	}

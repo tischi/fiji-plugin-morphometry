@@ -37,7 +37,8 @@ public class SimpleSegmenterMicroglia< T extends RealType< T > & NativeType< T >
 		 *  Create working image
 		 */
 
-		final double[] workingCalibration = Utils.as2dDoubleArray( settings.workingVoxelSize );
+		final double[] workingCalibration =
+				Utils.as2dDoubleArray( settings.workingVoxelSize );
 
 		final RandomAccessibleInterval< T > image =
 				createRescaledArrayImg( intensity,

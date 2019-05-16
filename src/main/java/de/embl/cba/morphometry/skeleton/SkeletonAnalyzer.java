@@ -21,7 +21,9 @@ public class SkeletonAnalyzer< R extends RealType< R > >
 	private long longestBranchLength;
 	private ArrayList< Long > branchLengths;
 
-	public SkeletonAnalyzer( RandomAccessibleInterval< BitType > skeleton, OpService opService )
+	public SkeletonAnalyzer(
+			RandomAccessibleInterval< BitType > skeleton,
+			OpService opService )
 	{
 		this.skeleton = skeleton;
 		this.opService = opService;
@@ -41,7 +43,7 @@ public class SkeletonAnalyzer< R extends RealType< R > >
 
 	private RandomAccessibleInterval< BitType > detectBranchpoints()
 	{
-		RandomAccessibleInterval< BitType > branchpoints = Skeletons.branchpoints( skeleton );
+		RandomAccessibleInterval< BitType > branchpoints = Skeletons.branchPoints( skeleton );
 
 		numBranchPoints = measureSum( branchpoints );
 
@@ -57,6 +59,9 @@ public class SkeletonAnalyzer< R extends RealType< R > >
 
 	public double getAverageBranchLength()
 	{
+
+		if ( branchLengths.size() == 0 ) return 0;
+
 		double avg = 0;
 
 		for ( long length : branchLengths )
@@ -70,6 +75,8 @@ public class SkeletonAnalyzer< R extends RealType< R > >
 
 	public long getLongestBranchLength()
 	{
+		if ( branchLengths.size() == 0 ) return 0;
+
 		return branchLengths.get( 0 );
 	}
 

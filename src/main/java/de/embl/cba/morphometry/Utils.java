@@ -4,9 +4,13 @@ import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.ImagePlus;
+import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.plugin.Duplicator;
 import ij.process.LUT;
+import loci.plugins.in.ImagePlusReader;
+import loci.plugins.in.ImportProcess;
+import loci.plugins.in.ImporterOptions;
 import net.imglib2.*;
 import net.imglib2.Cursor;
 import net.imglib2.Point;
@@ -407,19 +411,20 @@ public class Utils
 
 
 	public static  < T extends RealType< T > & NativeType< T > >
-	void applyMask( RandomAccessibleInterval< T > rai, RandomAccessibleInterval< BitType > mask )
+	void applyMask(
+			RandomAccessibleInterval< T > rai,
+			RandomAccessibleInterval< BitType > mask )
 	{
 		final Cursor< T > cursor = Views.iterable( rai ).cursor();
-		final OutOfBounds< BitType > maskAccess = Views.extendZero( mask ).randomAccess();
+		final OutOfBounds< BitType > maskAccess =
+				Views.extendZero( mask ).randomAccess();
 
   		while ( cursor.hasNext() )
 		{
 			cursor.fwd();
 			maskAccess.setPosition( cursor );
 			if ( ! maskAccess.get().get() )
-			{
 				cursor.get().setZero();
-			}
 		}
 	}
 
@@ -791,7 +796,11 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	void drawPoint( RandomAccessibleInterval< T > rai, double[] position, double radius, double calibration )
+	void drawPoint(
+			RandomAccessibleInterval< T > rai,
+			double[] position,
+			double radius,
+			double calibration )
 	{
 		Shape shape = new HyperSphereShape( (int) ceil( radius / calibration ) );
 		final RandomAccessible< Neighborhood< T > > nra = shape.neighborhoodsRandomAccessible( rai );
@@ -1008,7 +1017,8 @@ public class Utils
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval<BitType> asMask( RandomAccessibleInterval< T > rai )
 	{
-		RandomAccessibleInterval< BitType > mask = ArrayImgs.bits( Intervals.dimensionsAsLongArray( rai ) );
+		RandomAccessibleInterval< BitType > mask =
+				ArrayImgs.bits( Intervals.dimensionsAsLongArray( rai ) );
 		mask = Transforms.getWithAdjustedOrigin( rai, mask  );
 		final RandomAccess< BitType > maskAccess = mask.randomAccess();
 
@@ -1024,6 +1034,7 @@ public class Utils
 				maskAccess.get().set( true );
 			}
 		}
+
 		return mask;
 	}
 
@@ -1035,11 +1046,11 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	ImagePlus listOf2DImagesAsImagePlusMovie(
-			ArrayList< RandomAccessibleInterval< T > > rais,
+	ImagePlus asImagePlusMovie(
+			ArrayList< RandomAccessibleInterval< T > > rais2D,
 			String title )
 	{
-		RandomAccessibleInterval movie = Views.stack( rais );
+		RandomAccessibleInterval movie = Views.stack( rais2D );
 		movie = Views.addDimension( movie, 0, 0);
 		movie = Views.addDimension( movie, 0, 0);
 		movie = Views.permute( movie, 2,4 );
@@ -1160,7 +1171,7 @@ public class Utils
 		return unique;
 	}
 
-	public static ImagePlus asImagePlus( RandomAccessibleInterval rai, String title )
+	public static ImagePlus asImagePlusMovie( RandomAccessibleInterval rai, String title )
 	{
 		final ImagePlus wrap = ImageJFunctions.wrap(
 				Views.permute(
@@ -1169,9 +1180,9 @@ public class Utils
 		return wrap;
 	}
 
-	public static ImagePlus asImagePlus( RandomAccessibleInterval rai, String title, Calibration calibration )
+	public static ImagePlus asImagePlusMovie( RandomAccessibleInterval rai, String title, Calibration calibration )
 	{
-		final ImagePlus wrap = asImagePlus( rai, title );
+		final ImagePlus wrap = asImagePlusMovie( rai, title );
 		wrap.setCalibration( calibration );
 		return wrap;
 	}
@@ -1179,7 +1190,7 @@ public class Utils
 	public static < T extends RealType< T > & NativeType< T > >
 	ImagePlus labelingsAsImagePlus( ArrayList< RandomAccessibleInterval< T > > labelings )
 	{
-		ImagePlus segmentationImp = listOf2DImagesAsImagePlusMovie( labelings, SEGMENTATION );
+		ImagePlus segmentationImp = asImagePlusMovie( labelings, SEGMENTATION );
 		segmentationImp.setLut( getGoldenAngleLUT() );
 		segmentationImp.setTitle( SEGMENTATION );
 		return segmentationImp;
@@ -1315,5 +1326,78 @@ public class Utils
 								0 , 0 ),
 						2 ,3 );
 		return registeredImage;
+	}
+
+	public static ImagePlus openWithBioFormats( String path )
+	{
+		try
+		{
+			ImporterOptions opts = new ImporterOptions();
+			opts.setId( path );
+			opts.setVirtual( true );
+
+			ImportProcess process = new ImportProcess( opts );
+			process.execute();
+
+			ImagePlusReader impReader = new ImagePlusReader( process );
+
+			ImagePlus[] imps = impReader.openImagePlus();
+			return imps[ 0 ];
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+			return null;
+		}
+
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	void saveLabels(
+			ArrayList< RandomAccessibleInterval< T > > labelings,
+			Calibration calibration,
+			String outputLabelingsPath )
+	{
+		final ImagePlus labelsImp = labelingsAsImagePlus( labelings );
+		labelsImp.setCalibration( calibration );
+
+		new FileSaver( labelsImp ).saveAsTiff( outputLabelingsPath );
+
+		Logger.log( "Label images saved: " + outputLabelingsPath );
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > getChannelImages( ImagePlus imagePlus )
+	{
+		RandomAccessibleInterval< T > images = ImageJFunctions.wrap( imagePlus );
+
+		int numChannels = imagePlus.getNChannels();
+
+		if ( numChannels == 1 )
+			images = Views.addDimension( images, 0 ,0 );
+		else
+			images = Views.permute( images, imagePlusChannelDimension, 3 );
+
+		return images;
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > getChannelImage( RandomAccessibleInterval< T > images, int channel )
+	{
+		RandomAccessibleInterval< T > rai = Views.hyperSlice( images, 3, channel );
+		return rai;
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	void saveRAIListAsMovie(
+			ArrayList< RandomAccessibleInterval< T > > rais,
+			Calibration calibration,
+			String outputPath, String title )
+	{
+
+		final ImagePlus imp = asImagePlusMovie( rais, title );
+		imp.setCalibration( calibration );
+		new FileSaver( imp ).saveAsTiff( outputPath );
+		Logger.log( "Movie saved: " + outputPath );
 	}
 }

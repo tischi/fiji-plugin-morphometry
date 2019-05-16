@@ -1,6 +1,5 @@
 package de.embl.cba.morphometry.commands;
 
-import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Projection;
 import de.embl.cba.morphometry.registration.drospholia.DrosophilaRegistrationSettings;
@@ -31,7 +30,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 import static de.embl.cba.morphometry.Constants.*;
-import static de.embl.cba.morphometry.ImageIO.openWithBioFormats;
+import static de.embl.cba.morphometry.Utils.openWithBioFormats;
 
 
 @Plugin(type = Command.class, menuPath = "Plugins>Registration>EMBL>Drosophila Registration" )
@@ -245,7 +244,7 @@ public class DrosophilaRegistrationCommand < T extends RealType< T > & NativeTyp
 
 		for ( int channelId = 0; channelId < images.dimension( 3 ); ++channelId )
 		{
-			RandomAccessibleInterval channel = ImageIO.getChannelImage( images, channelId );
+			RandomAccessibleInterval channel = Utils.getChannelImage( images, channelId );
 
 			// top
 			long rangeMin = (long) ( settings.finalProjectionMinDistanceToCenter / settings.outputResolution );
@@ -283,8 +282,8 @@ public class DrosophilaRegistrationCommand < T extends RealType< T > & NativeTyp
 			DrosophilaSingleChannelRegistration registration )
 	{
 		final double[] inputCalibration = Utils.getCalibration( imagePlus );
-		RandomAccessibleInterval< T > images = ImageIO.getChannelImages( imagePlus );
-		RandomAccessibleInterval< T > image = ImageIO.getChannelImage( images, alignmentChannelIndexOneBased - 1  );
+		RandomAccessibleInterval< T > images = Utils.getChannelImages( imagePlus );
+		RandomAccessibleInterval< T > image = Utils.getChannelImage( images, alignmentChannelIndexOneBased - 1  );
 
 		/**
 		 * Compute registration

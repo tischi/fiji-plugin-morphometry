@@ -1,6 +1,8 @@
 package de.embl.cba.morphometry.measurements;
 
+import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Logger;
+import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.skeleton.SkeletonAnalyzer;
 import de.embl.cba.tables.Tables;
@@ -8,8 +10,10 @@ import ij.ImagePlus;
 import ij.measure.Calibration;
 import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
+import net.imglib2.Point;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.geom.real.Polygon2D;
 import net.imglib2.roi.labeling.ImgLabeling;
@@ -21,6 +25,7 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import inra.ijpb.measure.region2d.GeodesicDiameter;
@@ -34,10 +39,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static de.embl.cba.morphometry.Algorithms.getMaximumLocation;
+
 public class Measurements
 {
 
-	public static final String COORDINATE = "Coordinate";
+	public static final String CENTROID = "Centroid";
 
 	public static final String VOLUME = "Volume";
 	public static final String AREA = "Area";
@@ -47,6 +54,7 @@ public class Measurements
 	public static final String SURFACE = "Surface";
 
 	public static final String PIXEL_UNITS = "Pixels";
+
 	public static final String SUM_INTENSITY = "SumIntensity";
 	public static final String NUM_BOUNDARY_PIXELS = "NumBoundaryPixels";
 
@@ -61,6 +69,7 @@ public class Measurements
 	public static final String TIME = "Time";
 	public static final String VOXEL_SPACING = "VoxelSpacing";
 	public static final String FRAME_INTERVAL = "FrameInterval";
+	public static final String BRIGHTEST_POINT = "BrightestPoint";
 
 	public static String getVolumeName( int numDimensions )
 	{
@@ -81,7 +90,7 @@ public class Measurements
 	}
 
 
-	public static void measurePositions(
+	public static void measureCentroids(
 			HashMap< Integer, Map< String, Object > > objectMeasurements,
 			ImgLabeling<Integer, IntType> imgLabeling,
 			double[] calibration )
@@ -90,9 +99,7 @@ public class Measurements
 
 		String unit = "";
 		if ( calibration == null )
-		{
 			unit = PIXEL_UNITS;
-		}
 
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 
@@ -111,10 +118,73 @@ public class Measurements
 				addMeasurement(
 						objectMeasurements,
 						label,
-						COORDINATE + SEP + XYZ[ d ] + SEP + unit,
+						CENTROID + SEP + XYZ[ d ] + SEP + unit,
 						position[ d ] );
 			}
 		}
+	}
+
+
+	public static < T extends RealType< T > & NativeType< T > >
+	void measureBrightestPoints(
+			HashMap< Integer, Map< String, Object > > objectMeasurements,
+			ImgLabeling< Integer, IntType > imgLabeling,
+			RandomAccessibleInterval< T > intensity,
+			double[] calibration,
+			RandomAccessibleInterval< BitType > annotation )
+	{
+		String[] XYZ = new String[]{"X","Y","Z"};
+
+		String unit = "";
+		if ( calibration == null )
+			unit = PIXEL_UNITS;
+
+		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
+
+		for ( LabelRegion labelRegion : labelRegions )
+		{
+			final RandomAccessibleInterval< T > blur =
+					getBlurredIntensityImage( intensity, labelRegion );
+
+			final Point maximumLocation = getMaximumLocation( blur, null );
+
+			if ( annotation != null )
+			{
+				final RandomAccess< BitType > access = annotation.randomAccess();
+				access.setPosition( maximumLocation );
+				access.get().set( true );
+			}
+
+			final long[] position = new long[ maximumLocation.numDimensions() ];
+			maximumLocation.localize( position );
+			for ( int d = 0; d < position.length; ++d )
+			{
+				if ( calibration != null ) position[ d ] *= calibration[ d ];
+
+				addMeasurement(
+						objectMeasurements,
+						( int ) ( labelRegion.getLabel() ),
+						BRIGHTEST_POINT + SEP + XYZ[ d ] + SEP + unit,
+						position[ d ] );
+			}
+
+		}
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > getBlurredIntensityImage(
+			RandomAccessibleInterval< T > intensity,
+			LabelRegion labelRegion )
+	{
+		final RandomAccessibleInterval< T > crop =
+				Utils.copyAsArrayImg( Views.interval( intensity, labelRegion ) );
+		final RandomAccessibleInterval mask = Utils.asMask( labelRegion );
+		Utils.applyMask( crop, mask );
+		final RandomAccessibleInterval< T > blur =
+				Utils.copyAsArrayImg( crop );
+		Gauss3.gauss( 3, Views.extendBorder( crop ), blur ) ;
+		ImageJFunctions.show( blur );
+		return blur;
 	}
 
 	public static void measureVolumes( HashMap<Integer, Map<String, Object>> objectMeasurements,
@@ -182,7 +252,7 @@ public class Measurements
 
 		addMeasurement( objectMeasurements,
 				label,
-				SKELETON_NUMBER_BRANCH_POINTS + SEP + PIXEL_UNITS,
+				SKELETON_NUMBER_BRANCH_POINTS,
 				skeletonAnalyzer.getNumBranchPoints() );
 
 		addMeasurement( objectMeasurements,
@@ -222,7 +292,7 @@ public class Measurements
 
 		final GeodesicDiameter.Result[] results = GeodesicDiameter.geodesicDiameters(
 				ImageJFunctions.wrap( mask, "" ).getProcessor(),
-				new int[]{ 1 },
+				new int[]{ 255 },
 				calibration );
 
 		addMeasurement( objectMeasurements,
@@ -476,7 +546,7 @@ public class Measurements
 
 		String header = "Object_Label";
 
-		header += delim + COORDINATE + SEP + TIME + SEP + FRAME_UNITS;
+		header += delim + CENTROID + SEP + TIME + SEP + FRAME_UNITS;
 
 		for ( String measurementName : measurementNames )
 		{

@@ -354,7 +354,8 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 	}
 
 
-	public AffineTransform3D getRegistrationTransform( double[] inputCalibration, double outputResolution )
+	public AffineTransform3D getRegistrationTransform(
+			double[] inputCalibration, double outputResolution )
 	{
 		final AffineTransform3D transform =
 				Transforms.getScalingTransform( inputCalibration, settings.registrationResolution )

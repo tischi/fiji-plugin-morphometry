@@ -1,15 +1,18 @@
 package de.embl.cba.morphometry.microglia;
 
+import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.skeleton.SkeletonCreator;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.util.Intervals;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,38 +22,57 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 {
 
 	private final ArrayList< RandomAccessibleInterval< T > > labelMaps;
+	private final ArrayList< RandomAccessibleInterval< T > > intensities;
 	private final OpService opService;
 	private ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimepointList;
 	private ArrayList< RandomAccessibleInterval< BitType > > skeletons;
+	private ArrayList< RandomAccessibleInterval< BitType > > annotations;
 
-	public MicrogliaMorphometry( ArrayList< RandomAccessibleInterval< T > > labelMaps,
+
+	public MicrogliaMorphometry( ArrayList< RandomAccessibleInterval< T > > labelMasks,
+								 ArrayList< RandomAccessibleInterval< T > > intensities,
 								 OpService opService )
 	{
-		this.labelMaps = labelMaps;
+		this.labelMaps = labelMasks;
+		this.intensities = intensities;
 		this.opService = opService;
 	}
 
 	public void run()
 	{
 		createSkeletons();
+		annotations = new ArrayList<>(  );
 		measurementsTimepointList = Measurements.initMeasurements( labelMaps.size() );
 		performMeasurements();
 	}
 
 	private void performMeasurements( )
 	{
-		for ( int t = 0; t < labelMaps.size(); ++t )
+		final int nt = labelMaps.size();
+
+		for ( int t = 0; t < nt; ++t )
 		{
+			Logger.log( "Measuring morphometries, frame " + ( t + 1 ) + " / " + nt );
+
 			final HashMap< Integer, Map< String, Object > > measurements =
 					measurementsTimepointList.get( t );
 
 			final ImgLabeling< Integer, IntType > imgLabeling =
 					Utils.labelMapAsImgLabelingRobert( labelMaps.get( t ) );
 
-			Measurements.measurePositions(
+			annotations.add( ArrayImgs.bits( Intervals.dimensionsAsLongArray( imgLabeling ) ) );
+
+			Measurements.measureCentroids(
 					measurements,
 					imgLabeling,
 					null);
+
+			Measurements.measureBrightestPoints(
+					measurements,
+					imgLabeling,
+					intensities.get( t ),
+					null,
+					annotations.get( t ) );
 
 			// Volumes ( = areas )
 			Measurements.measureVolumes(
@@ -105,9 +127,8 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 		final SkeletonCreator skeletonCreator = new SkeletonCreator(
 				Utils.labelMapsAsMasks( labelMaps ),
 				opService );
-
+		skeletonCreator.setClosingRadius( 3 );
 		skeletonCreator.run();
-
 		skeletons = skeletonCreator.getSkeletons();
 	}
 
@@ -116,4 +137,13 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 		return measurementsTimepointList;
 	}
 
+	public ArrayList< RandomAccessibleInterval< BitType > > getSkeletons()
+	{
+		return skeletons;
+	}
+
+	public ArrayList< RandomAccessibleInterval< BitType > > getAnnotations()
+	{
+		return annotations;
+	}
 }

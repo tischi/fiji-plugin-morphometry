@@ -1,6 +1,5 @@
 package de.embl.cba.morphometry.tracking;
 
-import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.SyncWindowsHack;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.regions.Regions;
@@ -139,7 +138,7 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 		final JButton button = new JButton( "Save" );
 		button.addActionListener( e -> SwingUtilities.invokeLater( () -> {
 			labels = runMaximalOverlapTrackerOnEditedImagePlus();
-			ImageIO.saveLabels( labels, calibration, outputLabelingsPath );
+			Utils.saveLabels( labels, calibration, outputLabelingsPath );
 		} ) );
 		return button;
 	}

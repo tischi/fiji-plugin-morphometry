@@ -1,6 +1,5 @@
 package example;
 
-import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.registration.drospholia.DrosophilaRegistrationSettings;
@@ -12,7 +11,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 
-import static de.embl.cba.morphometry.ImageIO.openWithBioFormats;
+import static de.embl.cba.morphometry.Utils.openWithBioFormats;
 
 public class ExampleDrosophilaEllipsoidParameterComputation
 {
@@ -41,10 +40,10 @@ public class ExampleDrosophilaEllipsoidParameterComputation
 //		settings.showIntermediateResults = true;
 
 		RandomAccessibleInterval< T > images =
-				ImageIO.getChannelImages( imagePlus );
+				Utils.getChannelImages( imagePlus );
 
 		RandomAccessibleInterval< T > image =
-				ImageIO.getChannelImage( images, 0  );
+				Utils.getChannelImage( images, 0  );
 
 		final DrosophilaSingleChannelRegistration registration =
 				new DrosophilaSingleChannelRegistration( settings, opService );

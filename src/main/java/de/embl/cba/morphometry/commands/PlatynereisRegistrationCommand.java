@@ -1,6 +1,5 @@
 package de.embl.cba.morphometry.commands;
 
-import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistration;
@@ -9,18 +8,14 @@ import de.embl.cba.transforms.utils.Transforms;
 import ij.ImagePlus;
 import ij.io.FileSaver;
 import ij.plugin.FolderOpener;
-import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.UIService;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -74,8 +69,8 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 		Logger.log( "Opening image: " + inputDirectory.getAbsolutePath() );
 		final ImagePlus imagePlus = FolderOpener.open( inputDirectory.getAbsolutePath(),
 				" file=(.*" + fileNameEndsWith + ")" );
-		final RandomAccessibleInterval< R > channelImages = ImageIO.getChannelImages( imagePlus );
-		RandomAccessibleInterval< R > image = ImageIO.getChannelImage( channelImages, 0 );
+		final RandomAccessibleInterval< R > channelImages = Utils.getChannelImages( imagePlus );
+		RandomAccessibleInterval< R > image = Utils.getChannelImage( channelImages, 0 );
 
 		// Find registration
 		//

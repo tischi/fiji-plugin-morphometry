@@ -1,7 +1,5 @@
 package playground;
 
-import bdv.util.BdvFunctions;
-import bdv.util.BdvOptions;
 import de.embl.cba.morphometry.skeleton.Skeletons;
 import net.imagej.ImageJ;
 import net.imglib2.RandomAccess;
@@ -9,7 +7,6 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.view.Views;
 
 public class SkeletonsLongestBranchExample
 {
@@ -24,9 +21,9 @@ public class SkeletonsLongestBranchExample
 
 		ImageJFunctions.show( skeleton, "skeleton" );
 
-		final RandomAccessibleInterval< BitType > branchpoints = Skeletons.branchpoints( skeleton );
+		final RandomAccessibleInterval< BitType > branchpoints = Skeletons.branchPoints( skeleton );
 
-		ImageJFunctions.show( branchpoints, "branchpoints" );
+		ImageJFunctions.show( branchpoints, "branchPoints" );
 
 		final RandomAccessibleInterval< BitType > longestBranch = Skeletons.longestBranch( skeleton );
 

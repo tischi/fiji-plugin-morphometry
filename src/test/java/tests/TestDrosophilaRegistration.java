@@ -1,6 +1,5 @@
 package tests;
 
-import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.registration.drospholia.DrosophilaRegistrationSettings;
@@ -13,7 +12,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import org.junit.Test;
 
-import static de.embl.cba.morphometry.ImageIO.openWithBioFormats;
+import static de.embl.cba.morphometry.Utils.openWithBioFormats;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -39,7 +38,7 @@ public class TestDrosophilaRegistration < T extends RealType< T > & NativeType< 
 		final double[] calibration = Utils.getCalibration( imagePlus );
 
 		RandomAccessibleInterval< T > images =
-				ImageIO.getChannelImages( imagePlus );
+				Utils.getChannelImages( imagePlus );
 
 		runTest( opService, actualCentre, actualAngle, calibration, images );
 	}
@@ -64,7 +63,7 @@ public class TestDrosophilaRegistration < T extends RealType< T > & NativeType< 
 		final double[] calibration = Utils.getCalibration( imagePlus );
 
 		RandomAccessibleInterval< T > images =
-				ImageIO.getChannelImages( imagePlus );
+				Utils.getChannelImages( imagePlus );
 
 		runTest( opService, actualCentre, actualAngle, calibration, images );
 	}
@@ -78,7 +77,7 @@ public class TestDrosophilaRegistration < T extends RealType< T > & NativeType< 
 			RandomAccessibleInterval< T > images )
 	{
 		RandomAccessibleInterval< T > image =
-				ImageIO.getChannelImage( images, 0  );
+				Utils.getChannelImage( images, 0  );
 
 		final DrosophilaRegistrationSettings settings =
 				new DrosophilaRegistrationSettings();

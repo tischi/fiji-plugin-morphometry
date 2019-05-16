@@ -21,12 +21,18 @@ public class SkeletonCreator< T extends RealType< T > & NativeType< T > >
 	private final OpService opService;
 
 	private ArrayList< RandomAccessibleInterval< BitType > > skeletons;
+	private int closingRadius = 0;
 
 	public SkeletonCreator( ArrayList< RandomAccessibleInterval< BitType > > masks,
 							OpService opService )
 	{
 		this.masks = masks;
 		this.opService = opService;
+	}
+
+	public void setClosingRadius( int closingRadius )
+	{
+		this.closingRadius = closingRadius;
 	}
 
 	public void run()
@@ -39,16 +45,18 @@ public class SkeletonCreator< T extends RealType< T > & NativeType< T > >
 
 		for ( int t = tMin; t <= tMax; ++t )
 		{
-			Logger.log( "Computing skeletons for frame " + ( t + 1 ) );
+			Logger.log( "Creating skeletons, frame " + ( t + 1 ) + " / " + ( ( tMax - tMin ) + 1 ) );
 
-			final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( masks.get( t ), ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+			final ImgLabeling< Integer, IntType > imgLabeling =
+					Utils.asImgLabeling(
+							masks.get( t ),
+							ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 			final RandomAccessibleInterval< BitType > skeletons =
 					Algorithms.createObjectSkeletons(
-						imgLabeling,
-						3, // TODO: Make a parameter
-						opService
-					);
+							imgLabeling,
+							closingRadius, // TODO: Make a parameter
+							opService );
 
 			this.skeletons.add( skeletons );
 		}

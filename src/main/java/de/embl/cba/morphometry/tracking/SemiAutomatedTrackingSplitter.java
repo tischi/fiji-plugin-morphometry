@@ -12,7 +12,6 @@ import ij.ImagePlus;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
-import net.imglib2.ops.parse.token.Int;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.roi.labeling.LabelRegionCursor;
@@ -54,7 +53,7 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 
 		this.labelings = new ArrayList();
 		this.intensitiesImp =
-				Utils.listOf2DImagesAsImagePlusMovie( intensities, Constants.INTENSITIES );
+				Utils.asImagePlusMovie( intensities, Constants.INTENSITIES );
 	}
 
 	public void setMinimalObjectSize( MicrogliaSettings settings, int numDimensions )

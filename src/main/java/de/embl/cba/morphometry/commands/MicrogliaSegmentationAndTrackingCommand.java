@@ -1,6 +1,5 @@
 package de.embl.cba.morphometry.commands;
 
-import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTracking;
@@ -74,7 +73,7 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 
 		final ArrayList< RandomAccessibleInterval< T > > labelings = computeLabels();
 
-		ImageIO.saveLabels(
+		Utils.saveLabels(
 				labelings,
 				imagePlus.getCalibration(),
 				settings.outputLabelingsPath );
@@ -82,7 +81,7 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 
 	private void openIntensitiesAsFrameList( File file )
 	{
-		imagePlus = ImageIO.openWithBioFormats( file.getAbsolutePath() );
+		imagePlus = Utils.openWithBioFormats( file.getAbsolutePath() );
 
 		if ( imagePlus == null )
 		{
@@ -110,28 +109,28 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 	private ArrayList< RandomAccessibleInterval< T > > computeLabels()
 	{
 
-		final MicrogliaSegmentationAndTracking microgliaST =
+		final MicrogliaSegmentationAndTracking segmentationAndTracking =
 				new MicrogliaSegmentationAndTracking(
 						intensities,
 						settings );
 
 		if ( proceedFromExisting )
 		{
-
 			final ImagePlus labelsImp
-					= ImageIO.openWithBioFormats( segmentationFile.getAbsolutePath() );
+					= Utils.openWithBioFormats( segmentationFile.getAbsolutePath() );
+
 			final ArrayList< RandomAccessibleInterval< T > > labelings
 					= Utils.get2DImagePlusMovieAsFrameList(
 					labelsImp,
 					1 );
 
-			microgliaST.setLabelings( labelings );
+			segmentationAndTracking.setLabelings( labelings );
 		}
 
-		microgliaST.run();
+		segmentationAndTracking.run();
 
 		final ArrayList< RandomAccessibleInterval< T > > labelings
-				= microgliaST.getLabelings();
+				= segmentationAndTracking.getLabelings();
 
 		return labelings;
 	}

@@ -1,6 +1,5 @@
 package playground;
 
-import de.embl.cba.morphometry.ImageIO;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.microglia.MicrogliaSegmentationAndTracking;
 import de.embl.cba.morphometry.microglia.MicrogliaSettings;
@@ -21,7 +20,7 @@ public class TestMicrogliaTracking
 
 		final String inputFile = TestMicrogliaTracking.class.getResource( "microglia/MAX_5C-crop-t1-3.tif" ).getFile().toString();
 
-		ImagePlus imagePlus = ImageIO.openWithBioFormats( inputFile );
+		ImagePlus imagePlus = Utils.openWithBioFormats( inputFile );
 
 		final MicrogliaSettings microgliaSettings = new MicrogliaSettings();
 		microgliaSettings.opService = ij.op();

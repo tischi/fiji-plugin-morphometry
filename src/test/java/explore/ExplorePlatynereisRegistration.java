@@ -1,6 +1,6 @@
 package explore;
 
-import de.embl.cba.morphometry.ImageIO;
+import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistration;
 import de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistrationSettings;
 import ij.ImagePlus;
@@ -34,8 +34,8 @@ public class ExplorePlatynereisRegistration
 
 		final ImagePlus imagePlus = FolderOpener.open( imageDataFolder, " file=(.*." + imageDataExtension + ")" );
 
-		final RandomAccessibleInterval< R > channelImages = ImageIO.getChannelImages( imagePlus );
-		RandomAccessibleInterval< R > image = ImageIO.getChannelImage( channelImages, 0 );
+		final RandomAccessibleInterval< R > channelImages = Utils.getChannelImages( imagePlus );
+		RandomAccessibleInterval< R > image = Utils.getChannelImage( channelImages, 0 );
 
 		final PlatynereisRegistrationSettings settings = new PlatynereisRegistrationSettings();
 		settings.showIntermediateResults = true;
