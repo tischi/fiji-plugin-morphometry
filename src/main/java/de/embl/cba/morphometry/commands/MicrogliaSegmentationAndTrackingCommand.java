@@ -73,7 +73,7 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 
 		final ArrayList< RandomAccessibleInterval< T > > labelings = computeLabels();
 
-		Utils.saveLabels(
+		Utils.saveLabelings(
 				labelings,
 				imagePlus.getCalibration(),
 				settings.outputLabelingsPath );

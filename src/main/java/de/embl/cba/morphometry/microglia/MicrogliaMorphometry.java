@@ -65,14 +65,16 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 			Measurements.measureCentroids(
 					measurements,
 					imgLabeling,
-					null);
+					null,
+					annotations.get( t ));
 
 			Measurements.measureBrightestPoints(
 					measurements,
 					imgLabeling,
 					intensities.get( t ),
 					null,
-					annotations.get( t ) );
+					annotations.get( t ),
+					3 );
 
 			// Volumes ( = areas )
 			Measurements.measureVolumes(
@@ -99,25 +101,6 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 			Measurements.measureGeodesicDistanceFeatures(
 					measurements,
 					imgLabeling );
-
-
-
-			// Form factor could be calculated later, e.g. in R
-
-			// Analyze Skeletons: length, branch-points, branches
-			// avg branch-length = length / branches
-
-			// Measure: distance travelled
-
-			// Also,we are presently using MtrackJ to calculate velocity, distance travelled and displacement.
-			// => I would recommend you do this in Excel as this is downstream analysis.
-			// => What I can work on is a tool to upload your extended table again and view it on top of the objects
-
-			// With the segmented microglia movie generated with your plugin, can we do automatic tracking?
-			// The cells are already tracked.
-
-			//	2-The next  challenge would be to measure phagocytosis of green particles and quantify "black holes" as we discussed last summer.
-
 
 		}
 	}

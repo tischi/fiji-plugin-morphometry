@@ -6,6 +6,7 @@ import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.microglia.MicrogliaMorphometry;
 import de.embl.cba.tables.Tables;
 import ij.ImagePlus;
+import inra.ijpb.measure.region2d.GeodesicDiameter;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
@@ -42,15 +43,16 @@ public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType<
 	@Parameter
 	public boolean showIntermediateResults = false;
 
-
 	private ImagePlus labelMaskImagePlus;
 	private File tableOutputFile;
 	private String dataSetID;
 	private ImagePlus intensityImagePlus;
 
-
 	public void run()
 	{
+
+		if ( ! checkInstallationOfMorpholibJ() ) return;
+
 		Logger.log( "" );
 		Logger.log( "" );
 		Logger.log( "Microglia Morphometry Command" );
@@ -72,6 +74,19 @@ public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType<
 
 		Logger.log( "Done!" );
 
+	}
+
+	public boolean checkInstallationOfMorpholibJ()
+	{
+		try {
+			new GeodesicDiameter(  );
+		}
+		catch( NoClassDefFoundError e ) {
+			Logger.error( "Please install MorpholibJ by adding the Update Site: IJPB-plugins" );
+			return false;
+		}
+
+		return true;
 	}
 
 	public ArrayList< RandomAccessibleInterval< T > > openLabelMasks()
@@ -107,6 +122,8 @@ public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType<
 				outputDirectory, intensityFile, "Intensities" );
 
 		saveSkeletons( dataSetID, microgliaMorphometry, table );
+
+		saveAnnotations( dataSetID, microgliaMorphometry, table );
 
 		Logger.log( "Saving results table: " + tableOutputFile );
 

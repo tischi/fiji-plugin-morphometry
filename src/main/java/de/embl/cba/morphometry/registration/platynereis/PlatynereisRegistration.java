@@ -298,13 +298,15 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 					registrationCalibration, false );
 	}
 
-	private RandomAccessibleInterval< T > downSampleToRegistrationResolution( RandomAccessibleInterval< T > image )
+	private RandomAccessibleInterval< T >
+	downSampleToRegistrationResolution( RandomAccessibleInterval< T > image )
 	{
 		/**
 		 *  Down-sampling to registration resolution
 		 */
 
-		Logger.log( "Down-sampling to registration resolution: " + settings.registrationResolution + " micrometer" );
+		Logger.log( "Down-sampling to registration resolution: "
+				+ settings.registrationResolution + " micrometer" );
 
 		final double[] scalingFactors = getScalingFactors( inputCalibration, settings.registrationResolution );
 

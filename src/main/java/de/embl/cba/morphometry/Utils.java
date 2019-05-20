@@ -1226,7 +1226,8 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	ArrayList< RandomAccessibleInterval< T > > get2DImagePlusMovieAsFrameList(
+	ArrayList< RandomAccessibleInterval< T > >
+	get2DImagePlusMovieAsFrameList(
 			ImagePlus imagePlus,
 			long channelOneBased )
 	{
@@ -1237,7 +1238,8 @@ public class Utils
 				imagePlus.getNFrames() );
 	}
 
-	public static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< T > extractTimePoint( ImagePlus imagePlus, long t, RandomAccessibleInterval< T > channel )
+	public static < T extends RealType< T > & NativeType< T > > RandomAccessibleInterval< T >
+	extractTimePoint( ImagePlus imagePlus, long t, RandomAccessibleInterval< T > channel )
 	{
 		RandomAccessibleInterval< T > timepoint;
 
@@ -1353,7 +1355,7 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	void saveLabels(
+	void saveLabelings(
 			ArrayList< RandomAccessibleInterval< T > > labelings,
 			Calibration calibration,
 			String outputLabelingsPath )

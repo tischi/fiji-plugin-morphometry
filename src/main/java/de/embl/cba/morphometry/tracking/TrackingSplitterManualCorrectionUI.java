@@ -138,7 +138,7 @@ public class TrackingSplitterManualCorrectionUI < T extends RealType< T > & Nati
 		final JButton button = new JButton( "Save" );
 		button.addActionListener( e -> SwingUtilities.invokeLater( () -> {
 			labels = runMaximalOverlapTrackerOnEditedImagePlus();
-			Utils.saveLabels( labels, calibration, outputLabelingsPath );
+			Utils.saveLabelings( labels, calibration, outputLabelingsPath );
 		} ) );
 		return button;
 	}

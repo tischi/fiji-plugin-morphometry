@@ -601,7 +601,7 @@ public class Algorithms
 
 			if ( overlappingPreviousObjectLabels.size() > 1 )
 			{
-				RandomAccessibleInterval< BitType > currentObjectMask = Regions.getLabelRegionAsMask( currentRegions.getLabelRegion( currentObjectLabel ) );
+				RandomAccessibleInterval< BitType > currentObjectMask = Regions.asMask( currentRegions.getLabelRegion( currentObjectLabel ) );
 				RandomAccessibleInterval< IntType > previousLabelingCrop =  Views.interval( previousLabeling, currentObjectMask );
 
 				currentObjectMask = Views.zeroMin( currentObjectMask );
@@ -729,7 +729,7 @@ public class Algorithms
 			{
 
 				final RandomAccessibleInterval< T > maskedAndCroppedIntensities = Views.zeroMin( Regions.getMaskedAndCropped( intensity, labelRegions.getLabelRegion( label ) ) );
-				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Regions.getLabelRegionAsMask( labelRegions.getLabelRegion( label ) ) );
+				final RandomAccessibleInterval< BitType > labelRegionMask = Views.zeroMin( Regions.asMask( labelRegions.getLabelRegion( label ) ) );
 
 				final ArrayList< PositionAndValue > localMaxima =
 						computeSortedLocalIntensityMaxima(
@@ -820,7 +820,7 @@ public class Algorithms
 		for ( LabelRegion< IntType > labelRegion : labelRegions )
 		{
 			RandomAccessibleInterval< BitType > labelRegionMask =
-					Views.zeroMin( Regions.getLabelRegionAsMask( labelRegion ) );
+					Views.zeroMin( Regions.asMask( labelRegion ) );
 
 			labelRegionMask = Algorithms.close(  labelRegionMask, closingRadius );
 
@@ -956,7 +956,7 @@ public class Algorithms
 
 			if ( splitObjectLabel == WATERSHED )
 			{
-				final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( Regions.getLabelRegionAsMask( region ), ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+				final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( Regions.asMask( region ), ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 				final LabelRegions< Integer > splitRegions = new LabelRegions( imgLabeling );
 
 				long maximalLength = 0;

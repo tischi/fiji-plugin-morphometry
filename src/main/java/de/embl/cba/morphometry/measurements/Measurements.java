@@ -25,7 +25,7 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.view.IntervalView;
+import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.Views;
 
 import inra.ijpb.measure.region2d.GeodesicDiameter;
@@ -70,6 +70,7 @@ public class Measurements
 	public static final String VOXEL_SPACING = "VoxelSpacing";
 	public static final String FRAME_INTERVAL = "FrameInterval";
 	public static final String BRIGHTEST_POINT = "BrightestPoint";
+	public static final String BRIGHTEST_POINT_WIDTH = "BrightestPointWidth";
 
 	public static String getVolumeName( int numDimensions )
 	{
@@ -92,8 +93,9 @@ public class Measurements
 
 	public static void measureCentroids(
 			HashMap< Integer, Map< String, Object > > objectMeasurements,
-			ImgLabeling<Integer, IntType> imgLabeling,
-			double[] calibration )
+			ImgLabeling< Integer, IntType > imgLabeling,
+			double[] calibration,
+			RandomAccessibleInterval< BitType > annotation )
 	{
 		String[] XYZ = new String[]{"X","Y","Z"};
 
@@ -120,6 +122,9 @@ public class Measurements
 						label,
 						CENTROID + SEP + XYZ[ d ] + SEP + unit,
 						position[ d ] );
+
+				if ( annotation != null )
+					drawPosition( annotation, Utils.asLongs( position ) );
 			}
 		}
 	}
@@ -131,7 +136,8 @@ public class Measurements
 			ImgLabeling< Integer, IntType > imgLabeling,
 			RandomAccessibleInterval< T > intensity,
 			double[] calibration,
-			RandomAccessibleInterval< BitType > annotation )
+			RandomAccessibleInterval< BitType > annotation,
+			int gaussianBlurSigma )
 	{
 		String[] XYZ = new String[]{"X","Y","Z"};
 
@@ -144,19 +150,12 @@ public class Measurements
 		for ( LabelRegion labelRegion : labelRegions )
 		{
 			final RandomAccessibleInterval< T > blur =
-					getBlurredIntensityImage( intensity, labelRegion );
+					getBlurredIntensityImage( intensity, labelRegion, gaussianBlurSigma );
 
 			final Point maximumLocation = getMaximumLocation( blur, null );
-
-			if ( annotation != null )
-			{
-				final RandomAccess< BitType > access = annotation.randomAccess();
-				access.setPosition( maximumLocation );
-				access.get().set( true );
-			}
-
 			final long[] position = new long[ maximumLocation.numDimensions() ];
 			maximumLocation.localize( position );
+
 			for ( int d = 0; d < position.length; ++d )
 			{
 				if ( calibration != null ) position[ d ] *= calibration[ d ];
@@ -168,13 +167,42 @@ public class Measurements
 						position[ d ] );
 			}
 
+			drawPosition( annotation, position );
+
+			final RandomAccessibleInterval< DoubleType > squaredDistances
+					= Algorithms.computeSquaredDistances( Regions.asMask( labelRegion ) );
+
+			final RandomAccess< DoubleType > access = squaredDistances.randomAccess();
+
+			access.setPosition( position );
+			final double distanceAtPosition = Math.sqrt( access.get().getRealDouble() );
+
+			addMeasurement(
+					objectMeasurements,
+					( int ) ( labelRegion.getLabel() ),
+					BRIGHTEST_POINT_WIDTH + SEP + unit,
+					distanceAtPosition );
+
+		}
+	}
+
+	public static void drawPosition(
+			RandomAccessibleInterval< BitType > annotation,
+			long[] position )
+	{
+		if ( annotation != null )
+		{
+			final RandomAccess< BitType > access = annotation.randomAccess();
+			access.setPosition( position );
+			access.get().set( true );
 		}
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > getBlurredIntensityImage(
 			RandomAccessibleInterval< T > intensity,
-			LabelRegion labelRegion )
+			LabelRegion labelRegion,
+			int gaussianBlurSigma )
 	{
 		final RandomAccessibleInterval< T > crop =
 				Utils.copyAsArrayImg( Views.interval( intensity, labelRegion ) );
@@ -182,8 +210,8 @@ public class Measurements
 		Utils.applyMask( crop, mask );
 		final RandomAccessibleInterval< T > blur =
 				Utils.copyAsArrayImg( crop );
-		Gauss3.gauss( 3, Views.extendBorder( crop ), blur ) ;
-		ImageJFunctions.show( blur );
+		Gauss3.gauss( gaussianBlurSigma, Views.extendBorder( crop ), blur ) ;
+//		ImageJFunctions.show( blur );
 		return blur;
 	}
 
@@ -207,7 +235,7 @@ public class Measurements
 		{
 			final int label = ( int ) ( labelRegion.getLabel() );
 
-			final RandomAccessibleInterval< BitType > mask = Regions.getLabelRegionAsMask( labelRegion );
+			final RandomAccessibleInterval< BitType > mask = Regions.asMask( labelRegion );
 
 			// See: https://forum.image.sc/t/measure-surface-perimeter-in-imglib2/21213
 
@@ -286,7 +314,7 @@ public class Measurements
 		final int label = ( int ) ( labelRegion.getLabel() );
 
 		final RandomAccessibleInterval< BitType > mask =
-				Regions.getLabelRegionAsMask( labelRegion );
+				Regions.asMask( labelRegion );
 
 		final Calibration calibration = new Calibration();
 
