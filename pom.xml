@@ -13,7 +13,7 @@
 
 	<groupId>de.embl.cba</groupId>
 	<artifactId>fiji-plugin-morphometry</artifactId>
-	<version>0.4.10</version>
+	<version>0.4.12</version>
 	<url>https://github.com/tischi/fiji-plugin-morphometry</url>
 
 	<distributionManagement>
@@ -199,12 +199,18 @@
 			<artifactId>MorphoLibJ_</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-model</artifactId>
+			<version>3.6.0</version>
+		</dependency>
+
 		<!-- CBA		-->
 
 		<dependency>
 			<groupId>de.embl.cba</groupId>
 			<artifactId>table-utils</artifactId>
-			<version>0.3.08</version>
+			<version>0.3.09</version>
 		</dependency>
 
 		<dependency>

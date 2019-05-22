@@ -98,7 +98,7 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 					skeletons.get( t ),
 					opService );
 
-			Measurements.measureGeodesicDistanceFeatures(
+			Measurements.measureMorpholibJFeatures(
 					measurements,
 					imgLabeling );
 

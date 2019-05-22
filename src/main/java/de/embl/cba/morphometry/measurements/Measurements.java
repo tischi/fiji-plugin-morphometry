@@ -8,6 +8,9 @@ import de.embl.cba.morphometry.skeleton.SkeletonAnalyzer;
 import de.embl.cba.tables.Tables;
 import ij.ImagePlus;
 import ij.measure.Calibration;
+import ij.process.ImageProcessor;
+
+import inra.ijpb.geometry.Ellipse;
 import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
 import net.imglib2.Point;
@@ -29,6 +32,9 @@ import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.Views;
 
 import inra.ijpb.measure.region2d.GeodesicDiameter;
+import inra.ijpb.measure.region2d.Convexity;
+import inra.ijpb.measure.region2d.InertiaEllipse;
+
 
 import javax.swing.*;
 import java.io.File;
@@ -71,6 +77,7 @@ public class Measurements
 	public static final String FRAME_INTERVAL = "FrameInterval";
 	public static final String BRIGHTEST_POINT = "BrightestPoint";
 	public static final String BRIGHTEST_POINT_WIDTH = "BrightestPointWidth";
+	public static final String CONVEXITY = "Convexity";
 
 	public static String getVolumeName( int numDimensions )
 	{
@@ -296,18 +303,19 @@ public class Measurements
 
 	}
 
-	public static void measureGeodesicDistanceFeatures(
+	public static void measureMorpholibJFeatures(
 			HashMap<Integer, Map<String, Object>> objectMeasurements,
 			ImgLabeling<Integer, IntType> imgLabeling )
 	{
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 
 		for ( LabelRegion labelRegion : labelRegions )
-			measureGeodesicDistanceFeatures( objectMeasurements, labelRegion );
+			measureMorpholibJFeatures( objectMeasurements, labelRegion );
 
 	}
 
-	public static void measureGeodesicDistanceFeatures(
+
+	public static void measureMorpholibJFeatures(
 			HashMap< Integer, Map< String, Object > > objectMeasurements,
 			LabelRegion labelRegion )
 	{
@@ -317,22 +325,43 @@ public class Measurements
 				Regions.asMask( labelRegion );
 
 		final Calibration calibration = new Calibration();
+		final ImageProcessor maskProcessor =
+				ImageJFunctions.wrap( mask, "" ).getProcessor();
+		final int[] labels = { 255 };
 
-		final GeodesicDiameter.Result[] results = GeodesicDiameter.geodesicDiameters(
-				ImageJFunctions.wrap( mask, "" ).getProcessor(),
-				new int[]{ 255 },
+		final GeodesicDiameter.Result[] geodesicDiameters = GeodesicDiameter.geodesicDiameters(
+				maskProcessor,
+				labels,
 				calibration );
 
 		addMeasurement( objectMeasurements,
 				label,
 				"GeodesicDiameter" + SEP + PIXEL_UNITS,
-				results[ 0 ].diameter );
+				geodesicDiameters[ 0 ].diameter );
 
 		addMeasurement( objectMeasurements,
 				label,
 				"LargestInscribedCircleRadius" + SEP + PIXEL_UNITS,
-				results[ 0 ].innerRadius );
+				geodesicDiameters[ 0 ].innerRadius );
+
+		final Convexity.Result[] convexity
+				= new Convexity().analyzeRegions( maskProcessor, labels, calibration );
+
+		addMeasurement( objectMeasurements,
+				label,
+				CONVEXITY,
+				convexity[ 0 ].convexity );
+
+		final Ellipse[] ellipses =
+				new InertiaEllipse().analyzeRegions( maskProcessor, labels, calibration );
+
+		addMeasurement( objectMeasurements,
+				label,
+				"Elongation",
+				ellipses[ 0 ].radius1() / ellipses[ 0 ].radius2() );
+
 	}
+
 
 
 	public static void addMeasurement(

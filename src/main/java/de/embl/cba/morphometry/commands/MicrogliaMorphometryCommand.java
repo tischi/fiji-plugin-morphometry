@@ -19,6 +19,7 @@ import javax.swing.*;
 import java.io.File;
 import java.util.*;
 
+import static de.embl.cba.morphometry.Version.getArtifactVersion;
 import static de.embl.cba.tables.Tables.addRelativeImagePathColumn;
 import static de.embl.cba.tables.Tables.saveTable;
 
@@ -31,13 +32,13 @@ public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType<
 	@Parameter
 	public OpService opService;
 
-	@Parameter ( label = "Label masks" )
+	@Parameter ( label = "Label mask time series" )
 	public File labelMaskFile;
 
-	@Parameter ( label = "Raw image data" )
+	@Parameter ( label = "Intensity image time series" )
 	private File intensityFile;
 
-	@Parameter ( style = "directory" )
+	@Parameter ( label = "Output directory", style = "directory" )
 	public File outputDirectory;
 
 	@Parameter
@@ -55,7 +56,7 @@ public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType<
 
 		Logger.log( "" );
 		Logger.log( "" );
-		Logger.log( "Microglia Morphometry Command" );
+		Logger.log( "Microglia Morphometry Command - Version " + getArtifactVersion() );
 		Logger.log( "Analyzing: " + labelMaskFile );
 
 //		fetchFilesFromFolder();
