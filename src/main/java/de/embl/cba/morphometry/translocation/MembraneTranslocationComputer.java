@@ -84,9 +84,7 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		for ( int t = 0; t < inputs.size(); t++ )
 		{
 			createMembraneAndOtherRegions( interval, result, t );
-
 			measureIntensities( result, t  );
-
 			computeTranslocation( result, t );
 		}
 
