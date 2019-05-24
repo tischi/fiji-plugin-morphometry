@@ -48,6 +48,7 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 	private String membraneLabelsPath;
 	private String intensitiesPath;
 	private String tablePath;
+	private String outputPathStump;
 
 
 	public void run()
@@ -71,12 +72,25 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 		final ArrayList< TranslocationResult > results = computer.getResults();
 
 		// process output
+
+		outputPathStump = outputDirectory + File.separator + intensitiesImp.getTitle();
+		intensitiesPath = outputPathStump + "-intensities.tif";
+		membraneLabelsPath = outputPathStump + "-membrane-labels.tif";
+
 		final ImagePlus labelMasksImp =
 				Utils.getAsImagePlusMovie(
 						createLabelMasks( intensities, results ),
 						"label masks" );
 
 		final JTable jTable = TranslocationResult.resultsAsTable( results );
+
+		Tables.addColumn( jTable,
+				"Path_Membrane_Labels",
+				new File( membraneLabelsPath ).getName() );
+
+		Tables.addColumn( jTable,
+				"Path_Intensity_Image",
+				new File( intensitiesPath ).getName() );
 
 		saveResults( jTable, labelMasksImp, intensitiesImp );
 
@@ -102,18 +116,12 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 			ImagePlus labelMasksImp,
 			ImagePlus intensitiesImp )
 	{
-		final String outputPathStump =
-				outputDirectory + File.separator + intensitiesImp.getTitle();
-
-		membraneLabelsPath = outputPathStump + "-membrane-labels.tif";
 		new FileSaver( labelMasksImp ).saveAsTiff( membraneLabelsPath );
-
-		intensitiesPath = outputPathStump + "-intensities.tif";
 		new FileSaver( intensitiesImp ).saveAsTiff( intensitiesPath );
-
 		tablePath = outputPathStump + "-table.csv";
 		Tables.saveTable( jTable, new File( tablePath ) );
 	}
+
 
 	private ArrayList< FinalInterval > getIntervalsFromRoiManagerAndSaveRois()
 	{
@@ -127,11 +135,13 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 
 		// select all
 		for ( int i = 0; i < rm.getCount(); i++ )
-		{
 			rm.select( i );
-		}
+
 		rm.runCommand( "save",
-				outputDirectory + File.separator + intensitiesImp.getTitle() + "-rois.zip"  );
+				outputDirectory
+						+ File.separator
+						+ intensitiesImp.getTitle()
+						+ "-rois.zip"  );
 
 		return Rois.asIntervals( rm.getRoisAsArray() );
 	}

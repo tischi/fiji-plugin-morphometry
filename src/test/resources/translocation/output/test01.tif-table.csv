@@ -1,144 +1,143 @@
-RegionIndex	RegionCenterX	RegionCenterY	Timepoint	Translocation	
-1	52.0	35.0	0	0.9772997979536	
-1	52.0	35.0	1	0.8571918327901601	
-1	52.0	35.0	2	0.9429877233457064	
-1	52.0	35.0	3	1.0419185280524776	
-1	52.0	35.0	4	0.8738076796782123	
-1	52.0	35.0	5	1.0284233546578667	
-1	52.0	35.0	6	1.0212707258066718	
-1	52.0	35.0	7	0.9785900300555554	
-1	52.0	35.0	8	1.0304524523354412	
-1	52.0	35.0	9	0.996396764897839	
-1	52.0	35.0	10	1.054066641123581	
-1	52.0	35.0	11	1.2156830069080113	
-1	52.0	35.0	12	1.0413192450880857	
-1	52.0	35.0	13	0.9289006251118336	
-1	52.0	35.0	14	1.02687887108951	
-1	52.0	35.0	15	0.9438837982384181	
-1	52.0	35.0	16	0.9540404101616212	
-1	52.0	35.0	17	1.100253369927712	
-1	52.0	35.0	18	1.031723304730156	
-1	52.0	35.0	19	1.1124353473323298	
-1	52.0	35.0	20	0.9934855773747273	
-1	52.0	35.0	21	0.955696333644211	
-1	52.0	35.0	22	0.893240931659201	
-1	52.0	35.0	23	1.0091994324628504	
-1	52.0	35.0	24	1.0832020340310295	
-1	52.0	35.0	25	0.8501828187765299	
-1	52.0	35.0	26	0.8372119772996098	
-1	52.0	35.0	27	0.9445031530033409	
-1	52.0	35.0	28	0.9558744889287647	
-1	52.0	35.0	29	0.9423107139873741	
-1	52.0	35.0	30	0.896765997650238	
-1	52.0	35.0	31	1.9434985569566312	
-1	52.0	35.0	32	2.2896393535703092	
-1	52.0	35.0	33	2.6514795932377777	
-1	52.0	35.0	34	2.8936790501015897	
-1	52.0	35.0	35	2.9192640713636684	
-1	52.0	35.0	36	2.388330136530608	
-1	52.0	35.0	37	2.5792003251418336	
-1	52.0	35.0	38	3.312861299012737	
-1	52.0	35.0	39	2.766628619386153	
-1	52.0	35.0	40	2.3456410356615223	
-1	52.0	35.0	41	1.960693325640945	
-1	52.0	35.0	42	1.5837947491511264	
-1	52.0	35.0	43	1.4166209968663492	
-1	52.0	35.0	44	1.3217570454322	
-1	52.0	35.0	45	1.5884875309222846	
-1	52.0	35.0	46	1.2259851743577852	
-1	52.0	35.0	47	1.5107293035538492	
-1	52.0	35.0	48	1.7193551411699501	
-1	52.0	35.0	49	1.3650028820075275	
-1	52.0	35.0	50	1.3369484287710598	
-1	52.0	35.0	51	1.3907298163103348	
-1	52.0	35.0	52	1.3277543151087694	
-1	52.0	35.0	53	1.4141964423347262	
-1	52.0	35.0	54	1.525026519816541	
-1	52.0	35.0	55	1.5275954196386003	
-1	52.0	35.0	56	1.5264139669315393	
-1	52.0	35.0	57	1.4278283432779189	
-1	52.0	35.0	58	1.57254368344295	
-1	52.0	35.0	59	1.5814928625013223	
-1	52.0	35.0	60	1.608162183779446	
-1	52.0	35.0	61	1.4566349885009686	
-1	52.0	35.0	62	1.5810674449340705	
-1	52.0	35.0	63	1.6264386558945736	
-1	52.0	35.0	64	1.5577301668402654	
-1	52.0	35.0	65	1.5503052055556257	
-1	52.0	35.0	66	1.6243245738106953	
-1	52.0	35.0	67	1.7181609188926057	
-1	52.0	35.0	68	1.2225469705781704	
-1	52.0	35.0	69	1.5494242258822493	
-1	52.0	35.0	70	1.8740263163867814	
-2	49.0	107.0	0	0.9388493862882556	
-2	49.0	107.0	1	0.8711739072553497	
-2	49.0	107.0	2	0.9187207190573606	
-2	49.0	107.0	3	0.9150618562084225	
-2	49.0	107.0	4	0.9139958590232473	
-2	49.0	107.0	5	0.9823886815159182	
-2	49.0	107.0	6	0.893202815885818	
-2	49.0	107.0	7	0.8804403494289569	
-2	49.0	107.0	8	0.8792517831150986	
-2	49.0	107.0	9	0.8416052855185235	
-2	49.0	107.0	10	0.8767974100309333	
-2	49.0	107.0	11	0.8716627111989792	
-2	49.0	107.0	12	0.9397568939656263	
-2	49.0	107.0	13	0.9490971634574515	
-2	49.0	107.0	14	0.9572723969196872	
-2	49.0	107.0	15	0.9776682356614291	
-2	49.0	107.0	16	0.9071608173886266	
-2	49.0	107.0	17	0.8973777061231262	
-2	49.0	107.0	18	0.9815037308846258	
-2	49.0	107.0	19	0.873966644717725	
-2	49.0	107.0	20	0.8790524813963303	
-2	49.0	107.0	21	0.9193872379817573	
-2	49.0	107.0	22	0.8929105157894415	
-2	49.0	107.0	23	0.850422825581844	
-2	49.0	107.0	24	0.9167847186660618	
-2	49.0	107.0	25	0.8886160769276668	
-2	49.0	107.0	26	0.9331839427334749	
-2	49.0	107.0	27	0.9767848143624529	
-2	49.0	107.0	28	0.9721270484941527	
-2	49.0	107.0	29	0.8532648154912843	
-2	49.0	107.0	30	0.9297600170983584	
-2	49.0	107.0	31	2.2997395511645147	
-2	49.0	107.0	32	3.550510809643182	
-2	49.0	107.0	33	3.849040329521702	
-2	49.0	107.0	34	3.771911627792745	
-2	49.0	107.0	35	3.9818940777901544	
-2	49.0	107.0	36	4.139316745047522	
-2	49.0	107.0	37	4.038819959028291	
-2	49.0	107.0	38	4.017368552405956	
-2	49.0	107.0	39	4.4378697167573415	
-2	49.0	107.0	40	3.2227606196327376	
-2	49.0	107.0	41	2.5156587371905244	
-2	49.0	107.0	42	2.3573295177890845	
-2	49.0	107.0	43	2.1230818227606796	
-2	49.0	107.0	44	1.9861189529770242	
-2	49.0	107.0	45	1.993225818024511	
-2	49.0	107.0	46	1.890035477284739	
-2	49.0	107.0	47	1.872255419043665	
-2	49.0	107.0	48	1.7676445804580634	
-2	49.0	107.0	49	1.838315931521698	
-2	49.0	107.0	50	1.6643844461518646	
-2	49.0	107.0	51	1.4537121813395695	
-2	49.0	107.0	52	1.6001501703907954	
-2	49.0	107.0	53	1.5555304154628498	
-2	49.0	107.0	54	1.4943043212077074	
-2	49.0	107.0	55	1.6606401890793272	
-2	49.0	107.0	56	1.552384541906605	
-2	49.0	107.0	57	1.4912411410215594	
-2	49.0	107.0	58	1.6455146098473192	
-2	49.0	107.0	59	1.5869102866507774	
-2	49.0	107.0	60	1.5395913988220602	
-2	49.0	107.0	61	1.5477791874252216	
-2	49.0	107.0	62	1.6564135173140575	
-2	49.0	107.0	63	1.4900022500462242	
-2	49.0	107.0	64	1.4963468229488308	
-2	49.0	107.0	65	1.534242446983731	
-2	49.0	107.0	66	1.4231337765662184	
-2	49.0	107.0	67	1.4355256260281286	
-2	49.0	107.0	68	1.5500038980981339	
-2	49.0	107.0	69	1.5076912552149948	
-2	49.0	107.0	70	1.5366652611541705	
-null	null	null	null	null	
+RegionIndex	RegionCenterX	RegionCenterY	Timepoint	Translocation	Path_Membrane_Labels	Path_Intensity_Image
+1	52.0	40.0	0	-0.2346875007305117	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	1	-0.2450114161802733	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	2	-0.24230723609247892	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	3	-0.236398105606985	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	4	-0.22716584740434925	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	5	-0.2517476085734546	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	6	-0.24420598219957515	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	7	-0.22979879393035008	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	8	-0.23695239304064947	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	9	-0.23687167610392837	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	10	-0.2217506522242904	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	11	-0.22356610662953894	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	12	-0.2334231155810072	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	13	-0.22967920322814744	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	14	-0.24367121848739495	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	15	-0.23426201616333475	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	16	-0.2318070070211883	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	17	-0.2349108602183506	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	18	-0.2540659179500341	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	19	-0.22923404642221615	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	20	-0.24876779041260005	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	21	-0.23869238500933326	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	22	-0.22735309293996234	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	23	-0.24700056962954717	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	24	-0.25523858673160665	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	25	-0.2342171008906279	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	26	-0.24360419204368525	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	27	-0.2449895377919473	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	28	-0.2737707949124426	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	29	-0.25711058389934693	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	30	-0.26126785333213	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	31	-0.2391571340334059	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	32	-0.2337578568765122	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	33	-0.21319167352373	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	34	-0.22074938857135135	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	35	-0.21420976264176175	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	36	-0.2118047947004918	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	37	-0.20774167239346972	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	38	-0.19842634568287218	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	39	-0.17902752098578095	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	40	-0.1792420843850323	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	41	-0.18364624534709642	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	42	-0.18131887032599098	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	43	-0.17936714265766626	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	44	-0.1878115316060437	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	45	-0.17319147398312437	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	46	-0.16858379179692218	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	47	-0.16136979916172495	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	48	-0.159424833283883	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	49	-0.15938357649536908	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	50	-0.16219514067831486	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	51	-0.14604109950951677	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	52	-0.1526972368546354	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	53	-0.16321345774689008	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	54	-0.16535791890521828	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	55	-0.160077066527167	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	56	-0.14880554764990486	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	57	-0.16128340370589025	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	58	-0.15290981162521486	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	59	-0.16461888332058347	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	60	-0.1542235267803211	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	61	-0.16079273237370886	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	62	-0.166308644204676	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	63	-0.15464409517050715	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	64	-0.1707055923416899	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	65	-0.16563036050713267	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	66	-0.15655447944537712	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	67	-0.1577193361770325	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	68	-0.16249351900829043	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	69	-0.15601215955793218	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+1	52.0	40.0	70	-0.15352788702421882	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	0	-0.1677815504865827	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	1	-0.16801777688773525	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	2	-0.17805166289913946	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	3	-0.1812445967516823	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	4	-0.1863014955020554	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	5	-0.1766610174465525	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	6	-0.17534709653546982	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	7	-0.19075110108005092	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	8	-0.17938136704412747	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	9	-0.18622589868947637	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	10	-0.1850257905390557	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	11	-0.1859782875776001	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	12	-0.18260370213424273	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	13	-0.17181016177531797	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	14	-0.19127886498006985	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	15	-0.1766667657805882	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	16	-0.19495502769102985	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	17	-0.20782010266066336	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	18	-0.184320589708183	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	19	-0.18404125702035753	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	20	-0.17744352484358517	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	21	-0.16346772977595855	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	22	-0.16605114519961683	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	23	-0.17013404574073862	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	24	-0.19476081457218428	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	25	-0.18731991434369405	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	26	-0.16603504467487945	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	27	-0.18562224818636092	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	28	-0.16324401800433894	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	29	-0.15732144669314854	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	30	-0.1799680098217643	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	31	-0.16727566536308025	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	32	-0.19763782553105963	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	33	-0.19066404251456487	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	34	-0.1957405031786916	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	35	-0.19709834976112733	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	36	-0.18406163549404372	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	37	-0.19026791792676379	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	38	-0.20241915957901677	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	39	-0.22337319217928261	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	40	-0.20062842496450878	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	41	-0.18336762765734163	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	42	-0.19358691784309756	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	43	-0.1807808103566059	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	44	-0.19116988211046743	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	45	-0.18787163539738944	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	46	-0.19417406558570266	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	47	-0.19515549391966958	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	48	-0.19139355896918273	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	49	-0.20613404420209339	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	50	-0.20610460364815095	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	51	-0.2221671669978037	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	52	-0.23121020505105172	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	53	-0.2227806122036191	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	54	-0.23335060628900878	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	55	-0.24398526536360593	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	56	-0.25173327770751663	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	57	-0.24686949035457628	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	58	-0.25421985647528866	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	59	-0.26697145759046803	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	60	-0.2698206344066547	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	61	-0.2666729040572655	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	62	-0.27847756194073475	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	63	-0.2408843554527008	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	64	-0.24755847931030414	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	65	-0.24771062739204078	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	66	-0.24591794799831607	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	67	-0.2844164446250884	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	68	-0.28204773883518147	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	69	-0.28109412684901025	test01.tif-membrane-labels.tif	test01.tif-intensities.tif
+2	49.0	102.0	70	-0.27888895752837933	test01.tif-membrane-labels.tif	test01.tif-intensities.tif

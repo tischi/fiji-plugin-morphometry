@@ -116,11 +116,17 @@ public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType<
 		tableOutputFile = new File(
 				outputDirectory.toString() + File.separator + dataSetID + ".csv" );
 
-		addRelativeImagePathColumn( table,
-				outputDirectory, labelMaskFile, "LabelMasks" );
+		addRelativeImagePathColumn(
+				table,
+				outputDirectory.getAbsolutePath(),
+				labelMaskFile.getAbsolutePath(),
+				"LabelMasks" );
 
-		addRelativeImagePathColumn( table,
-				outputDirectory, intensityFile, "Intensities" );
+		addRelativeImagePathColumn(
+				table,
+				outputDirectory.getAbsolutePath(),
+				intensityFile.getAbsolutePath(),
+				"Intensities" );
 
 		saveSkeletons( dataSetID, microgliaMorphometry, table );
 

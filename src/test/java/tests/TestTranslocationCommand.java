@@ -14,10 +14,10 @@ public class TestTranslocationCommand
 		final ImageJ ij = new ImageJ();
 		ij.ui().showUI();
 
-		IJ.open( "translocation/test01.zip" );
+		IJ.open( "/Users/tischer/Documents/fiji-plugin-morphometry/src/test/resources/translocation/test01.zip" );
 
 		final RoiManager rm = new RoiManager();
-		rm.runCommand( "open", "translocation/test01-rois.zip" );
+		rm.runCommand( "open", "/Users/tischer/Documents/fiji-plugin-morphometry/src/test/resources/translocation/test01-rois.zip" );
 
 		final TranslocationCommand command = new TranslocationCommand();
 
@@ -25,13 +25,10 @@ public class TestTranslocationCommand
 		command.intensitiesImp = IJ.getImage();
 		command.showTranslocationPlots = true;
 		command.opService = ij.op();
-		command.outputDirectory = new File( "translocation/output" );
+		command.outputDirectory = new File( "/Users/tischer/Documents/fiji-plugin-morphometry/src/test/resources/translocation/output" );
 		command.showIntermediateResults = false;
 
 		command.run();
-
-
-
 
 		// TODO: Add a test to check whether it works
 	}

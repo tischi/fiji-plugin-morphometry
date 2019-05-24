@@ -69,9 +69,8 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 	private void computeTranslocations()
 	{
 		for ( region = 0; region < intervals.size(); region++ )
-		{
 			computeTranslocationsInRoi( intervals.get( region ) );
-		}
+
 	}
 
 	private void computeTranslocationsInRoi( FinalInterval interval )
@@ -118,13 +117,19 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		}
 	}
 
-	private void createMembraneAndOtherRegions( FinalInterval interval, TranslocationResult result, int t )
+	private void createMembraneAndOtherRegions(
+			FinalInterval interval,
+			TranslocationResult result,
+			int t )
 	{
-		final RandomAccessibleInterval< R > intensity = Views.interval( inputs.get( t ) , interval );
+		final RandomAccessibleInterval< R > intensity =
+				Views.interval( inputs.get( t ) , interval );
 
-		RandomAccessibleInterval< BitType > cellEdgeSkeleton = computeCellEdge( result, intensity );
+		RandomAccessibleInterval< BitType > cellEdgeSkeleton =
+				computeCellEdge( result, intensity );
 
-		final RandomAccessibleInterval< BitType > membrane = Skeletons.longestBranch( cellEdgeSkeleton );
+		final RandomAccessibleInterval< BitType > membrane =
+				Skeletons.longestBranch( cellEdgeSkeleton );
 
 		result.cellEdges.add( cellEdgeSkeleton );
 		result.membranes.add( membrane );
@@ -132,7 +137,9 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		createNonMembraneMasks( result, t );
 	}
 
-	private RandomAccessibleInterval< BitType > computeCellEdge( TranslocationResult result, RandomAccessibleInterval< R > intensity )
+	private RandomAccessibleInterval< BitType > computeCellEdge(
+			TranslocationResult result,
+			RandomAccessibleInterval< R > intensity )
 	{
 		final RandomAccessibleInterval< R > smoothed = Algorithms.median(
 				intensity, blurRadius, opService );

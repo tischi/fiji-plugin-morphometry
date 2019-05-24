@@ -69,14 +69,12 @@ public class TranslocationResult < R extends RealType< R > & NativeType< R > >
 
 		model.setColumnIdentifiers( columnNames );
 
-		model.addRow( new Object[ numRegions * numTimepoints ] );
+		//model.addRow( new Object[ numRegions * numTimepoints ] );
 
 		for ( int r = 0; r < numRegions; r++ )
 		{
-
 			for ( int t = 0; t < numTimepoints; t++ )
 			{
-
 				final int row = t + numTimepoints * r;
 
 				model.setValueAt(
@@ -103,7 +101,6 @@ public class TranslocationResult < R extends RealType< R > & NativeType< R > >
 						results.get( r ).translocations.get( t ),
 						row,
 						model.findColumn( TRANSLOCATION ) );
-
 			}
 		}
 
