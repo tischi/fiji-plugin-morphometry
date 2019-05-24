@@ -395,7 +395,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	{
 		Logger.log( "Determining DNA axes..." );
 
-		return Ellipsoids3DImageSuite.fitEllipsoid( Utils.asImagePlusMovie( dnaMask, "" ) );
+		return Ellipsoids3DImageSuite.fitEllipsoid( Utils.getAsImagePlusMovie( dnaMask, "" ) );
 	}
 
 	public void measureDnaAxialExtend( RandomAccessibleInterval alignedDNA )

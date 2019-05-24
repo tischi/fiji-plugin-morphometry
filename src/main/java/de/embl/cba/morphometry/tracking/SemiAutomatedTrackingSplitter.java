@@ -53,7 +53,7 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 
 		this.labelings = new ArrayList();
 		this.intensitiesImp =
-				Utils.asImagePlusMovie( intensities, Constants.INTENSITIES );
+				Utils.getAsImagePlusMovie( intensities, Constants.INTENSITIES );
 	}
 
 	public void setMinimalObjectSize( MicrogliaSettings settings, int numDimensions )

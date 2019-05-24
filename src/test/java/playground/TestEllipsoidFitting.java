@@ -49,13 +49,13 @@ public class TestEllipsoidFitting
 
 			final RandomAccessibleInterval aligned2 = createMLJAligned( aligned );
 
-			Ellipsoids3DImageSuite.fitEllipsoid( Utils.asImagePlusMovie( aligned, "" ) );
+			Ellipsoids3DImageSuite.fitEllipsoid( Utils.getAsImagePlusMovie( aligned, "" ) );
 
 			System.out.println( "\nDataset (round 3): " + path.toString() );
 
 			final RandomAccessibleInterval aligned3 = createMLJAligned( aligned2 );
 
-			Ellipsoids3DImageSuite.fitEllipsoid( Utils.asImagePlusMovie( aligned2, "" ) );
+			Ellipsoids3DImageSuite.fitEllipsoid( Utils.getAsImagePlusMovie( aligned2, "" ) );
 
 		}
 

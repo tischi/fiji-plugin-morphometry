@@ -40,7 +40,7 @@ public class TestTrackingSplitter
 		final SemiAutomatedTrackingSplitter splitter = new SemiAutomatedTrackingSplitter( Utils.asMasks( masks ), intensities, settings );
 		splitter.run();
 		final ArrayList labelings = splitter.getLabelings();
-		Utils.asImagePlusMovie( labelings, "Labels" ).show();
+		Utils.getAsImagePlusMovie( labelings, "Labels" ).show();
 	}
 
 

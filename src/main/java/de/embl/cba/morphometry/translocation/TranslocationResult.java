@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry.translocation;
 
+import de.embl.cba.tables.table.ColumnClassAwareTableModel;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;

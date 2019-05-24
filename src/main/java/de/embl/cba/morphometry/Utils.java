@@ -1046,7 +1046,7 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	ImagePlus asImagePlusMovie(
+	ImagePlus getAsImagePlusMovie(
 			ArrayList< RandomAccessibleInterval< T > > rais2D,
 			String title )
 	{
@@ -1171,7 +1171,7 @@ public class Utils
 		return unique;
 	}
 
-	public static ImagePlus asImagePlusMovie( RandomAccessibleInterval rai, String title )
+	public static ImagePlus getAsImagePlusMovie( RandomAccessibleInterval rai, String title )
 	{
 		final ImagePlus wrap = ImageJFunctions.wrap(
 				Views.permute(
@@ -1180,9 +1180,9 @@ public class Utils
 		return wrap;
 	}
 
-	public static ImagePlus asImagePlusMovie( RandomAccessibleInterval rai, String title, Calibration calibration )
+	public static ImagePlus getAsImagePlusMovie( RandomAccessibleInterval rai, String title, Calibration calibration )
 	{
-		final ImagePlus wrap = asImagePlusMovie( rai, title );
+		final ImagePlus wrap = getAsImagePlusMovie( rai, title );
 		wrap.setCalibration( calibration );
 		return wrap;
 	}
@@ -1190,7 +1190,7 @@ public class Utils
 	public static < T extends RealType< T > & NativeType< T > >
 	ImagePlus labelingsAsImagePlus( ArrayList< RandomAccessibleInterval< T > > labelings )
 	{
-		ImagePlus segmentationImp = asImagePlusMovie( labelings, SEGMENTATION );
+		ImagePlus segmentationImp = getAsImagePlusMovie( labelings, SEGMENTATION );
 		segmentationImp.setLut( getGoldenAngleLUT() );
 		segmentationImp.setTitle( SEGMENTATION );
 		return segmentationImp;
@@ -1397,7 +1397,7 @@ public class Utils
 			String outputPath, String title )
 	{
 
-		final ImagePlus imp = asImagePlusMovie( rais, title );
+		final ImagePlus imp = getAsImagePlusMovie( rais, title );
 		imp.setCalibration( calibration );
 		new FileSaver( imp ).saveAsTiff( outputPath );
 		Logger.log( "Movie saved: " + outputPath );

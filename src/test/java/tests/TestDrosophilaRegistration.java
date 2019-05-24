@@ -40,7 +40,7 @@ public class TestDrosophilaRegistration < T extends RealType< T > & NativeType< 
 		RandomAccessibleInterval< T > images =
 				Utils.getChannelImages( imagePlus );
 
-		runTest( opService, actualCentre, actualAngle, calibration, images );
+		runDrosophilaRegistrationTest( opService, actualCentre, actualAngle, calibration, images );
 	}
 
 	@Test
@@ -65,11 +65,12 @@ public class TestDrosophilaRegistration < T extends RealType< T > & NativeType< 
 		RandomAccessibleInterval< T > images =
 				Utils.getChannelImages( imagePlus );
 
-		runTest( opService, actualCentre, actualAngle, calibration, images );
+		runDrosophilaRegistrationTest(
+				opService, actualCentre, actualAngle, calibration, images );
 	}
 
 
-	public void runTest(
+	public void runDrosophilaRegistrationTest(
 			OpService opService,
 			double[] actualCentre,
 			int actualAngle,
