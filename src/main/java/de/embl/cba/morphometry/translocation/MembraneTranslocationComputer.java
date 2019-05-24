@@ -61,7 +61,7 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		blurRadius = 4;
 		erosionRadius = 4;
 
-		results = new ArrayList<TranslocationResult >();
+		results = new ArrayList<>();
 
 		computeTranslocations();
 	}
@@ -75,7 +75,7 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 
 	private void computeTranslocationsInRoi( FinalInterval interval )
 	{
-		final TranslocationResult< ? > result = new TranslocationResult();
+		final TranslocationResult< R > result = new TranslocationResult();
 
 		final ArrayList nonMembraneMasks = result.nonMembraneMasks;
 
@@ -177,25 +177,11 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		return Skeletons.skeleton( openedBinaryGradient, opService );
 	}
 
-	private void measureMembraneIntensity( TranslocationResult result, int t )
+	private void measureMembraneIntensity( TranslocationResult< R > result, int t )
 	{
-		final Cursor< BitType > cursor = Views.iterable(
-				(RandomAccessibleInterval) result.membranes.get( t ) ).cursor();
-		final RandomAccess< R > access = inputs.get( t ).randomAccess();
-
-		double sum = 0.0;
-		int n = 0;
-		while ( cursor.hasNext() )
-		{
-			if ( cursor.next().get() )
-			{
-				access.setPosition( cursor );
-				sum += access.get().getRealDouble();
-				n++;
-			}
-		}
-
-		result.membraneIntensities.add( sum / n );
+		final RandomAccessibleInterval< R > intensity = inputs.get( t );
+		final RandomAccessibleInterval< BitType > membraneMask = result.membranes.get( t );
+		result.membraneIntensities.add( Measurements.meanIntensity( intensity, membraneMask ) );
 	}
 
 	private void createNonMembraneMasks( TranslocationResult result, int t )
@@ -227,11 +213,10 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 	}
 
 	private void measureIntensities(
-			TranslocationResult< ? > result,
+			TranslocationResult< R > result,
 			int t )
 	{
 		measureMembraneIntensity( result, t );
-
 		measureNonMembraneIntensities( result, t );
 	}
 
@@ -255,10 +240,11 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		else
 		{
 			for ( int region = 0; region < 2; region++ )
-			{
-				Measurements.sumIntensity( intensity, nonMembraneMasks.get( region )  );
-				intensities.add( Measurements.sumIntensity( intensity, nonMembraneMasks.get( region )  ) );
-			}
+				intensities.add(
+						Measurements.meanIntensity(
+								intensity,
+								nonMembraneMasks.get( region )  ) );
+
 
 			Collections.sort( intensities );
 		}
@@ -347,7 +333,8 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 
 	private RandomAccessibleInterval< IntType > computeDistanceMap( RandomAccessibleInterval< BitType > mask )
 	{
-		final RandomAccessibleInterval< DoubleType > squaredDistances = Algorithms.computeSquaredDistances( mask );
+		final RandomAccessibleInterval< DoubleType > squaredDistances =
+				Algorithms.computeSquaredDistances( mask );
 
 		return Converters.convert(
 				squaredDistances,
