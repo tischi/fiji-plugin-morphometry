@@ -25,7 +25,7 @@ import javax.swing.*;
 import java.io.File;
 import java.util.ArrayList;
 
-@Plugin(type = Command.class, menuPath = "Plugins>Measurement>Membrane Translocation" )
+@Plugin(type = Command.class, menuPath = "Plugins>Measure>Membrane Translocation" )
 public class TranslocationCommand< R extends RealType< R > & NativeType< R > > implements Command
 {
 	@Parameter
@@ -43,8 +43,8 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 	@Parameter ( label = "Show translocation plots" )
 	public boolean showTranslocationPlots = false;
 
-	@Parameter ( label = "Review membrane segmentations" )
-	public boolean reviewMembraneSegmentations = false;
+	@Parameter ( label = "Review membrane segmentation" )
+	public boolean reviewMembraneSegmentation = false;
 	private String membraneLabelsPath;
 	private String intensitiesPath;
 	private String tablePath;
@@ -97,7 +97,7 @@ public class TranslocationCommand< R extends RealType< R > & NativeType< R > > i
 		if ( showTranslocationPlots )
 			plotTranslocations( results );
 
-		if ( reviewMembraneSegmentations )
+		if ( reviewMembraneSegmentation )
 		{
 			new ExploreIntensityImageAndLabelImageAndTable(
 					intensitiesPath,

@@ -10,15 +10,22 @@ public abstract class CurveAnalysis
 {
 
 	// TODO: instead of CoordinatesAndValues one should use a 1D RealRandomAccessible (or, in fact, a PhysicalImg...)
-
 	public static CoordinatesAndValues derivative( CoordinatesAndValues coordinatesAndValues, int di )
 	{
 		final CoordinatesAndValues derivative = new CoordinatesAndValues();
 
-		for ( int i = di / 2 + 1; i < coordinatesAndValues.values.size() - di / 2 - 1; ++i )
+		for ( int i = di / 2 + 1; i < coordinatesAndValues.values.size() - ( di / 2 + 1 ); ++i )
 		{
-			derivative.values.add( coordinatesAndValues.values.get( i + di / 2 ) - coordinatesAndValues.values.get( i - di / 2 ) );
-			derivative.coordinates.add( 0.5 * ( coordinatesAndValues.coordinates.get( i + di / 2 ) + coordinatesAndValues.coordinates.get( i - di / 2 ) ));
+			final int right = i + di / 2;
+			final int left = i - di / 2;
+
+			derivative.values.add(
+					coordinatesAndValues.values.get( right )
+							- coordinatesAndValues.values.get( left ) );
+
+			derivative.coordinates.add(
+					0.5 * ( coordinatesAndValues.coordinates.get( right )
+							+ coordinatesAndValues.coordinates.get( left ) ));
 		}
 
 		return derivative;

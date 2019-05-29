@@ -21,7 +21,7 @@ public class TestTranslocationCommand
 
 		final TranslocationCommand command = new TranslocationCommand();
 
-		command.reviewMembraneSegmentations = true;
+		command.reviewMembraneSegmentation = true;
 		command.intensitiesImp = IJ.getImage();
 		command.showTranslocationPlots = true;
 		command.opService = ij.op();

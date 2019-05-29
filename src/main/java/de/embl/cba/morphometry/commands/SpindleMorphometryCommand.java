@@ -6,7 +6,6 @@ import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.spindle.SpindleMorphometry;
 import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import de.embl.cba.tables.Tables;
-import de.embl.cba.tables.Tables;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.ops.OpService;
@@ -25,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-@Plugin(type = Command.class, menuPath = "Plugins>Morphometry>Spindle Morphometry" )
+@Plugin(type = Command.class, menuPath = "Plugins>Measure>Spindle Morphometry" )
 public class SpindleMorphometryCommand< R extends RealType< R > > implements Command
 {
 	@Parameter
@@ -34,14 +33,16 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter ( label = "Input Image File" )
 	public File inputImageFile;
 
+	// TODO: how to make this more clear and easy?
+	// (it is to remove to part of the path to only store a relative directory )
+	@Parameter ( label = "Input Image Files Parent Directory", style = "directory" )
+	public File inputImageFilesParentDirectory;
+
 	@Parameter ( label = "Output Directory", style = "directory" )
 	public File outputDirectory;
 
-	@Parameter ( label = "Parent Directory", style = "directory" )
-	public File inputParentDirectory;
-
 	@Parameter ( label = "Voxel Size for Analysis" )
-	public double voxelSpacing = 0.25;
+	public double voxelSpacingDuringAnalysis = 0.25;
 
 	@Parameter ( label = "DNA Channel [one-based index]" )
 	public long dnaChannelIndexOneBased = 2;
@@ -65,9 +66,10 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	private void setSettingsFromUI()
 	{
 		settings.showIntermediateResults = showIntermediateResults;
-		settings.workingVoxelSize = voxelSpacing;
+		settings.workingVoxelSize = voxelSpacingDuringAnalysis;
 		settings.maxDnaAxisDist = 6;
-		settings.derivativeDelta = 3.0;
+		settings.derivativeDelta = 3.0; // TODO: how to set this?
+		settings.spindleDerivativeDelta = 1.0;
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 		settings.watershedSeedsLocalMaximaDistanceThreshold = 1.0;
 		settings.watershedSeedsGlobalDistanceThreshold = 2.0;
@@ -149,12 +151,15 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	private void saveOutputImageAndAddImagePathsToMeasurements( ImagePlus imagePlus )
 	{
-		final Path parentPath = inputParentDirectory.toPath();
+		final Path parentPath = inputImageFilesParentDirectory.toPath();
 
-		final File outputImageFile = new File( getOutputDirectory() + imageName + "-out.tif" );
+		final File outputImageFile =
+				new File( getOutputDirectory() + imageName + "-out.tif" );
+
 		outputImageFile.getParentFile().mkdirs();
 
 		addImagePathToMeasurements( parentPath, inputImageFile, objectMeasurements, "Path_InputImage" );
+
 		addImagePathToMeasurements( parentPath, outputImageFile, objectMeasurements, "Path_OutputImage" );
 
 		Logger.log( "Saving: " + outputImageFile );

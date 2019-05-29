@@ -31,4 +31,5 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public double erosionOfDnaMaskInCalibratedUnits = 1.0; // um
 	public Calibration imagePlusCalibration;
 	public double maxSpindlePoleRefinementDistance;
+	public double spindleDerivativeDelta = 1;
 }

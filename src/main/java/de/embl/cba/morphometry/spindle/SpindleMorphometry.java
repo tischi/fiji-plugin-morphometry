@@ -206,7 +206,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			realPoints.add( new RealPoint( newCenter ) );
 			show(
 					tubulinAlignedAlongSpindlePoleToPoleAxis1,
-					"tubulin aligned pole to pole",
+					"spindle aligned pole to pole",
 					realPoints,
 					workingCalibration,
 					false );
@@ -220,20 +220,20 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * Measure spindle lateral extend in projection along spindle axis
 		 */
 
-		Projection projection = new Projection<>( tubulinAlignedAlongSpindlePoleToPoleAxis, 2 );
+		Logger.log( "Computing maximum projection of spindle along spindle axis..." );
+
+		Projection projection = new Projection<>(
+				tubulinAlignedAlongSpindlePoleToPoleAxis, 2 );
 
 		final RandomAccessibleInterval< T > spindleProjection = projection.maximum();
 
 		final ProfileAndRadius spindleLateralRadiusAndProfile
 				= measureRadialProfileAndRadius(
 						spindleProjection,
-					"tubulin lateral",
-						settings.derivativeDelta );
+					"spindle lateral",
+						settings.spindleDerivativeDelta );
 
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
-				SPINDLE_LATERAL_EXTEND + SEP + LENGTH_UNIT,
+		addMeasurement( SPINDLE_LATERAL_EXTEND + SEP + LENGTH_UNIT,
 				2.0 * spindleLateralRadiusAndProfile.radius );
 
 		return spindleLateralRadiusAndProfile;
@@ -273,7 +273,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			realPoints.add( new RealPoint( spindlePoles.get( 1 ) ) );
 			realPoints.add( new RealPoint( spindleCenter ) );
 			show(
-					dnaAlignedTubulin, "tubulin aligned along DNA axis",
+					dnaAlignedTubulin, "spindle aligned along DNA axis",
 					realPoints,
 					workingCalibration,
 					false );
@@ -320,7 +320,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			show( dna, "DNA isotropic voxel size", null, workingCalibration, false );
 
 		if ( settings.showIntermediateResults )
-			show( tubulin, "tubulin isotropic voxel size", null, workingCalibration, false );
+			show( tubulin, "spindle isotropic voxel size", null, workingCalibration, false );
 	}
 
 	public double getDnaThreshold()
@@ -488,15 +488,23 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		addPoleRefinementDistanceMeasurements( dnaAxisBasedSpindlePoles, spindlePoles );
 
-		final double distance = LinAlgHelpers.distance( spindlePoles.get( 0 ), spindlePoles.get( 1 ) );
+		final double distance = LinAlgHelpers.distance(
+				spindlePoles.get( 0 ), spindlePoles.get( 1 ) );
+
+		addMeasurement( SPINDLE_AXIAL_EXTEND + SEP + LENGTH_UNIT, distance );
+
+		return spindlePoles;
+	}
+
+	public void addMeasurement( String name, double distance )
+	{
+		Logger.log( name + ": " + distance  );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
 				0,
-				SPINDLE_AXIAL_EXTEND + SEP + LENGTH_UNIT,
+				name,
 				distance );
-
-		return spindlePoles;
 	}
 
 	public RandomAccessibleInterval< BitType > measureDnaVolume(
@@ -555,7 +563,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 					CurveAnalysis.getValueAtCoordinate(
 							tubulinProfile,
 							tubulinExtrema.get( p ).coordinate );
-			Logger.log( "Tubulin axial threshold " + p + ": " + value );
+			Logger.log( "Spindle axial threshold " + p + ": " + value );
 		}
 
 		if ( settings.showIntermediateResults )
@@ -563,16 +571,14 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 					tubulinProfile.coordinates,
 					tubulinProfile.values,
 					"center distance [um]",
-					"tubulin max along shortest DNA axis" );
+					"spindle max along shortest DNA axis" );
 
 		if ( settings.showIntermediateResults )
 			Plots.plot(
 					tubulinProfileDerivative.coordinates,
 					tubulinProfileDerivative.values,
 					"distance to center",
-					"d/dx tubulin max along shortest DNA axis" );
-
-
+					"d/dx spindle max along shortest DNA axis" );
 
 		return dnaAxisBasedSpindlePoles;
 	}
@@ -888,7 +894,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return transformedPoint;
 	}
 
-	private void drawPoint( RandomAccessibleInterval< T > rai, double[] position, double calibratedRadius, double calibration, int value )
+	private void drawPoint(
+			RandomAccessibleInterval< T > rai,
+			double[] position,
+			double calibratedRadius, double calibration, int value )
 	{
 		Shape shape = new HyperSphereShape( (int) Math.ceil( calibratedRadius / calibration ) );
 		final RandomAccessible< Neighborhood< T > > nra = shape.neighborhoodsRandomAccessible( rai );

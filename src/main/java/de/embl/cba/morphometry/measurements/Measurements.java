@@ -369,9 +369,7 @@ public class Measurements
 			int objectLabel, String name, Object value )
 	{
 		if ( ! objectMeasurements.keySet().contains( objectLabel ) )
-		{
 			objectMeasurements.put( objectLabel, new HashMap<>(  ) );
-		}
 
 		objectMeasurements.get( objectLabel ).put( name, value );
 	}

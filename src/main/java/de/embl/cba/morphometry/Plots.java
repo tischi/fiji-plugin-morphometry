@@ -23,7 +23,6 @@ public class Plots
 
 	public static void plot( CoordinatesAndValues cv, String xLab, String yLab )
 	{
-
 		Plot plot = new Plot("",
 				xLab,
 				yLab,
@@ -35,7 +34,6 @@ public class Plots
 
 	public static void plot( CoordinateToValue cv, String xLab, String yLab )
 	{
-
 		Plot plot = new Plot("",
 				xLab,
 				yLab,
