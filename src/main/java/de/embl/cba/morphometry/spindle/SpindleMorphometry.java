@@ -121,14 +121,16 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final double[] spindleCenter = getSpindleCenter( spindlePoles, poleToPoleVector );
 
-		measureDnaCenterToSpindleCenterDistance( workingCalibration, spindlePoles, spindleCenter );
+		measureDnaCenterToSpindleCenterDistance(
+				workingCalibration, spindlePoles, spindleCenter );
 
 		measureSpindleAxisToCoverslipPlaneAngle( poleToPoleVector );
 
 		final ProfileAndRadius spindleLateralRadiusAndProfile =
 				measureSpindleLateralExtend( workingCalibration, spindlePoles, spindleCenter );
 
-		spindleVolumeMask = measureSpindleVolume( workingCalibration, spindleLateralRadiusAndProfile );
+		spindleVolumeMask =
+				measureSpindleVolume( workingCalibration, spindleLateralRadiusAndProfile );
 
 	}
 
@@ -169,7 +171,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 	public ProfileAndRadius measureSpindleLateralExtend(
-			double[] workingCalibration, ArrayList< double[] > spindlePoles, double[] spindleCenter )
+			double[] workingCalibration,
+			ArrayList< double[] > spindlePoles,
+			double[] spindleCenter )
 	{
 		/**
 		 * Measure spindle radius
@@ -188,7 +192,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				Transforms.getRotationTransform3D( new double[]{ 0, 0, 1 }, poleToPoleAxis );
 		spindleTransform = spindleTransform.preConcatenate( poleToPoleAxisRotation );
 
-		final RandomAccessibleInterval tubulinAlignedAlongSpindlePoleToPoleAxis1
+		final RandomAccessibleInterval< T > spindleAlignedAlongSpindlePoleToPoleAxis
 				= Transforms.createTransformedView( dnaAlignedTubulin, spindleTransform );
 
 		final double[] newPole00 = new double[ 3 ];
@@ -204,17 +208,14 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			realPoints.add( new RealPoint( newPole00 ) );
 			realPoints.add( new RealPoint( newPole01 ) );
 			realPoints.add( new RealPoint( newCenter ) );
+
 			show(
-					tubulinAlignedAlongSpindlePoleToPoleAxis1,
+					spindleAlignedAlongSpindlePoleToPoleAxis,
 					"spindle aligned pole to pole",
 					realPoints,
 					workingCalibration,
 					false );
 		}
-
-		final RandomAccessibleInterval tubulinAlignedAlongSpindlePoleToPoleAxis =
-				tubulinAlignedAlongSpindlePoleToPoleAxis1;
-
 
 		/**
 		 * Measure spindle lateral extend in projection along spindle axis
@@ -223,7 +224,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		Logger.log( "Computing maximum projection of spindle along spindle axis..." );
 
 		Projection projection = new Projection<>(
-				tubulinAlignedAlongSpindlePoleToPoleAxis, 2 );
+				spindleAlignedAlongSpindlePoleToPoleAxis, 2 );
 
 		final RandomAccessibleInterval< T > spindleProjection = projection.maximum();
 
@@ -233,8 +234,12 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 					"spindle lateral",
 						settings.spindleDerivativeDelta );
 
-		addMeasurement( SPINDLE_LATERAL_EXTEND + SEP + LENGTH_UNIT,
+		addMeasurement( getSpindleWidthKey(),
 				2.0 * spindleLateralRadiusAndProfile.radius );
+
+		if ( settings.showIntermediateResults )
+			show( spindleProjection, "spindle maximum projection along pole axis", null, workingCalibration, false);
+
 
 		return spindleLateralRadiusAndProfile;
 	}
@@ -931,6 +936,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return mask;
 	}
 
-
+	public static String getSpindleWidthKey()
+	{
+		return SPINDLE_LATERAL_EXTEND + SEP + LENGTH_UNIT;
+	}
 
 }

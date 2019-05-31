@@ -25,7 +25,7 @@ public class TestDrosophilaRegistration < T extends RealType< T > & NativeType< 
 
 		final OpService opService = ij.op();
 
-		final String filePath = "../drosophila/tests/low_res_x60_y55_z41_yaw-22.zip";
+		final String filePath = "../drosophila/test-data/low_res_x60_y55_z41_yaw-22.zip";
 		final double[] actualCentre = { 60.0, 55.0, 41.0 };
 		final int actualAngle = -22;
 
@@ -50,14 +50,14 @@ public class TestDrosophilaRegistration < T extends RealType< T > & NativeType< 
 
 		final OpService opService = ij.op();
 
-		final String filePath = "../drosophila/tests/low_res_x58_y69_z38_yaw-54.zip";
+		final String filePath = "../drosophila/test-data/low_res_x58_y69_z38_yaw-54.zip";
 		final double[] actualCentre = { 58.0, 69.0, 38.0 };
 		final int actualAngle = -54;
 
 		final String inputPath =
 				TestDrosophilaRegistration.class.getResource(
 						filePath )
-						.getFile().toString();
+						.getFile();
 
 		final ImagePlus imagePlus = openWithBioFormats( inputPath );
 		final double[] calibration = Utils.getCalibration( imagePlus );

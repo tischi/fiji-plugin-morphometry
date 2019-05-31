@@ -53,6 +53,8 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter ( label = "Show Intermediate Results" )
 	public boolean showIntermediateResults = false;
 
+	public boolean saveResults = true;
+
 	private String imageName;
 	private SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
@@ -76,6 +78,11 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.maxSpindlePoleRefinementDistance = 3.0;
 		settings.interestPointsRadius = 0.5;
 		settings.outputDirectory = outputDirectory;
+	}
+
+	public HashMap< Integer, Map< String, Object > > getObjectMeasurements()
+	{
+		return objectMeasurements;
 	}
 
 	private void processFile( File file )
@@ -103,9 +110,11 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 		objectMeasurements = morphometry.getObjectMeasurements();
 
-		saveOutputImageAndAddImagePathsToMeasurements( morphometry.getOutputImage() );
-
-		saveMeasurements( morphometry );
+		if ( saveResults )
+		{
+			saveOutputImageAndAddImagePathsToMeasurements( morphometry.getOutputImage() );
+			saveMeasurements( morphometry );
+		}
 
 		logEnd();
 

@@ -1,4 +1,4 @@
-package tests;
+package headless;
 
 import de.embl.cba.morphometry.commands.TranslocationCommand;
 import ij.IJ;

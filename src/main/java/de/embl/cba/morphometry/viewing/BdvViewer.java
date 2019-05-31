@@ -26,6 +26,12 @@ public class BdvViewer
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
+	void show( RandomAccessibleInterval< T > rai, String title )
+	{
+		show( rai, title, null, null, false );
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
 	void show( RandomAccessibleInterval rai, String title, List< RealPoint > points, double calibration )
 	{
 		show( rai, title, points, Utils.as3dDoubleArray( calibration ), false );
@@ -82,7 +88,7 @@ public class BdvViewer
 				imgPlus,
 				imgPlus.getName(),
 				Bdv.options().sourceTransform(
-						((LinearAxis )imgPlus.axis( 0 )).scale(),
+						((LinearAxis)imgPlus.axis( 0 )).scale(),
 						((LinearAxis)imgPlus.axis( 1 )).scale(),
 						((LinearAxis)imgPlus.axis( 2 )).scale() )
 		);
