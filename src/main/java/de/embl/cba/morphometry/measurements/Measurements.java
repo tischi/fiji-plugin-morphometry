@@ -40,10 +40,7 @@ import javax.swing.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static de.embl.cba.morphometry.Algorithms.getMaximumLocation;
 
@@ -583,9 +580,12 @@ public class Measurements
 		return Tables.createJTableFromStringList( measurementsAsTableRowsStringList( timepoints, "\t" ), "\t" );
 	}
 
-	public static JTable asTable( ArrayList< HashMap< Integer, Map< String, Object > > > timepoints )
+	public static JTable asTable(
+			ArrayList< HashMap< Integer, Map< String, Object > > > timepoints )
 	{
-		return Tables.createJTableFromStringList( measurementsAsTableRowsStringList( timepoints, "\t" ), "\t" );
+		return Tables.createJTableFromStringList(
+				measurementsAsTableRowsStringList( timepoints, "\t" ),
+				"\t" );
 	}
 
 	public static ArrayList< String > measurementsAsTableRowsStringList(
@@ -594,25 +594,29 @@ public class Measurements
 			String delim )
 	{
 
-		final Set< Integer > objectLabelsFirstTimePoint = measurementsTimePointList.get( 0 ).keySet();
-		final Set< String > measurementNames = measurementsTimePointList.get( 0 ).get( objectLabelsFirstTimePoint.iterator().next() ).keySet();
+		final Set< Integer > objectLabelsFirstTimePoint =
+				measurementsTimePointList.get( 0 ).keySet();
+
+		final Set< String > measurementSet =
+				measurementsTimePointList.get( 0 ).get(
+						objectLabelsFirstTimePoint.iterator().next() ).keySet();
+
+		List< String  > measurementNames = new ArrayList< String >( measurementSet );
+		java.util.Collections.sort( measurementNames );
 
 		final ArrayList< String > lines = new ArrayList<>();
 
 		String header = "Object_Label";
-
 		header += delim + CENTROID + SEP + TIME + SEP + FRAME_UNITS;
-
 		for ( String measurementName : measurementNames )
-		{
 			header += delim + measurementName ;
-		}
 
 		lines.add( header );
 
 		for ( int t = 0; t < measurementsTimePointList.size(); ++t )
 		{
-			final HashMap< Integer, Map< String, Object > > measurements = measurementsTimePointList.get( t );
+			final HashMap< Integer, Map< String, Object > > measurements
+					= measurementsTimePointList.get( t );
 
 			final Set< Integer > objectLabels = measurements.keySet();
 
@@ -625,9 +629,7 @@ public class Measurements
 				values += delim + String.format( "%05d", t + 1 ); // convert to one-based time points
 
 				for ( String measurementName : measurementNames )
-				{
 					values += delim + measurementsMap.get( measurementName );
-				}
 
 				lines.add( values );
 			}
@@ -636,9 +638,11 @@ public class Measurements
 		return lines;
 	}
 
-	public static ArrayList< HashMap< Integer, Map< String, Object > > >  initMeasurements( int numTimepoints )
+	public static ArrayList< HashMap< Integer, Map< String, Object > > >  initMeasurements(
+			int numTimepoints )
 	{
-		ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimepointList = new ArrayList<>();
+		ArrayList< HashMap< Integer, Map< String, Object > > > measurementsTimepointList
+				= new ArrayList<>();
 
 		for ( int t = 0; t < numTimepoints; ++t )
 		{
