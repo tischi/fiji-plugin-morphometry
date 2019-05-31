@@ -360,7 +360,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final RandomAccessibleInterval< BitType > processedDnaMask = createProcessedMetaPhasePlate( dnaMask );
 
 		if ( settings.showIntermediateResults )
-			show( processedDnaMask, "eroded dna mask", null, workingCalibration, false );
+			show( processedDnaMask, "eroded DNA mask", null, workingCalibration, false );
 
 		return dnaMask;
 	}
@@ -851,7 +851,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	private RandomAccessibleInterval< BitType > createProcessedMetaPhasePlate( RandomAccessibleInterval< BitType > metaphasePlate )
 	{
-		Logger.log( "Perform morphological filtering on dna mask..." );
+		Logger.log( "Perform morphological filtering on DNA mask..." );
 
 		RandomAccessibleInterval< BitType > filtered;
 

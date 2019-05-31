@@ -118,14 +118,14 @@ public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType<
 
 		addRelativeImagePathColumn(
 				table,
-				outputDirectory.getAbsolutePath(),
 				labelMaskFile.getAbsolutePath(),
+				outputDirectory.getAbsolutePath(),
 				"LabelMasks" );
 
 		addRelativeImagePathColumn(
 				table,
-				outputDirectory.getAbsolutePath(),
 				intensityFile.getAbsolutePath(),
+				outputDirectory.getAbsolutePath(),
 				"Intensities" );
 
 		saveSkeletons( dataSetID, microgliaMorphometry, table );
