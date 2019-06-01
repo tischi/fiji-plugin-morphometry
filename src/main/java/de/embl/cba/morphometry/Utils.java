@@ -120,7 +120,8 @@ public class Utils
 		{
 			final IntervalView< T > intensitySlice = Views.hyperSlice( rai, axis, coordinate );
 			coordinatesAndValues.coordinates.add( (double) coordinate * calibration );
-			coordinatesAndValues.values.add( computeAverage( intensitySlice, maxAxisDist ) );
+			coordinatesAndValues.values.add(
+					computeAverage( intensitySlice, maxAxisDist, calibration ) );
 		}
 
 		return coordinatesAndValues;
@@ -512,8 +513,12 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	double computeAverage( final RandomAccessibleInterval< T > rai, double maxAxisDist )
+	double computeAverage( final RandomAccessibleInterval< T > rai,
+						   double maxCenterDist,
+						   double voxelSpacing )
 	{
+		final double maxVoxelDist = maxCenterDist / voxelSpacing;
+
 		final Cursor< T > cursor = Views.iterable( rai ).cursor();
 
 		double average = 0;
@@ -524,7 +529,7 @@ public class Utils
 		{
 			cursor.fwd();
 			cursor.localize( position );
-			if ( Utils.vectorLength( position ) <= maxAxisDist)
+			if ( Utils.vectorLength( position ) <= maxVoxelDist )
 			{
 				average += cursor.get().getRealDouble();
 				++n;

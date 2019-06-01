@@ -21,8 +21,12 @@ import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.interpolation.randomaccess.NLinearInterpolator;
+import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
+import net.imglib2.realtransform.AffineTransform2D;
 import net.imglib2.realtransform.AffineTransform3D;
+import net.imglib2.realtransform.RealViews;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
 import net.imglib2.type.NativeType;
@@ -85,6 +89,12 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	private RandomAccessibleInterval< BitType > dnaVolumeMask;
 	private RandomAccessibleInterval< BitType > spindleVolumeMask;
 	private double[] workingCalibration;
+	private RandomAccessibleInterval< BitType > segmentedDna;
+	private EllipsoidVectors dnaEllipsoidVectors;
+	private ProfileAndRadius dnaLateralProfileAndRadius;
+	private double[] spindlePoleToPoleVector;
+	private double[] spindleCenter;
+	private ProfileAndRadius spindleLateralRadiusAndProfile;
 
 	public SpindleMorphometry( SpindleMorphometrySettings settings, OpService opService )
 	{
@@ -100,16 +110,16 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		double dnaThreshold = getDnaThreshold();
 
-		final RandomAccessibleInterval< BitType > segmentedDna = segmentDna( dna, dnaThreshold );
+		segmentedDna = segmentDna( dna, dnaThreshold );
 
-		final EllipsoidVectors ellipsoidVectors = determineDnaAxes( segmentedDna );
+		dnaEllipsoidVectors = determineDnaAxes( segmentedDna );
 
 		computeDnaAlignmentTransformAndAlignImages(
-				dna, tubulin, segmentedDna, ellipsoidVectors );
+				dna, tubulin, segmentedDna, dnaEllipsoidVectors );
 
 		measureDnaAxialExtend( dnaAlignedDna );
 
-		final ProfileAndRadius dnaLateralProfileAndRadius = measureDnaLateralExtend( dnaAlignedDna );
+		dnaLateralProfileAndRadius = measureDnaLateralExtend( dnaAlignedDna );
 
 		dnaVolumeMask = measureDnaVolume( dna, dnaLateralProfileAndRadius );
 
@@ -117,16 +127,16 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		spindlePoles = measureSpindlePoleLocations( dnaAlignedTubulin );
 
-		final double[] poleToPoleVector = getSpindleAxisVector( spindlePoles );
+		spindlePoleToPoleVector = getSpindleAxisVector( spindlePoles );
 
-		final double[] spindleCenter = getSpindleCenter( spindlePoles, poleToPoleVector );
+		spindleCenter = getSpindleCenter( spindlePoles, spindlePoleToPoleVector );
 
 		measureDnaCenterToSpindleCenterDistance(
 				workingCalibration, spindlePoles, spindleCenter );
 
-		measureSpindleAxisToCoverslipPlaneAngle( poleToPoleVector );
+		measureSpindleAxisToCoverslipPlaneAngle( spindlePoleToPoleVector );
 
-		final ProfileAndRadius spindleLateralRadiusAndProfile =
+		spindleLateralRadiusAndProfile =
 				measureSpindleLateralExtend( workingCalibration, spindlePoles, spindleCenter );
 
 		spindleVolumeMask =
@@ -135,7 +145,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 	public RandomAccessibleInterval< BitType > measureSpindleVolume(
-			double[] workingCalibration, ProfileAndRadius spindleLateralRadiusAndProfile )
+			double[] workingCalibration,
+			ProfileAndRadius spindleLateralRadiusAndProfile )
 	{
 		/**
 		 * Extract spindle object at the threshold determined by the lateral maximal gradient
@@ -218,7 +229,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		}
 
 		/**
-		 * Measure spindle lateral extend in projection along spindle axis
+		 * Measure spindle lateral extend in maximum projection along spindle axis
 		 */
 
 		Logger.log( "Computing maximum projection of spindle along spindle axis..." );
@@ -227,6 +238,19 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				spindleAlignedAlongSpindlePoleToPoleAxis, 2 );
 
 		final RandomAccessibleInterval< T > spindleProjection = projection.maximum();
+
+//		final CoordinatesAndValues coordinatesAndValues = Utils.computeAverageIntensitiesAlongAxis(
+//				spindleProjection, 0.5, 0, settings.workingVoxelSize );
+//
+//		Plots.plot( coordinatesAndValues, "center distance [um]", "Spindle intensity" );
+//
+//		final AffineTransform2D transform2D = new AffineTransform2D();
+//		transform2D.rotate( Math.PI / 2 );
+//
+//		final RealRandomAccessible< T > rraSpindleProjection = Views.interpolate( Views.extendZero( spindleProjection ), new NLinearInterpolatorFactory<>() );
+//
+//		RealViews.transform(
+//				rraSpindleProjection, transform2D );
 
 		final ProfileAndRadius spindleLateralRadiusAndProfile
 				= measureRadialProfileAndRadius(
@@ -239,7 +263,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		if ( settings.showIntermediateResults )
 			show( spindleProjection, "spindle maximum projection along pole axis", null, workingCalibration, false);
-
 
 		return spindleLateralRadiusAndProfile;
 	}
