@@ -239,18 +239,18 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final RandomAccessibleInterval< T > spindleProjection = projection.maximum();
 
-//		final CoordinatesAndValues coordinatesAndValues = Utils.computeAverageIntensitiesAlongAxis(
-//				spindleProjection, 0.5, 0, settings.workingVoxelSize );
-//
-//		Plots.plot( coordinatesAndValues, "center distance [um]", "Spindle intensity" );
-//
-//		final AffineTransform2D transform2D = new AffineTransform2D();
-//		transform2D.rotate( Math.PI / 2 );
-//
-//		final RealRandomAccessible< T > rraSpindleProjection = Views.interpolate( Views.extendZero( spindleProjection ), new NLinearInterpolatorFactory<>() );
-//
-//		RealViews.transform(
-//				rraSpindleProjection, transform2D );
+		final CoordinatesAndValues coordinatesAndValues = Utils.computeAverageIntensitiesAlongAxis(
+				spindleProjection, 0.5, 0, settings.workingVoxelSize );
+
+		Plots.plot( coordinatesAndValues, "center distance [um]", "Spindle intensity" );
+
+		final AffineTransform2D transform2D = new AffineTransform2D();
+		transform2D.rotate( Math.PI / 2 );
+
+		final RealRandomAccessible< T > rraSpindleProjection = Views.interpolate( Views.extendZero( spindleProjection ), new NLinearInterpolatorFactory<>() );
+
+		RealViews.transform(
+				rraSpindleProjection, transform2D );
 
 		final ProfileAndRadius spindleLateralRadiusAndProfile
 				= measureRadialProfileAndRadius(
