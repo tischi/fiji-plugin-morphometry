@@ -21,7 +21,6 @@ import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
-import net.imglib2.interpolation.randomaccess.NLinearInterpolator;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform2D;
@@ -35,6 +34,7 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
+import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import java.io.File;
@@ -137,7 +137,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		measureSpindleAxisToCoverslipPlaneAngle( spindlePoleToPoleVector );
 
 		spindleLateralRadiusAndProfile =
-				measureSpindleLateralExtend( workingCalibration, spindlePoles, spindleCenter );
+				measureSpindleLateralExtends( workingCalibration, spindlePoles, spindleCenter );
 
 		spindleVolumeMask =
 				measureSpindleVolume( workingCalibration, spindleLateralRadiusAndProfile );
@@ -181,15 +181,47 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return spindleVolumeMask;
 	}
 
-	public ProfileAndRadius measureSpindleLateralExtend(
+	public ProfileAndRadius measureSpindleLateralExtends(
 			double[] workingCalibration,
 			ArrayList< double[] > spindlePoles,
 			double[] spindleCenter )
 	{
-		/**
-		 * Measure spindle radius
-		 */
 
+		final RandomAccessibleInterval< T > spindleAlignedAlongSpindlePoleToPoleAxis
+				= createSpindlePolesAlignedRai( workingCalibration, spindlePoles, spindleCenter );
+
+		final RandomAccessibleInterval< T > spindleProjection =
+				createMaximumProjectionAlongSpindleAxis( spindleAlignedAlongSpindlePoleToPoleAxis );
+
+		measureRadialWidths( spindleProjection );
+
+		final ProfileAndRadius spindleLateralRadiusAndProfile
+				= measureRadialProfileAndRadius(
+						spindleProjection,
+					"spindle lateral",
+						settings.spindleDerivativeDelta );
+
+		addMeasurement( getSpindleWidthKey(),
+				2.0 * spindleLateralRadiusAndProfile.radius );
+
+		if ( settings.showIntermediateResults )
+			show( spindleProjection, "spindle maximum projection along pole axis", null, workingCalibration, false);
+
+		return spindleLateralRadiusAndProfile;
+	}
+
+	public RandomAccessibleInterval< T > createMaximumProjectionAlongSpindleAxis( RandomAccessibleInterval< T > spindleAlignedAlongSpindlePoleToPoleAxis )
+	{
+		Logger.log( "Computing maximum projection of spindle along spindle axis..." );
+
+		Projection projection = new Projection<>(
+				spindleAlignedAlongSpindlePoleToPoleAxis, 2 );
+
+		return ( RandomAccessibleInterval< T > ) projection.maximum();
+	}
+
+	public RandomAccessibleInterval< T > createSpindlePolesAlignedRai( double[] workingCalibration, ArrayList< double[] > spindlePoles, double[] spindleCenter )
+	{
 		// Realign spindle along pole to pole axis
 		//
 		final double[] poleToPoleAxis = new double[ 3 ];
@@ -227,44 +259,53 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 					workingCalibration,
 					false );
 		}
+		return spindleAlignedAlongSpindlePoleToPoleAxis;
+	}
 
-		/**
-		 * Measure spindle lateral extend in maximum projection along spindle axis
-		 */
+	public void measureRadialWidths( RandomAccessibleInterval< T > rai )
+	{
+		RealRandomAccessible< T > rra =
+				Views.interpolate(
+						Views.extendZero( rai ), new NLinearInterpolatorFactory<>() );
 
-		Logger.log( "Computing maximum projection of spindle along spindle axis..." );
+		double dAngle = Math.PI / 2;
 
-		Projection projection = new Projection<>(
-				spindleAlignedAlongSpindlePoleToPoleAxis, 2 );
+		for ( int angle = 0; angle < Math.PI; angle += dAngle )
+		{
 
-		final RandomAccessibleInterval< T > spindleProjection = projection.maximum();
+			final AffineTransform2D transform2D = new AffineTransform2D();
+			transform2D.rotate( angle );
 
-		final CoordinatesAndValues coordinatesAndValues = Utils.computeAverageIntensitiesAlongAxis(
-				spindleProjection, 0.5, 0, settings.workingVoxelSize );
+			IntervalView< T > rotated =
+					Views.interval(
+							Views.raster(
+									RealViews.transform( rra, transform2D ) ), rai );
 
-		Plots.plot( coordinatesAndValues, "center distance [um]", "Spindle intensity" );
+			final CoordinatesAndValues coordinatesAndValues =
+					Utils.computeAverageIntensitiesAlongAxis(
+							rotated,
+							1.0,
+							0,
+							settings.workingVoxelSize );
 
-		final AffineTransform2D transform2D = new AffineTransform2D();
-		transform2D.rotate( Math.PI / 2 );
 
-		final RealRandomAccessible< T > rraSpindleProjection = Views.interpolate( Views.extendZero( spindleProjection ), new NLinearInterpolatorFactory<>() );
+			final CoordinatesAndValues derivative =
+					CurveAnalysis.derivative(
+							coordinatesAndValues,
+							( int ) Math.ceil( settings.spindleDerivativeDelta / settings.workingVoxelSize ) );
 
-		RealViews.transform(
-				rraSpindleProjection, transform2D );
 
-		final ProfileAndRadius spindleLateralRadiusAndProfile
-				= measureRadialProfileAndRadius(
-						spindleProjection,
-					"spindle lateral",
-						settings.spindleDerivativeDelta );
+			if ( settings.showIntermediateResults )
+			{
+				Plots.plot(
+						coordinatesAndValues, "Center distance [um]",
+						"Spindle lateral intensity, angle = " + angle );
+				Plots.plot( derivative, "Center distance [um]",
+						"d/dx Spindle lateral intensity, angle = " + angle  );
+			}
 
-		addMeasurement( getSpindleWidthKey(),
-				2.0 * spindleLateralRadiusAndProfile.radius );
+		}
 
-		if ( settings.showIntermediateResults )
-			show( spindleProjection, "spindle maximum projection along pole axis", null, workingCalibration, false);
-
-		return spindleLateralRadiusAndProfile;
 	}
 
 	public void measureSpindleAxisToCoverslipPlaneAngle( double[] poleToPoleVector )
