@@ -162,17 +162,21 @@ public class Utils
 		return mean;
 	}
 
-	public static double median( List<Double> a ){
+	public static double median( List<Double> input )
+	{
+		final ArrayList< Double > sorted = new ArrayList<>( input );
 
-		if ( a.size() == 1 ) return a.get( 0 );
-		if ( a.size() == 0 ) return 0;
+		Collections.sort( sorted );
 
-		int middle = a.size()/2;
+		if ( sorted.size() == 1 ) return sorted.get( 0 );
+		if ( sorted.size() == 0 ) return 0;
 
-		if (a.size() % 2 == 1) {
-			return a.get(middle);
+		int middle = sorted.size()/2;
+
+		if (sorted.size() % 2 == 1) {
+			return sorted.get(middle);
 		} else {
-			return (a.get(middle-1) + a.get(middle)) / 2.0;
+			return (sorted.get(middle-1) + sorted.get(middle)) / 2.0;
 		}
 	}
 

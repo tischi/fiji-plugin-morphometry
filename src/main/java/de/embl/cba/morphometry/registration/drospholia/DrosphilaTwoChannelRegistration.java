@@ -646,8 +646,6 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 			}
 		}
 
-		Collections.sort( offCenterAngles );
-
 		double medianAngle = Utils.median( offCenterAngles );
 
 		return -medianAngle;

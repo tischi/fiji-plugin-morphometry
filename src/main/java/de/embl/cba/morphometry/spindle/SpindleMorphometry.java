@@ -95,6 +95,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	private double[] spindlePoleToPoleVector;
 	private double[] spindleCenter;
 	private ProfileAndRadius spindleLateralRadiusAndProfile;
+	private RandomAccessibleInterval< T > poleToPoleAlignedSpindleRai;
+	private double spindleThreshold;
 
 	public SpindleMorphometry( SpindleMorphometrySettings settings, OpService opService )
 	{
@@ -130,6 +132,11 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		spindlePoleToPoleVector = getSpindleAxisVector( spindlePoles );
 
 		spindleCenter = getSpindleCenter( spindlePoles, spindlePoleToPoleVector );
+
+		poleToPoleAlignedSpindleRai =
+				createSpindlePolesAlignedRai( spindlePoles, spindleCenter );
+
+		spindleThreshold = measureSpindleThreshold( poleToPoleAlignedSpindleRai );
 
 		measureDnaCenterToSpindleCenterDistance(
 				workingCalibration, spindlePoles, spindleCenter );
@@ -181,6 +188,21 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return spindleVolumeMask;
 	}
 
+	/**
+	 *
+	 * TODO:
+	 * This method currently also determines a threshold value
+	 * that is later used to measure the spindle volume.
+	 * Maybe it makes more sense to have a separate method to
+	 * determine a threshold value and only later use the binary
+	 * spindle to measure its morphometry.
+	 *
+	 *
+	 * @param workingCalibration
+	 * @param spindlePoles
+	 * @param spindleCenter
+	 * @return
+	 */
 	public ProfileAndRadius measureSpindleLateralExtends(
 			double[] workingCalibration,
 			ArrayList< double[] > spindlePoles,
@@ -188,7 +210,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	{
 
 		final RandomAccessibleInterval< T > spindleAlignedAlongSpindlePoleToPoleAxis
-				= createSpindlePolesAlignedRai( workingCalibration, spindlePoles, spindleCenter );
+				= createSpindlePolesAlignedRai( spindlePoles, spindleCenter );
 
 		final RandomAccessibleInterval< T > spindleProjection =
 				createMaximumProjectionAlongSpindleAxis( spindleAlignedAlongSpindlePoleToPoleAxis );
@@ -197,9 +219,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final ProfileAndRadius spindleLateralRadiusAndProfile
 				= measureRadialProfileAndRadius(
-						spindleProjection,
-					"spindle lateral",
-						settings.spindleDerivativeDelta );
+				spindleProjection,
+				"spindle lateral",
+				settings.spindleDerivativeDelta );
 
 		addMeasurement( getSpindleWidthKey(),
 				2.0 * spindleLateralRadiusAndProfile.radius );
@@ -210,20 +232,49 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return spindleLateralRadiusAndProfile;
 	}
 
-	public RandomAccessibleInterval< T > createMaximumProjectionAlongSpindleAxis( RandomAccessibleInterval< T > spindleAlignedAlongSpindlePoleToPoleAxis )
+
+	public double measureSpindleThreshold(
+			RandomAccessibleInterval< T > poleToPoleAlignedSpindleRai )
+	{
+		final RandomAccessibleInterval< T > spindleProjection =
+				createMaximumProjectionAlongSpindleAxis( poleToPoleAlignedSpindleRai );
+
+		final ArrayList< Double > thresholdCandidates = measureRadialThresholds( spindleProjection );
+
+		final double threshold = Utils.median( thresholdCandidates );
+
+		return threshold;
+	}
+
+	public RandomAccessibleInterval< T > createMaximumProjectionAlongSpindleAxis(
+			RandomAccessibleInterval< T > poleToPoleAlignedSpindleRai )
 	{
 		Logger.log( "Computing maximum projection of spindle along spindle axis..." );
 
 		Projection projection = new Projection<>(
-				spindleAlignedAlongSpindlePoleToPoleAxis, 2 );
+				poleToPoleAlignedSpindleRai, 2 );
 
-		return ( RandomAccessibleInterval< T > ) projection.maximum();
+		final RandomAccessibleInterval< T > maximum = projection.maximum();
+
+		if ( settings.showIntermediateResults )
+			show( maximum, "spindle maximum projection along pole axis", null, workingCalibration, false);
+
+		return maximum;
 	}
 
-	public RandomAccessibleInterval< T > createSpindlePolesAlignedRai( double[] workingCalibration, ArrayList< double[] > spindlePoles, double[] spindleCenter )
+
+	/**
+	 *
+	 * Align spindle along pole to pole axis
+	 *
+	 * @param spindlePoles
+	 * @param spindleCenter
+	 * @return
+	 */
+	private RandomAccessibleInterval< T > createSpindlePolesAlignedRai(
+			ArrayList< double[] > spindlePoles,
+			double[] spindleCenter )
 	{
-		// Realign spindle along pole to pole axis
-		//
 		final double[] poleToPoleAxis = new double[ 3 ];
 		LinAlgHelpers.subtract( spindlePoles.get( 0 ), spindlePoles.get( 1 ), poleToPoleAxis );
 		LinAlgHelpers.normalize( poleToPoleAxis );
@@ -252,13 +303,13 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			realPoints.add( new RealPoint( newPole01 ) );
 			realPoints.add( new RealPoint( newCenter ) );
 
-			show(
-					spindleAlignedAlongSpindlePoleToPoleAxis,
+			show( spindleAlignedAlongSpindlePoleToPoleAxis,
 					"spindle aligned pole to pole",
 					realPoints,
 					workingCalibration,
 					false );
 		}
+
 		return spindleAlignedAlongSpindlePoleToPoleAxis;
 	}
 
@@ -268,11 +319,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				Views.interpolate(
 						Views.extendZero( rai ), new NLinearInterpolatorFactory<>() );
 
-		double dAngle = Math.PI / 2;
+		double dAngle = Math.PI / 3;
 
-		for ( int angle = 0; angle < Math.PI; angle += dAngle )
+		for ( double angle = 0; angle < Math.PI; angle += dAngle )
 		{
-
 			final AffineTransform2D transform2D = new AffineTransform2D();
 			transform2D.rotate( angle );
 
@@ -288,18 +338,18 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 							0,
 							settings.workingVoxelSize );
 
-
 			final CoordinatesAndValues derivative =
 					CurveAnalysis.derivative(
 							coordinatesAndValues,
-							( int ) Math.ceil( settings.spindleDerivativeDelta / settings.workingVoxelSize ) );
+							( int ) Math.ceil( settings.spindleDerivativeDelta
+									/ settings.workingVoxelSize ) );
 
 
-			if ( settings.showIntermediateResults )
+//			if ( settings.showIntermediateResults )
 			{
-				Plots.plot(
-						coordinatesAndValues, "Center distance [um]",
-						"Spindle lateral intensity, angle = " + angle );
+//				Plots.plot(
+//						coordinatesAndValues, "Center distance [um]",
+//						"Spindle lateral intensity, angle = " + angle );
 				Plots.plot( derivative, "Center distance [um]",
 						"d/dx Spindle lateral intensity, angle = " + angle  );
 			}
@@ -307,6 +357,66 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		}
 
 	}
+
+	public ArrayList< Double > measureRadialThresholds( RandomAccessibleInterval< T > rai )
+	{
+
+		final ArrayList< Double > thresholdCandidates = new ArrayList<>();
+
+		RealRandomAccessible< T > rra =
+				Views.interpolate(
+						Views.extendZero( rai ), new NLinearInterpolatorFactory<>() );
+
+		double dAngle = Math.PI / 5;
+
+		for ( double angle = 0; angle < Math.PI; angle += dAngle )
+		{
+			final AffineTransform2D transform2D = new AffineTransform2D();
+			transform2D.rotate( angle );
+
+			IntervalView< T > rotated =
+					Views.interval(
+							Views.raster(
+									RealViews.transform( rra, transform2D ) ), rai );
+
+			final CoordinatesAndValues intensities =
+					Utils.computeAverageIntensitiesAlongAxis(
+							rotated,
+							1.0,
+							0,
+							settings.workingVoxelSize );
+
+			final CoordinatesAndValues derivatives =
+					CurveAnalysis.derivative(
+							intensities,
+							( int ) Math.ceil( settings.spindleDerivativeDelta
+									/ settings.workingVoxelSize ) );
+
+			final ArrayList< CoordinateAndValue > extrema
+					= CurveAnalysis.leftMaxAndRightMinLoc( derivatives );
+
+			for ( int i = 0; i < 2; i++ )
+			{
+				final Double intensityAtDerivativeExtremum
+						= CurveAnalysis.getValueAtCoordinate(
+								intensities,
+						extrema.get( i ).coordinate );
+				thresholdCandidates.add( intensityAtDerivativeExtremum );
+			}
+
+//			if ( settings.showIntermediateResults )
+			{
+				Plots.plot( intensities, "Center distance [um]",
+						"d/dx Spindle lateral intensity, angle = " + angle  );
+				Plots.plot( derivatives, "Center distance [um]",
+						"d/dx Spindle lateral intensity, angle = " + angle  );
+			}
+
+		}
+
+		return thresholdCandidates;
+	}
+
 
 	public void measureSpindleAxisToCoverslipPlaneAngle( double[] poleToPoleVector )
 	{
