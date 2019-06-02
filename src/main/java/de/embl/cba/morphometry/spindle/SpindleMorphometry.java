@@ -152,10 +152,29 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 	private ProfileAndRadius measureSpindleLateralExtends(
-			RandomAccessibleInterval<T> poleToPoleAlignedSpindleRai,
+			RandomAccessibleInterval< T > poleToPoleAlignedSpindleRai,
 			double spindleThreshold )
 	{
-		Algorithms.createMask(  )
+		final RandomAccessibleInterval< BitType > alignedSpindleMask
+				= Algorithms.createMask( poleToPoleAlignedSpindleRai, spindleThreshold );
+
+		Logger.log( "Computing maximum projection of spindle along spindle axis..." );
+
+		final RandomAccessibleInterval< BitType > maximum =
+				new Projection<>(
+					alignedSpindleMask,
+					2 ).maximum();
+
+		if ( settings.showIntermediateResults )
+			show( 	maximum,
+					"Spindle maximum projection along pole to pole axis",
+					null,
+					workingCalibration,
+					false);
+
+		measureRadialWidthsOld( spindleProjection );
+
+
 	}
 
 	public RandomAccessibleInterval< BitType > measureSpindleVolume(
@@ -177,30 +196,12 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				Measurements.measureSizeInPixels( spindleVolumeMask )
 						* Math.pow( settings.workingVoxelSize, 3 );
 
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
-				SPINDLE_VOLUME + SEP + VOLUME_UNIT,
-				spindleVolume );
+		addMeasurement( SPINDLE_VOLUME + SEP + VOLUME_UNIT, spindleVolume );
 
 		return spindleVolumeMask;
 	}
 
-	/**
-	 *
-	 * TODO:
-	 * This method currently also determines a threshold value
-	 * that is later used to measure the spindle volume.
-	 * Maybe it makes more sense to have a separate method to
-	 * determine a threshold value and only later use the binary
-	 * spindle to measure its morphometry.
-	 *
-	 *
-	 * @param workingCalibration
-	 * @param spindlePoles
-	 * @param spindleCenter
-	 * @return
-	 */
+	@Deprecated
 	public ProfileAndRadius measureSpindleLateralExtends(
 			double[] workingCalibration,
 			ArrayList< double[] > spindlePoles,
@@ -213,7 +214,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final RandomAccessibleInterval< T > spindleProjection =
 				createMaximumProjectionAlongSpindleAxis( spindleAlignedAlongSpindlePoleToPoleAxis );
 
-		measureRadialWidths( spindleProjection );
+		measureRadialWidthsOld( spindleProjection );
 
 		final ProfileAndRadius spindleLateralRadiusAndProfile
 				= measureRadialProfileAndRadius(
@@ -251,23 +252,25 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return threshold;
 	}
 
-	public RandomAccessibleInterval< T > createMaximumProjectionAlongSpindleAxis(
+	private RandomAccessibleInterval< T > createMaximumProjectionAlongSpindleAxis(
 			RandomAccessibleInterval< T > poleToPoleAlignedSpindleRai )
 	{
 		Logger.log( "Computing maximum projection of spindle along spindle axis..." );
 
 		Projection projection = new Projection<>(
-				poleToPoleAlignedSpindleRai, 2 );
+				poleToPoleAlignedSpindleRai,
+				2 );
 
 		final RandomAccessibleInterval< T > maximum = projection.maximum();
 
 //		ImageJFunctions.show( maximum );
 
 		if ( settings.showIntermediateResults )
-			show( maximum, "spindle maximum projection along pole axis", null, workingCalibration, false);
+			show( maximum, "Spindle maximum projection along pole to pole axis", null, workingCalibration, false);
 
 		return maximum;
 	}
+
 
 
 	/**
@@ -320,7 +323,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return spindleAlignedAlongSpindlePoleToPoleAxis;
 	}
 
-	public void measureRadialWidths( RandomAccessibleInterval< T > rai )
+	@Deprecated
+	public void measureRadialWidthsOld( RandomAccessibleInterval< T > rai )
 	{
 		RealRandomAccessible< T > rra =
 				Views.interpolate(
@@ -337,6 +341,52 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 					Views.interval(
 							Views.raster(
 									RealViews.transform( rra, transform2D ) ), rai );
+
+			final CoordinatesAndValues coordinatesAndValues =
+					Utils.computeAverageIntensitiesAlongAxis(
+							rotated,
+							1.0,
+							0,
+							settings.workingVoxelSize );
+
+			final CoordinatesAndValues derivative =
+					CurveAnalysis.derivative(
+							coordinatesAndValues,
+							( int ) Math.ceil( settings.spindleDerivativeDelta
+									/ settings.workingVoxelSize ) );
+
+
+//			if ( settings.showIntermediateResults )
+			{
+//				Plots.plot(
+//						coordinatesAndValues, "Center distance [um]",
+//						"Spindle lateral intensity, angle = " + angle );
+				Plots.plot( derivative, "Center distance [um]",
+						"d/dx Spindle lateral intensity, angle = " + angle  );
+			}
+
+		}
+
+	}
+
+
+	public void measureRadialWidths( RandomAccessibleInterval< BitType > mask )
+	{
+		RealRandomAccessible< BitType > rra =
+				Views.interpolate(
+						Views.extendZero( mask ), new NearestNeighborInterpolatorFactory<>() );
+
+		double dAngle = Math.PI / 3;
+
+		for ( double angle = 0; angle < Math.PI; angle += dAngle )
+		{
+			final AffineTransform2D transform2D = new AffineTransform2D();
+			transform2D.rotate( angle );
+
+			IntervalView< BitType > rotated =
+					Views.interval(
+							Views.raster(
+									RealViews.transform( rra, transform2D ) ), mask );
 
 			final CoordinatesAndValues coordinatesAndValues =
 					Utils.computeAverageIntensitiesAlongAxis(
@@ -682,15 +732,15 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return spindlePoles;
 	}
 
-	public void addMeasurement( String name, double distance )
+	public void addMeasurement( String name, double value )
 	{
-		Logger.log( name + ": " + distance  );
+		Logger.log( name + ": " + value  );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
 				0,
 				name,
-				distance );
+				value );
 	}
 
 	public RandomAccessibleInterval< BitType > measureDnaVolume(
