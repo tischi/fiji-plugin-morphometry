@@ -138,35 +138,32 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		spindleThreshold = measureSpindleThreshold( poleToPoleAlignedSpindleRai );
 
+		spindleVolumeMask =
+				measureSpindleVolume( tubulin, spindleThreshold );
+
+		spindleLateralRadiusAndProfile =
+				measureSpindleLateralExtends( poleToPoleAlignedSpindleRai, spindleThreshold );
+
 		measureDnaCenterToSpindleCenterDistance(
 				workingCalibration, spindlePoles, spindleCenter );
 
 		measureSpindleAxisToCoverslipPlaneAngle( spindlePoleToPoleVector );
 
-		spindleLateralRadiusAndProfile =
-				measureSpindleLateralExtends( workingCalibration, spindlePoles, spindleCenter );
+	}
 
-		spindleVolumeMask =
-				measureSpindleVolume( workingCalibration, spindleLateralRadiusAndProfile );
-
+	private ProfileAndRadius measureSpindleLateralExtends(
+			RandomAccessibleInterval<T> poleToPoleAlignedSpindleRai,
+			double spindleThreshold )
+	{
+		Algorithms.createMask(  )
 	}
 
 	public RandomAccessibleInterval< BitType > measureSpindleVolume(
-			double[] workingCalibration,
-			ProfileAndRadius spindleLateralRadiusAndProfile )
+			RandomAccessibleInterval< T > tubulin,
+			double spindleThreshold )
 	{
-		/**
-		 * Extract spindle object at the threshold determined by the lateral maximal gradient
-		 */
-
-		final double spindleVolumeThreshold =
-				spindleLateralRadiusAndProfile.profile.values.get(
-						spindleLateralRadiusAndProfile.radiusIndex );
-
-		Logger.log( "Spindle lateral threshold: " + spindleVolumeThreshold );
-
 		final RandomAccessibleInterval< BitType > spindleVolumeMask =
-				createCentralObjectsMask( tubulin, spindleVolumeThreshold );
+				createCentralObjectsMask( tubulin, spindleThreshold );
 
 		if ( settings.showIntermediateResults )
 			show( spindleVolumeMask,
@@ -177,7 +174,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 */
 
 		final double spindleVolume =
-				Measurements.measureSizeInPixels( spindleVolumeMask ) * Math.pow( settings.workingVoxelSize, 3 );
+				Measurements.measureSizeInPixels( spindleVolumeMask )
+						* Math.pow( settings.workingVoxelSize, 3 );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
@@ -233,6 +231,11 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 
+	/**
+	 *
+	 * @param poleToPoleAlignedSpindleRai
+	 * @return
+	 */
 	public double measureSpindleThreshold(
 			RandomAccessibleInterval< T > poleToPoleAlignedSpindleRai )
 	{
@@ -242,6 +245,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final ArrayList< Double > thresholdCandidates = measureRadialThresholds( spindleProjection );
 
 		final double threshold = Utils.median( thresholdCandidates );
+
+		Logger.log( "Spindle intensity threshold: " + threshold );
 
 		return threshold;
 	}
@@ -255,6 +260,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				poleToPoleAlignedSpindleRai, 2 );
 
 		final RandomAccessibleInterval< T > maximum = projection.maximum();
+
+//		ImageJFunctions.show( maximum );
 
 		if ( settings.showIntermediateResults )
 			show( maximum, "spindle maximum projection along pole axis", null, workingCalibration, false);
@@ -404,7 +411,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				thresholdCandidates.add( intensityAtDerivativeExtremum );
 			}
 
-//			if ( settings.showIntermediateResults )
+			if ( settings.showIntermediateResults )
 			{
 				Plots.plot( intensities, "Center distance [um]",
 						"d/dx Spindle lateral intensity, angle = " + angle  );
