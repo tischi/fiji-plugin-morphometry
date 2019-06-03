@@ -88,7 +88,7 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 					opService );
 
 			// Surfaces ( = perimeters )
-			Measurements.measureNumBoundaryPixels(
+			Measurements.measureImageBoundaryContact(
 					measurements,
 					imgLabeling );
 
