@@ -56,10 +56,11 @@ public class Measurements
 	public static final String PERIMETER = "Perimeter";
 	public static final String SURFACE = "Surface";
 
-	public static final String PIXEL_UNITS = "Pixels";
+	public static final String PIXEL_UNIT = "Pixel";
+	public static final String POW = "^";
 
 	public static final String SUM_INTENSITY = "SumIntensity";
-	public static final String NUM_BOUNDARY_PIXELS = "NumBoundaryPixels";
+	public static final String IMAGE_BOUNDARY_CONTACT = "ImageBoundaryContact";
 
 	public static final String GLOBAL_BACKGROUND_INTENSITY = "GlobalBackgroundIntensity";
 	public static final String SKELETON_TOTAL_LENGTH = "SkeletonTotalLength";
@@ -73,8 +74,8 @@ public class Measurements
 	public static final String VOXEL_SPACING = "VoxelSpacing";
 	public static final String FRAME_INTERVAL = "FrameInterval";
 	public static final String BRIGHTEST_POINT = "BrightestPoint";
-	public static final String BRIGHTEST_POINT_WIDTH = "BrightestPointWidth";
-	public static final String CONVEXITY = "Convexity";
+	public static final String RADIUS_AT_BRIGHTEST_POINT = "RadiusAtBrightestPoint";
+	public static final String CONVEX_AREA = "ConvexArea";
 
 	public static String getVolumeName( int numDimensions )
 	{
@@ -103,10 +104,6 @@ public class Measurements
 	{
 		String[] XYZ = new String[]{"X","Y","Z"};
 
-		String unit = "";
-		if ( calibration == null )
-			unit = PIXEL_UNITS;
-
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 
 		for ( LabelRegion labelRegion : labelRegions )
@@ -124,7 +121,7 @@ public class Measurements
 				addMeasurement(
 						objectMeasurements,
 						label,
-						CENTROID + SEP + XYZ[ d ] + SEP + unit,
+						CENTROID + SEP + XYZ[ d ] + SEP + PIXEL_UNIT,
 						position[ d ] );
 
 				if ( annotation != null )
@@ -145,10 +142,6 @@ public class Measurements
 	{
 		String[] XYZ = new String[]{"X","Y","Z"};
 
-		String unit = "";
-		if ( calibration == null )
-			unit = PIXEL_UNITS;
-
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 
 		for ( LabelRegion labelRegion : labelRegions )
@@ -167,7 +160,7 @@ public class Measurements
 				addMeasurement(
 						objectMeasurements,
 						( int ) ( labelRegion.getLabel() ),
-						BRIGHTEST_POINT + SEP + XYZ[ d ] + SEP + unit,
+						BRIGHTEST_POINT + SEP + XYZ[ d ] + SEP + PIXEL_UNIT,
 						position[ d ] );
 			}
 
@@ -184,7 +177,7 @@ public class Measurements
 			addMeasurement(
 					objectMeasurements,
 					( int ) ( labelRegion.getLabel() ),
-					BRIGHTEST_POINT_WIDTH + SEP + unit,
+					RADIUS_AT_BRIGHTEST_POINT + SEP + PIXEL_UNIT,
 					distanceAtPosition );
 
 		}
@@ -225,8 +218,14 @@ public class Measurements
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
 		{
+
 			final int label = ( int ) ( labelRegion.getLabel() );
-			addMeasurement( objectMeasurements, label, getVolumeName( labelRegion.numDimensions() ) + SEP + PIXEL_UNITS, labelRegion.size() );
+			addMeasurement(
+					objectMeasurements,
+					label,
+					getVolumeName( labelRegion.numDimensions() )
+							+ SEP + PIXEL_UNIT + POW + labelRegion.numDimensions(),
+					labelRegion.size() );
 		}
 	}
 
@@ -246,16 +245,18 @@ public class Measurements
 			final Polygon2D contour = opService.geom().contour( mask, true );
 			final double boundarySize = opService.geom().boundarySize( contour ).getRealDouble();
 
-			addMeasurement( objectMeasurements, label, getSurfaceName( labelRegion.numDimensions() ) + SEP + PIXEL_UNITS, boundarySize );
+			addMeasurement( objectMeasurements,
+					label,
+					getSurfaceName( labelRegion.numDimensions() ) + SEP + PIXEL_UNIT,
+					boundarySize );
 		}
 	}
 
 
-	public static void measureSkeletons(
-			HashMap<Integer, Map<String, Object>> objectMeasurements,
-			ImgLabeling<Integer, IntType> imgLabeling,
-			RandomAccessibleInterval< BitType > skeleton,
-			OpService opService )
+	public static void measureSkeletons( HashMap<Integer, Map<String, Object>> objectMeasurements,
+										 ImgLabeling<Integer, IntType> imgLabeling,
+										 RandomAccessibleInterval< BitType > skeleton,
+										 OpService opService )
 	{
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 
@@ -280,7 +281,7 @@ public class Measurements
 
 		addMeasurement( objectMeasurements,
 				label,
-				 SKELETON_TOTAL_LENGTH + SEP + PIXEL_UNITS,
+				 SKELETON_TOTAL_LENGTH + SEP + PIXEL_UNIT,
 				skeletonAnalyzer.getTotalSkeletonLength() );
 
 		addMeasurement( objectMeasurements,
@@ -290,15 +291,13 @@ public class Measurements
 
 		addMeasurement( objectMeasurements,
 				label,
-				SKELETON_AVG_BRANCH_LENGTH + SEP + PIXEL_UNITS,
+				SKELETON_AVG_BRANCH_LENGTH + SEP + PIXEL_UNIT,
 				skeletonAnalyzer.getAverageBranchLength() );
 
 		addMeasurement( objectMeasurements,
 				label,
-				SKELETON_LONGEST_BRANCH_LENGTH + SEP + PIXEL_UNITS,
+				SKELETON_LONGEST_BRANCH_LENGTH + SEP + PIXEL_UNIT,
 				skeletonAnalyzer.getLongestBranchLength() );
-
-
 	}
 
 	public static void measureMorpholibJFeatures(
@@ -334,29 +333,36 @@ public class Measurements
 
 		addMeasurement( objectMeasurements,
 				label,
-				"GeodesicDiameter" + SEP + PIXEL_UNITS,
+				"GeodesicDiameter" + SEP + PIXEL_UNIT,
 				geodesicDiameters[ 0 ].diameter );
 
 		addMeasurement( objectMeasurements,
 				label,
-				"LargestInscribedCircleRadius" + SEP + PIXEL_UNITS,
+				"LargestInscribedCircleRadius" + SEP + PIXEL_UNIT,
 				geodesicDiameters[ 0 ].innerRadius );
 
 		final Convexity.Result[] convexity
 				= new Convexity().analyzeRegions( maskProcessor, labels, calibration );
 
+
+
 		addMeasurement( objectMeasurements,
 				label,
-				CONVEXITY,
-				convexity[ 0 ].convexity );
+				CONVEX_AREA + SEP + PIXEL_UNIT + POW + 2,
+				convexity[ 0 ].convexArea );
 
 		final Ellipse[] ellipses =
 				new InertiaEllipse().analyzeRegions( maskProcessor, labels, calibration );
 
 		addMeasurement( objectMeasurements,
 				label,
-				"Elongation",
-				ellipses[ 0 ].radius1() / ellipses[ 0 ].radius2() );
+				"EllipsoidLongestAxisRadius" + SEP + PIXEL_UNIT,
+				ellipses[ 0 ].radius1()  );
+
+		addMeasurement( objectMeasurements,
+				label,
+				"EllipsoidShortestAxisRadius" + SEP + PIXEL_UNIT,
+				ellipses[ 0 ].radius2()  );
 
 	}
 
@@ -441,7 +447,7 @@ public class Measurements
 	}
 
 	private static < T extends RealType< T > & NativeType< T > >
-	long measureNumBoundaryPixels( LabelRegion labelRegion, long[] min, long[] max )
+	long measureImageBoundaryContact( LabelRegion labelRegion, long[] min, long[] max )
 	{
 		final LabelRegionCursor cursor = labelRegion.cursor();
 
@@ -676,7 +682,7 @@ public class Measurements
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	void measureNumBoundaryPixels(
+	void measureImageBoundaryContact(
 			HashMap< Integer, Map< String, Object > > objectMeasurements,
 			ImgLabeling< Integer, IntType > imgLabeling )
 	{
@@ -691,10 +697,12 @@ public class Measurements
 		for ( LabelRegion labelRegion : labelRegions )
 		{
 			long numBoundaryPixels =
-					measureNumBoundaryPixels( labelRegion, imgBoundaryMin, imgBoundaryMax );
+					measureImageBoundaryContact( labelRegion, imgBoundaryMin, imgBoundaryMax );
 
 			addMeasurement( objectMeasurements,
-					(int) labelRegion.getLabel(), NUM_BOUNDARY_PIXELS, numBoundaryPixels );
+					(int) labelRegion.getLabel(),
+					IMAGE_BOUNDARY_CONTACT + SEP + PIXEL_UNIT,
+					numBoundaryPixels );
 		}
 	}
 
