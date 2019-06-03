@@ -251,10 +251,11 @@ public class Measurements
 	}
 
 
-	public static void measureSkeletons( HashMap<Integer, Map<String, Object>> objectMeasurements,
-										 ImgLabeling<Integer, IntType> imgLabeling,
-										 RandomAccessibleInterval< BitType > skeleton,
-										 OpService opService )
+	public static void measureSkeletons(
+			HashMap<Integer, Map<String, Object>> objectMeasurements,
+			ImgLabeling<Integer, IntType> imgLabeling,
+			RandomAccessibleInterval< BitType > skeleton,
+			OpService opService )
 	{
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 
