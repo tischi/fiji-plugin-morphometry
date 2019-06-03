@@ -298,8 +298,6 @@ public class Measurements
 				label,
 				SKELETON_LONGEST_BRANCH_LENGTH + SEP + PIXEL_UNIT,
 				skeletonAnalyzer.getLongestBranchLength() );
-
-
 	}
 
 	public static void measureMorpholibJFeatures(
