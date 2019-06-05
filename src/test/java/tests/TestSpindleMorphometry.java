@@ -37,13 +37,12 @@ public class TestSpindleMorphometry
 				command.getObjectMeasurements();
 
 		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
-				SpindleMorphometry.getSpindleWidthKey() );
+				SpindleMorphometry.getSpindleWidthMaxKey() );
 
-		assertEquals( spindleWidth, 5.0, 1.0 );
+		assertEquals( spindleWidth, 5.64, 1.0 );
 	}
 
-
-//	@Test // TODO: spindle is very asymmetric
+	@Test
 	public < R extends RealType< R > > void testLargeSpindle()
 	{
 		final ImageJ ij = new ImageJ();
@@ -66,15 +65,15 @@ public class TestSpindleMorphometry
 				command.getObjectMeasurements();
 
 		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
-				SpindleMorphometry.getSpindleWidthKey() );
+				SpindleMorphometry.getSpindleWidthMaxKey() );
 
-		//assertEquals( spindleWidth, 5.0, 1.0 );
+		assertEquals( spindleWidth, 8.79, 1.0 );
 	}
 
 	public static void main( String[] args )
 	{
-		//new TestSpindleMorphometry().testSmallSpindle();
-		new TestSpindleMorphometry().testLargeSpindle(); // TODO: spindle is very asymmetric
+		new TestSpindleMorphometry().testSmallSpindle();
+		new TestSpindleMorphometry().testLargeSpindle();
 	}
 
 }

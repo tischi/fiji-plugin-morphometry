@@ -18,10 +18,6 @@ public class RunSpindleMorphometry
 
 		command.inputImageFile = new File("/Users/tischer/Desktop/kletter/HighZoom--W0000--P0001-T0004--0001.tif");
 
-		//		command.inputImageFile = new File( "/Users/tischer/Desktop/kletter/HighZoom--W0000--P0001-T0007.tif" );
-
-
-
 		command.outputDirectory = new File( "/Users/tischer/Desktop/kletter" );
 		command.inputImageFilesParentDirectory = new File( "/Users/tischer/Desktop/kletter" );
 
@@ -30,7 +26,7 @@ public class RunSpindleMorphometry
 
 		command.voxelSpacingDuringAnalysis = 0.25;
 
-		command.showIntermediateResults = true;
+		command.showIntermediateResults = false;
 
 		command.run();
 

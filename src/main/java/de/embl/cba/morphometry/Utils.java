@@ -127,6 +127,26 @@ public class Utils
 		return coordinatesAndValues;
 	}
 
+	public static long countNonZeroPixelsAlongAxis(
+			RandomAccessibleInterval< BitType > rai,
+			int axis )
+	{
+		final CoordinatesAndValues coordinatesAndValues = new CoordinatesAndValues();
+
+		// Set position at zero
+		final RandomAccess< BitType > access = rai.randomAccess();
+		access.setPosition( new long[ rai.numDimensions() ] );
+
+		long numNonZeroPixels = 0;
+		for ( long coordinate = rai.min( axis ); coordinate <= rai.max( axis ); ++coordinate )
+		{
+			access.setPosition( coordinate, axis );
+			if ( access.get().get() ) numNonZeroPixels++;
+		}
+
+		return numNonZeroPixels;
+	}
+
 	public static < T extends RealType< T > & NativeType< T > >
 	CoordinatesAndValues computeMaximumIntensitiesAlongAxis(
 			RandomAccessibleInterval< T > rai, double maxAxisDist, int axis, double calibration )
