@@ -29,13 +29,13 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 
 	MicrogliaSettings settings = new MicrogliaSettings();
 
-	@Parameter( label = "Input time series (single channel 2D+t)")
+	@Parameter( label = "Intensity image time series (single channel 2D+t)")
 	public File intensitiesFile;
 
 	@Parameter( label = "Proceed from existing segmentation")
 	public boolean proceedFromExisting;
 
-	@Parameter( label = "Existing segmentation (2D+t label mask)", required = false )
+	@Parameter( label = "Label mask time series (single channel 2D+t)", required = false )
 	public File segmentationFile;
 
 	@Parameter( label = "Output directory", style = "directory" )

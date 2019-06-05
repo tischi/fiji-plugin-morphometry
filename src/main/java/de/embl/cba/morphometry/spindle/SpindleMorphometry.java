@@ -156,7 +156,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final RandomAccessibleInterval< BitType > alignedSpindleMask
 				= Algorithms.createMask( poleToPoleAlignedSpindleRai, spindleThreshold );
 
-		Logger.log( "Computing maximum projection of spindle along spindle axis..." );
+		Logger.log( "Creating projection of spindle mask along spindle axis..." );
 
 		final RandomAccessibleInterval< BitType > projectedMask =
 				new Projection<>(
@@ -262,8 +262,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final ArrayList< Double > thresholdCandidates = measureRadialThresholds( spindleProjection );
 
 		final double threshold = Utils.median( thresholdCandidates );
-
-		Logger.log( "Spindle intensity threshold: " + threshold );
 
 		addMeasurement( "Spindle_Intensity_Threshold",  threshold );
 

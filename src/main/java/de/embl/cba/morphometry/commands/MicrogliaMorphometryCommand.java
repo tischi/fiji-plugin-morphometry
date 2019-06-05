@@ -32,11 +32,11 @@ public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType<
 	@Parameter
 	public OpService opService;
 
-	@Parameter ( label = "Label mask time series" )
-	public File labelMaskFile;
-
-	@Parameter ( label = "Intensity image time series" )
+	@Parameter ( label = "Intensity image time series (single channel 2D+t)" )
 	private File intensityFile;
+
+	@Parameter ( label = "Label mask time series (single channel 2D+t)" )
+	public File labelMaskFile;
 
 	@Parameter ( label = "Output directory", style = "directory" )
 	public File outputDirectory;
