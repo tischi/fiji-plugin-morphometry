@@ -265,6 +265,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Logger.log( "Spindle intensity threshold: " + threshold );
 
+		addMeasurement( "Spindle_Intensity_Threshold",  threshold );
+
 		return threshold;
 	}
 
@@ -760,6 +762,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 						dnaLateralExtendAndProfile.radiusIndex );
 
 		Logger.log( "DNA lateral threshold: " + dnaLateralIntensityValueAtRadius );
+
+		addMeasurement( "DNA_Intensity_Threshold", dnaLateralIntensityValueAtRadius );
 
 		final RandomAccessibleInterval< BitType > dnaVolumeMask =
 				createCentralObjectsMask( dna, dnaLateralIntensityValueAtRadius );
