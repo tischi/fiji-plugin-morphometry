@@ -57,7 +57,7 @@ public class Measurements
 	public static final String SURFACE = "Surface";
 
 	public static final String PIXEL_UNIT = "Pixel";
-	public static final String POW = "^";
+	public static final String POW = ""; // the ^ character felt to risky
 
 	public static final String SUM_INTENSITY = "SumIntensity";
 	public static final String IMAGE_BOUNDARY_CONTACT = "ImageBoundaryContact";
@@ -76,6 +76,7 @@ public class Measurements
 	public static final String BRIGHTEST_POINT = "BrightestPoint";
 	public static final String RADIUS_AT_BRIGHTEST_POINT = "RadiusAtBrightestPoint";
 	public static final String CONVEX_AREA = "ConvexArea";
+	public static final String[] XYZ = new String[]{"X","Y","Z"};
 
 	public static String getVolumeName( int numDimensions )
 	{
@@ -140,7 +141,6 @@ public class Measurements
 			RandomAccessibleInterval< BitType > annotation,
 			int gaussianBlurSigma )
 	{
-		String[] XYZ = new String[]{"X","Y","Z"};
 
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 
@@ -160,7 +160,7 @@ public class Measurements
 				addMeasurement(
 						objectMeasurements,
 						( int ) ( labelRegion.getLabel() ),
-						BRIGHTEST_POINT + SEP + XYZ[ d ] + SEP + PIXEL_UNIT,
+						getCoordinateName( BRIGHTEST_POINT, d ),
 						position[ d ] );
 			}
 
@@ -181,6 +181,11 @@ public class Measurements
 					distanceAtPosition );
 
 		}
+	}
+
+	public static String getCoordinateName( String brightestPoint, int dimension )
+	{
+		return brightestPoint + SEP + XYZ[ dimension ] + SEP + PIXEL_UNIT;
 	}
 
 	public static void drawPosition(
@@ -365,8 +370,6 @@ public class Measurements
 				ellipses[ 0 ].radius2()  );
 
 	}
-
-
 
 	public static void addMeasurement(
 			HashMap< Integer, Map< String, Object > > objectMeasurements,
@@ -752,6 +755,36 @@ public class Measurements
 						timeUnit );
 			}
 
+		}
+	}
+
+	public static void measureCentroidsToBrightestPointsDistances(
+			HashMap< Integer, Map< String, Object>> measurements )
+	{
+		final Set< Integer > objectLabels = measurements.keySet();
+
+		for ( int objectLabel : objectLabels )
+		{
+
+			final long bx =
+					(long) measurements.get( objectLabel )
+							.get( getCoordinateName( BRIGHTEST_POINT, 0 ) );
+			final long by =
+					(long) measurements.get( objectLabel )
+							.get( getCoordinateName( BRIGHTEST_POINT, 1 ) );
+			final double cx =
+					(double) measurements.get( objectLabel )
+							.get( getCoordinateName( CENTROID, 0 ) );
+			final double cy =
+					(double) measurements.get( objectLabel )
+							.get( getCoordinateName( CENTROID, 1 ) );
+
+			double distance = Math.sqrt( 1.0 * ( bx - cx ) * ( bx - cx ) + 1.0 * ( by - cy ) * ( by - cy ) );
+
+			addMeasurement( measurements,
+					objectLabel,
+					"BrightestPointToCentroidDistance" + SEP + PIXEL_UNIT,
+					distance );
 		}
 	}
 }
