@@ -76,6 +76,11 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 					annotations.get( t ),
 					3 );
 
+			Measurements.measureCentroidsToBrightestPointsDistances(
+					measurements
+			);
+
+
 			// Volumes ( = areas )
 			Measurements.measureVolumes(
 					measurements,
@@ -101,7 +106,6 @@ public class MicrogliaMorphometry < T extends RealType< T > & NativeType< T > >
 			Measurements.measureMorpholibJFeatures(
 					measurements,
 					imgLabeling );
-
 		}
 	}
 
