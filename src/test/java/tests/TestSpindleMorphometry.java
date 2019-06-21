@@ -70,10 +70,40 @@ public class TestSpindleMorphometry
 		assertEquals( spindleWidth, 8.79, 1.0 );
 	}
 
+
+	@Test
+	public < R extends RealType< R > > void testSpindleWithBrightOtherDNA()
+	{
+		final ImageJ ij = new ImageJ();
+
+		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		command.opService = ij.op();
+
+		command.inputImageFile = new File(
+				TestSpindleMorphometry.class.getResource(
+						"../spindle/test-data/SpindleWidth9.0_BrightOtherDNA.zip" ).getFile() );
+
+		command.spindleChannelIndexOneBased = 2; // This is the other way around than in the others!
+		command.dnaChannelIndexOneBased = 1;
+		command.voxelSpacingDuringAnalysis = 0.25;
+		command.showIntermediateResults = true;
+		command.saveResults = false;
+		command.run();
+
+		final HashMap< Integer, Map< String, Object > > measurements =
+				command.getObjectMeasurements();
+
+		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
+				SpindleMorphometry.getSpindleWidthMaxKey() );
+
+		assertEquals( spindleWidth, 9.2, 1.0 );
+	}
+
 	public static void main( String[] args )
 	{
-		new TestSpindleMorphometry().testSmallSpindle();
-		new TestSpindleMorphometry().testLargeSpindle();
+		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
+//		new TestSpindleMorphometry().testSmallSpindle();
+//		new TestSpindleMorphometry().testLargeSpindle();
 	}
 
 }
