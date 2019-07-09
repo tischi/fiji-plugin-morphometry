@@ -81,7 +81,7 @@ public class TestSpindleMorphometry
 
 		command.inputImageFile = new File(
 				TestSpindleMorphometry.class.getResource(
-						"../spindle/test-data/SpindleWidth9.0_BrightOtherDNA.zip" ).getFile() );
+						"../spindle/test-data/BrightOtherDNA.zip" ).getFile() );
 
 		command.spindleChannelIndexOneBased = 2; // This is the other way around than in the others!
 		command.dnaChannelIndexOneBased = 1;
