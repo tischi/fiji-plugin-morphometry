@@ -1339,6 +1339,15 @@ public class Utils
 		return copy;
 	}
 
+	public static < R extends RealType< R > & NativeType< R > >
+	RandomAccessibleInterval< BitType > createEmptyMask( RandomAccessibleInterval< R > image )
+	{
+		RandomAccessibleInterval< BitType > mask =
+				new ArrayImgFactory( new BitType(  ) ).create( image );
+		mask = Views.translate( mask, Intervals.minAsLongArray( image ) );
+		return mask;
+	}
+
 	public static double[] copy( double[] values )
 	{
 		final double[] copy = new double[ values.length ];

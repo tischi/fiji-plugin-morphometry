@@ -26,7 +26,7 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public String inputDataSetName;
 	public double derivativeDelta;
 
-	public double minimalDnaVolume = 5; // um^3
+	public double minimalDnaFragementsVolume = 5; // um^3
 	public double maxCentralObjectRegionsDistance = 7; // um
 	public double erosionOfDnaMaskInCalibratedUnits = 1.0; // um
 	public Calibration imagePlusCalibration;

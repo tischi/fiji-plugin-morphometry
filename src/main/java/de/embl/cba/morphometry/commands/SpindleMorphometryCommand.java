@@ -44,6 +44,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter ( label = "Voxel Size for Analysis" )
 	public double voxelSpacingDuringAnalysis = 0.25;
 
+	@Parameter ( label = "DNA threshold factor" )
+	public double dnaThresholdFactor = 1.0;
+
 	@Parameter ( label = "DNA Channel [one-based index]" )
 	public long dnaChannelIndexOneBased = 2;
 
@@ -78,6 +81,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.maxSpindlePoleRefinementDistance = 3.0;
 		settings.interestPointsRadius = 0.5;
 		settings.outputDirectory = outputDirectory;
+		settings.dnaThresholdFactor = dnaThresholdFactor;
 	}
 
 	public HashMap< Integer, Map< String, Object > > getObjectMeasurements()
