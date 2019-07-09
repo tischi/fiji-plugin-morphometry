@@ -39,11 +39,6 @@ public class Projection< T extends RealType< T > & NativeType< T > >
         init( input, projectionDimension, projectionInterval );
     }
 
-    public Projection( RandomAccessibleInterval< T > input, int projectionDimension, FinalInterval projectionInterval )
-    {
-        init( input, projectionDimension, projectionInterval );
-    }
-
     private void init( RandomAccessibleInterval< T > input, int projectionDimension, FinalInterval projectionInterval )
     {
         this.numOutputDimensions = input.numDimensions() - 1;
@@ -195,8 +190,8 @@ public class Projection< T extends RealType< T > & NativeType< T > >
     private void setMedianProjection( Cursor< T > outputCursor )
     {
         double[] values = new double[ (int) projectionInterval.dimension( 0 ) ];
-        int min = (int) projectionInterval.min(0);
-        int max = (int) projectionInterval.max(0);
+        int min = (int) projectionInterval.min( 0 );
+        int max = (int) projectionInterval.max( 0 );
 
         for ( int i = min; i <= max; ++i )
         {
@@ -256,9 +251,7 @@ public class Projection< T extends RealType< T > & NativeType< T > >
     private void setInputAccess( Cursor< T > cursorOutput )
     {
         for ( int d = 0; d < numOutputDimensions; ++d )
-        {
-            inputAccess.setPosition( cursorOutput.getLongPosition( d ) , inputAxesExcludingProjectionAxis[ d ] );
-        }
+            inputAccess.setPosition( cursorOutput.getLongPosition( d ), inputAxesExcludingProjectionAxis[ d ] );
     }
 
     private void configureInputAxesExcludingProjectionAxis()
@@ -268,13 +261,9 @@ public class Projection< T extends RealType< T > & NativeType< T > >
         for ( int i = 0; i < numOutputDimensions; i++ )
         {
             if ( i >= projectionDimension )
-            {
                 inputAxesExcludingProjectionAxis[ i ] = i + 1;
-            }
             else
-            {
                 inputAxesExcludingProjectionAxis[ i ] = i;
-            }
         }
     }
 }

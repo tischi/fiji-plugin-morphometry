@@ -161,8 +161,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 					alignedSpindleMask,
 					2 ).maximum();
 
+		Regions.onlyKeepLargestRegion( projectedMask, ConnectedComponents.StructuringElement.EIGHT_CONNECTED  );
+
 		if ( settings.showIntermediateResults )
-			show( 	projectedMask,
+			show( projectedMask,
 					"Spindle mask projection along pole to pole axis",
 					null,
 					workingCalibration,
@@ -243,15 +245,13 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	{
 		Logger.log( "Computing maximum projection of spindle along spindle axis..." );
 
-		// TODO: only include pixels within the spindle
+		final FinalInterval spindleInterval = createSpindleInterval();
 
 		Projection projection = new Projection<>(
-				poleToPoleAlignedSpindleRai,
+				Views.interval(  poleToPoleAlignedSpindleRai, spindleInterval ),
 				2 );
 
 		final RandomAccessibleInterval< T > maximum = projection.maximum();
-
-//		ImageJFunctions.show( maximum );
 
 		if ( settings.showIntermediateResults )
 			show( maximum, "Spindle maximum projection along pole to pole axis",
@@ -260,6 +260,20 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return maximum;
 	}
 
+	private FinalInterval createSpindleInterval()
+	{
+		long[] min = new long[3];
+		long[] max = new long[3];
+
+		max[ 0 ] = (long) Math.ceil( dnaLateralExtend / 2.0 / settings.workingVoxelSize );
+		max[ 1 ] = (long) Math.ceil( dnaLateralExtend / 2.0 / settings.workingVoxelSize );
+		max[ 2 ] = (long) Math.ceil( 1.2 * spindleAxialExtend / 2.0 / settings.workingVoxelSize );
+
+		for ( int d = 0; d < 3; d++ )
+			min[ d ] = - max[ d ];
+
+		return new FinalInterval( min, max );
+	}
 
 
 	/**
@@ -434,21 +448,25 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			final ArrayList< CoordinateAndValue > extrema
 					= CurveAnalysis.leftMaxAndRightMinLoc( derivatives );
 
-			for ( int i = 0; i < 2; i++ )
-			{
-				final Double intensityAtDerivativeExtremum
-						= CurveAnalysis.getValueAtCoordinate(
-								intensities,
-						extrema.get( i ).coordinate );
-				thresholdCandidates.add( intensityAtDerivativeExtremum );
-			}
+
+			final double leftLoc = extrema.get( 0 ).coordinate - settings.spindleDerivativeDelta / 2.0;
+
+			thresholdCandidates.add( CurveAnalysis.getValueAtCoordinate(
+					intensities,
+					leftLoc ) );
+
+			final double rightLoc = extrema.get( 1 ).coordinate + settings.spindleDerivativeDelta / 2.0;
+
+			thresholdCandidates.add( CurveAnalysis.getValueAtCoordinate(
+					intensities,
+					rightLoc ) );
 
 			if ( settings.showIntermediateResults )
 			{
-//				Plots.plot( intensities, "Center distance [um]",
-//						"d/dx Spindle lateral intensity, angle = " + angle  );
-//				Plots.plot( derivatives, "Center distance [um]",
-//						"d/dx Spindle lateral intensity, angle = " + angle  );
+				Plots.plot( intensities, "Center distance [um]",
+						"Spindle lateral intensity, angle = " + angle  );
+				Plots.plot( derivatives, "Center distance [um]",
+						"d/dx Spindle lateral intensity, angle = " + angle  );
 			}
 
 		}
@@ -909,7 +927,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	private RandomAccessibleInterval< BitType > createSpindleMask(
 			RandomAccessibleInterval< T > poleToPoleAlignedSpindle,
-			double threshold )
+			double spindleThreshold )
 	{
 
 		// TODO: do not consider pixels to zero that are not within the spindle range:
@@ -923,8 +941,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		long[] position = new long[ 3 ];
 
-		double maximumPerpendicularAxisDistanceSquared = Math.pow( dnaLateralExtend / 2, 2 );
-		double maximumAlongAxisDistance = 1.1 * spindleAxialExtend / 2;
+		final double maximumPerpendicularAxisDistanceSquared = Math.pow( dnaLateralExtend / 2, 2 );
+		final double maximumAlongAxisDistance = 1.1 * spindleAxialExtend / 2;
 
 		while ( cursor.hasNext() )
 		{
@@ -933,21 +951,21 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 			// check position
 
-			double perpendicularAxisDistanceSquared =
+			final double perpendicularAxisDistanceSquared =
 					Math.pow( position[ 0 ] * settings.workingVoxelSize, 2 ) +
-							Math.pow( position[ 0 ] * settings.workingVoxelSize, 2 );
+							Math.pow( position[ 1 ] * settings.workingVoxelSize, 2 );
 
 			if ( perpendicularAxisDistanceSquared > maximumPerpendicularAxisDistanceSquared )
 				continue;
 
-			double alongAxisDistance = position[ 2 ] * settings.workingVoxelSize;
+			final double alongAxisDistance = Math.abs( position[ 2 ] * settings.workingVoxelSize );
 
 			if ( alongAxisDistance > maximumAlongAxisDistance )
 				continue;
 
 			// check threshold
 
-			if ( cursor.get().getRealDouble() > threshold )
+			if ( cursor.get().getRealDouble() > spindleThreshold )
 			{
 				access.setPosition( cursor );
 				access.get().set( true );

@@ -131,8 +131,6 @@ public class Utils
 			RandomAccessibleInterval< BitType > rai,
 			int axis )
 	{
-		final CoordinatesAndValues coordinatesAndValues = new CoordinatesAndValues();
-
 		// Set position at zero
 		final RandomAccess< BitType > access = rai.randomAccess();
 		access.setPosition( new long[ rai.numDimensions() ] );
@@ -146,6 +144,7 @@ public class Utils
 
 		return numNonZeroPixels;
 	}
+
 
 	public static < T extends RealType< T > & NativeType< T > >
 	CoordinatesAndValues computeMaximumIntensitiesAlongAxis(
@@ -457,7 +456,7 @@ public class Utils
 	RandomAccessibleInterval< T > createAverageProjectionAlongAxis(
 			RandomAccessibleInterval< T > rai, int d, double min, double max, double scaling )
 	{
-		Projection< T > projection = new Projection< T >(  rai, d,  new FinalInterval( new long[]{ (long) ( min / scaling) },  new long[]{ (long) ( max / scaling ) } ) );
+		Projection< T > projection = new Projection< T >(  rai, d,  (long) ( min / scaling) , (long) ( max / scaling )  );
 		return projection.average();
 	}
 
@@ -465,7 +464,7 @@ public class Utils
 	RandomAccessibleInterval< T > createSumProjectionAlongAxis(
 			RandomAccessibleInterval< T > rai, int d, double min, double max, double scaling )
 	{
-		Projection< T > projection = new Projection< T >(  rai, d,  new FinalInterval( new long[]{ (long) ( min / scaling) },  new long[]{ (long) ( max / scaling ) } ) );
+		Projection< T > projection = new Projection< T >(  rai, d,  (long) ( min / scaling) , (long) ( max / scaling )  );
 		return projection.sum();
 	}
 

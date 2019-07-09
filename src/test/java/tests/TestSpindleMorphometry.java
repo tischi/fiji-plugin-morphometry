@@ -24,12 +24,12 @@ public class TestSpindleMorphometry
 
 		command.inputImageFile = new File(
 				TestSpindleMorphometry.class.getResource(
-						"../spindle/test-data/SpindleWidth5.5.zip" ).getFile() );
+						"../spindle/test-data/SpindleWidthSmall.zip" ).getFile() );
 
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
 		command.voxelSpacingDuringAnalysis = 0.25;
-		command.showIntermediateResults = false;
+		command.showIntermediateResults = true;
 		command.saveResults = false;
 		command.run();
 
@@ -39,7 +39,7 @@ public class TestSpindleMorphometry
 		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
 				SpindleMorphometry.getSpindleWidthMaxKey() );
 
-		assertEquals( spindleWidth, 5.64, 1.0 );
+		assertEquals( spindleWidth, 7.5, 1.0 );
 	}
 
 	@Test
@@ -52,7 +52,7 @@ public class TestSpindleMorphometry
 
 		command.inputImageFile = new File(
 				TestSpindleMorphometry.class.getResource(
-						"../spindle/test-data/SpindleWidth8.5.zip" ).getFile() );
+						"../spindle/test-data/SpindleWidthLarge.zip" ).getFile() );
 
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
@@ -86,7 +86,7 @@ public class TestSpindleMorphometry
 		command.spindleChannelIndexOneBased = 2; // This is the other way around than in the others!
 		command.dnaChannelIndexOneBased = 1;
 		command.voxelSpacingDuringAnalysis = 0.25;
-		command.showIntermediateResults = true;
+		command.showIntermediateResults = false;
 		command.saveResults = false;
 		command.run();
 
@@ -96,14 +96,14 @@ public class TestSpindleMorphometry
 		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
 				SpindleMorphometry.getSpindleWidthMaxKey() );
 
-		assertEquals( spindleWidth, 9.2, 1.0 );
+		assertEquals( spindleWidth, 9.25, 1.0 );
 	}
 
 	public static void main( String[] args )
 	{
 		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
-//		new TestSpindleMorphometry().testSmallSpindle();
-//		new TestSpindleMorphometry().testLargeSpindle();
+		new TestSpindleMorphometry().testSmallSpindle();
+		new TestSpindleMorphometry().testLargeSpindle();
 	}
 
 }
