@@ -135,7 +135,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		poleToPoleAlignedSpindleRai =
 				createSpindlePolesAlignedRai( spindlePoles, spindleCenter );
 
-		spindleThreshold = measureSpindleThreshold( poleToPoleAlignedSpindleRai );
+		spindleThreshold =
+				measureSpindleThreshold( poleToPoleAlignedSpindleRai );
 
 		spindleVolumeMask =
 				measureSpindleVolume( poleToPoleAlignedSpindleRai, spindleThreshold );

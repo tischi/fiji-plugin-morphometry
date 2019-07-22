@@ -13,6 +13,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
+import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
@@ -55,6 +56,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	@Parameter ( label = "Show Intermediate Results" )
 	public boolean showIntermediateResults = false;
+
+	@Parameter( visibility = ItemVisibility.MESSAGE )
+	private String version = "Spindle Morphometry Version: 0.5.5";
 
 	public boolean saveResults = true;
 
