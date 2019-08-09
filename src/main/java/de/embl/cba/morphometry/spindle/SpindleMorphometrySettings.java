@@ -34,4 +34,5 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public double spindleDerivativeDelta = 1;
 	public double dnaThresholdFactor = 1.0;
 	public double dnaThresholdResolution = 1.5;
+	public int minimalDynamicRange = 50;
 }

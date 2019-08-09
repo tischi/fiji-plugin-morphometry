@@ -36,6 +36,7 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
+import net.imglib2.util.Pair;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
@@ -51,13 +52,9 @@ import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 {
 
-	public static final String SPINDLE_POLE_REFINEMENT_DISTANCE = "Spindle_Pole_Refinement_Distance";
-	public static final String SPINDLE_AXIAL_EXTEND = "Spindle_Length";
-	public static final String SPINDLE_LATERAL_EXTEND = "Spindle_Width";
-
 	public static final String SEP = "_";
 
-	final SpindleMorphometrySettings settings;
+	final SpindleMorphometrySettings< T > settings;
 	final OpService opService;
 
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
@@ -95,13 +92,39 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		this.opService = opService;
 	}
 
-	public void run()
+	public String run()
 	{
 		objectMeasurements = new HashMap<>();
 
 		spindleMeasurements = new SpindleMeasurements( objectMeasurements );
 
+		try
+		{
+			spindleMeasurements.log = measure();
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+			spindleMeasurements.log = "Exception during computation.";
+		}
+
+		spindleMeasurements.setObjectMeasurements();
+
+		return spindleMeasurements.log;
+
+	}
+
+	private String measure()
+	{
 		createIsotropicallyResampledImages();
+
+		Pair< Double, Double > minMaxValues = Algorithms.getMinMaxValues( dna );
+		if ( minMaxValues.getB() - minMaxValues.getA() < settings.minimalDynamicRange )
+			return SpindleMeasurements.TOO_LOW_DYNAMIC_RANGE_IN_DNA_IMAGE;
+
+		minMaxValues = Algorithms.getMinMaxValues( tubulin );
+		if ( minMaxValues.getB() - minMaxValues.getA() < settings.minimalDynamicRange )
+			return SpindleMeasurements.TOO_LOW_DYNAMIC_RANGE_IN_TUBULIN_IMAGE;
 
 		double dnaThreshold = determineDnaThreshold();
 
@@ -142,6 +165,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		measureSpindleAxisToCoverslipPlaneAngle( spindlePoleToPoleVector );
 
+		return "No comment";
 	}
 
 	private void measureSpindleLateralExtends(

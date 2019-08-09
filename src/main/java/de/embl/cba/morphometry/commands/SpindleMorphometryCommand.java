@@ -3,6 +3,7 @@ package de.embl.cba.morphometry.commands;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
+import de.embl.cba.morphometry.spindle.SpindleMeasurements;
 import de.embl.cba.morphometry.spindle.SpindleMorphometry;
 import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import de.embl.cba.tables.Tables;
@@ -28,6 +29,10 @@ import java.util.Map;
 @Plugin(type = Command.class, menuPath = "Plugins>Measure>Spindle Morphometry" )
 public class SpindleMorphometryCommand< R extends RealType< R > > implements Command
 {
+
+	private SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
+
+
 	@Parameter
 	public OpService opService;
 
@@ -37,7 +42,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	// TODO: how to make this more clear and easy?
 	// (it is to remove to part of the path to only store a relative directory )
 	@Parameter ( label = "Input Image Files Parent Directory", style = "directory" )
-	public File inputImageFilesParentDirectory;
+	public File inputImageFilesParentDirectory = new File("/" );
 
 	@Parameter ( label = "Output Directory", style = "directory" )
 	public File outputDirectory;
@@ -47,6 +52,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	@Parameter ( label = "DNA threshold factor" )
 	public double dnaThresholdFactor = 1.0;
+
+	@Parameter ( label = "Minimal dynamic value range [gray values]" )
+	public int minimalDynamicRange = settings.minimalDynamicRange;
 
 	@Parameter ( label = "DNA Channel [one-based index]" )
 	public long dnaChannelIndexOneBased = 2;
@@ -63,7 +71,6 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	public boolean saveResults = true;
 
 	private String imageName;
-	private SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
 
 	public void run()
@@ -86,6 +93,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.interestPointsRadius = 0.5;
 		settings.outputDirectory = outputDirectory;
 		settings.dnaThresholdFactor = dnaThresholdFactor;
+		settings.minimalDynamicRange = minimalDynamicRange;
 	}
 
 	public HashMap< Integer, Map< String, Object > > getObjectMeasurements()
@@ -114,13 +122,23 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.tubulinImage = tubulin;
 
 		SpindleMorphometry morphometry = new SpindleMorphometry( settings, opService );
-		morphometry.run();
+		final String log = morphometry.run();
 
 		objectMeasurements = morphometry.getObjectMeasurements();
 
+		addImagePathToMeasurements(
+				inputImageFilesParentDirectory.toPath(),
+				inputImageFile,
+				objectMeasurements,
+				"Path_InputImage" );
+
 		if ( saveResults )
 		{
-			saveOutputImageAndAddImagePathsToMeasurements( morphometry.getOutputImage() );
+			new File( getOutputDirectory() ).mkdirs();
+
+			if ( log.equals( SpindleMeasurements.NO_PROBLEM ))
+				saveOutputImageAndAddImagePathsToMeasurements( morphometry.getOutputImage() );
+
 			saveMeasurements( morphometry );
 		}
 
@@ -172,10 +190,6 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 		final File outputImageFile =
 				new File( getOutputDirectory() + imageName + "-out.tif" );
-
-		outputImageFile.getParentFile().mkdirs();
-
-		addImagePathToMeasurements( parentPath, inputImageFile, objectMeasurements, "Path_InputImage" );
 
 		addImagePathToMeasurements( parentPath, outputImageFile, objectMeasurements, "Path_OutputImage" );
 

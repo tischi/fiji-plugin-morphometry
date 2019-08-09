@@ -20,21 +20,29 @@ public class SpindleMeasurements
 	public static final String LENGTH_UNIT = "um";
 	public static final String VOLUME_UNIT = "um3";
 	public static final int ALIGNED_DNA_AXIS = 2;
+	public static final String COMMENT = "Comment";
+	public static final String SPINDLE_POLE_REFINEMENT_DISTANCE = "Spindle_Pole_Refinement_Distance";
+	public static final String SPINDLE_AXIAL_EXTEND = "Spindle_Length";
+	public static final String SPINDLE_LATERAL_EXTEND = "Spindle_Width";
+	public static final String TOO_LOW_DYNAMIC_RANGE_IN_DNA_IMAGE = "Too low dynamic range in DNA image";
+	public static final String TOO_LOW_DYNAMIC_RANGE_IN_TUBULIN_IMAGE = "Too low dynamic range in Tubulin image";
+	public static final String NO_PROBLEM = "No problem";
 
-	public Double dnaLateralExtend;
+	public Double dnaLateralExtend = Double.NaN;
 	public Double dnaAxialExtend = Double.NaN;
-	public Double dnaVolumeCalibrated;
-	public Double dnaRelativeCentralIntensity;
-	public Double spindleAxialExtend;
-	public Double spindlePoleARefinementDistance;
-	public Double spindlePoleBRefinementDistance;
-	public Double spindleThreshold;
-	public Double spindleVolume;
-	public Double spindleWidthMin;
-	public Double spindleWidthMax;
-	public Double dnaCenterToSpindleCenterDistance;
-	public Double angleSpindleAxisToCoverslipPlaneInDegrees;
-	public Double dnaVolumeThreshold;
+	public Double dnaVolumeCalibrated = Double.NaN;
+	public Double dnaRelativeCentralIntensity = Double.NaN;
+	public Double spindleAxialExtend = Double.NaN;
+	public Double spindlePoleARefinementDistance = Double.NaN;
+	public Double spindlePoleBRefinementDistance = Double.NaN;
+	public Double spindleThreshold = Double.NaN;
+	public Double spindleVolume = Double.NaN;
+	public Double spindleWidthMin = Double.NaN;
+	public Double spindleWidthMax = Double.NaN;
+	public Double dnaCenterToSpindleCenterDistance = Double.NaN;
+	public Double angleSpindleAxisToCoverslipPlaneInDegrees = Double.NaN;
+	public Double dnaVolumeThreshold = Double.NaN;
+	public String log = NO_PROBLEM;
 
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
 
@@ -59,7 +67,7 @@ public class SpindleMeasurements
 		return SPINDLE_LATERAL_EXTEND + SEP + LENGTH_UNIT;
 	}
 
-	public void setMeasurements( )
+	public void setObjectMeasurements( )
 	{
 
 		addMeasurement( "DNA_Intensity_Threshold", dnaVolumeThreshold );
@@ -125,6 +133,12 @@ public class SpindleMeasurements
 				SpindleMeasurements.SPINDLE_AXIS_TO_COVERSLIP_PLANE_ANGLE_DEGREES,
 				angleSpindleAxisToCoverslipPlaneInDegrees );
 
+
+		Measurements.addMeasurement(
+				objectMeasurements,
+				0,
+				COMMENT,
+				log );
 	}
 
 

@@ -104,8 +104,7 @@ public class TestSpindleMorphometry
 	public < R extends RealType< R > > void testDimDNA()
 	{
 		final ImageJ ij = new ImageJ();
-
-		ij.ui().showUI();
+		//ij.ui().showUI();
 
 		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
 		command.opService = ij.op();
@@ -117,17 +116,21 @@ public class TestSpindleMorphometry
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
 		command.voxelSpacingDuringAnalysis = 0.25;
+		command.minimalDynamicRange = 20;
 		command.showIntermediateResults = false;
-		command.saveResults = false;
+		command.saveResults = true;
+		command.outputDirectory = new File("/Users/tischer/" +
+				"Documents/fiji-plugin-morphometry/src" +
+				"/test/resources/test-data/spindle/output" );
 		command.run();
 
 		final HashMap< Integer, Map< String, Object > > measurements =
 				command.getObjectMeasurements();
 
-		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
-				SpindleMeasurements.getSpindleWidthMaxKey() );
+		final String comment = ( String) measurements.get( 0 ).get(
+				SpindleMeasurements.COMMENT );
 
-		// assertEquals( spindleWidth, 9.25, 1.0 );
+		assertEquals( comment, SpindleMeasurements.TOO_LOW_DYNAMIC_RANGE_IN_DNA_IMAGE  );
 	}
 
 
