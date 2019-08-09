@@ -7,6 +7,7 @@ import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidVectors;
 import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.regions.Regions;
+import de.embl.cba.morphometry.viewing.Viewers;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.CompositeImage;
 import ij.IJ;
@@ -53,17 +54,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	public static final String SPINDLE_POLE_REFINEMENT_DISTANCE = "Spindle_Pole_Refinement_Distance";
 	public static final String SPINDLE_AXIAL_EXTEND = "Spindle_Length";
 	public static final String SPINDLE_LATERAL_EXTEND = "Spindle_Width";
-	public static final String DNA_AXIAL_EXTEND = "DNA_Width";
-	public static final String DNA_LATERAL_EXTEND = "DNA_Length";
-	public static final String DNA_VOLUME = "DNA_Volume";
-	public static final String SPINDLE_VOLUME = "Spindle_Volume";
 
-	public static final String DNA_RELATIVE_CENTRAL_INTENSITY = "DNA_Normalised_Central_Intensity";
-	public static final String DNA_SPINDLE_CENTER_DISTANCE = "Dna_Center_To_Spindle_Center_Distance";
-	public static final String SPINDLE_AXIS_TO_COVERSLIP_PLANE_ANGLE_DEGREES = "Spindle_Axis_To_Coverslip_Plane_Angle_Degrees";
-	public static final String LENGTH_UNIT = "um";
-	public static final String VOLUME_UNIT = "um3";
-	public static final int ALIGNED_DNA_AXIS = 2;
 	public static final String SEP = "_";
 
 	final SpindleMorphometrySettings settings;
@@ -96,6 +87,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	private double spindleThreshold;
 	private double dnaLateralExtend;
 	private double spindleAxialExtend;
+	private SpindleMeasurements spindleMeasurements;
 
 	public SpindleMorphometry( SpindleMorphometrySettings settings, OpService opService )
 	{
@@ -106,6 +98,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	public void run()
 	{
 		objectMeasurements = new HashMap<>();
+
+		spindleMeasurements = new SpindleMeasurements( objectMeasurements );
 
 		createIsotropicallyResampledImages();
 
@@ -179,19 +173,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				widths.get( widths.size() - 1 ) * workingCalibration[ 1 ]
 		};
 
-		addMeasurement( getSpindleWidthMinKey(), calibratedMinMaxWidths[ 0 ] );
-		addMeasurement( getSpindleWidthMaxKey(), calibratedMinMaxWidths[ 1 ] );
+		spindleMeasurements.spindleWidthMin = calibratedMinMaxWidths[ 0 ];
+		spindleMeasurements.spindleWidthMax = calibratedMinMaxWidths[ 1 ];
 
-	}
-
-	public static String getSpindleWidthMaxKey()
-	{
-		return "Spindle_Width_Max" + SEP + LENGTH_UNIT;
-	}
-
-	public static String getSpindleWidthMinKey()
-	{
-		return "Spindle_Width_Min" + SEP + LENGTH_UNIT;
 	}
 
 	public RandomAccessibleInterval< BitType > measureSpindleVolume(
@@ -210,11 +194,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		 * Compute spindle volume
 		 */
 
-		final double spindleVolume =
+		spindleMeasurements.spindleVolume =
 				Measurements.measureSizeInPixels( spindleMask )
 						* Math.pow( settings.workingVoxelSize, 3 );
-
-		addMeasurement( SPINDLE_VOLUME + SEP + VOLUME_UNIT, spindleVolume );
 
 		return spindleMask;
 	}
@@ -234,11 +216,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final ArrayList< Double > thresholdCandidates =
 				measureRadialThresholds( spindleProjection );
 
-		final double threshold = Utils.median( thresholdCandidates );
+		spindleMeasurements.spindleThreshold = Utils.median( thresholdCandidates );
 
-		addMeasurement( "Spindle_Intensity_Threshold",  threshold );
-
-		return threshold;
+		return spindleMeasurements.spindleThreshold ;
 	}
 
 	private RandomAccessibleInterval< T > createMaximumProjectionAlongSpindleAxis(
@@ -481,27 +461,18 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final double[] poleToPoleVectorInCSCS =
 				transformToPixelUnitsCoverslipCoordinateSystem( dnaAxesAlignmentTransform, poleToPoleVector );
 
-		final double angleSpindleAxisToCoverslipPlaneInDegrees =
+		spindleMeasurements.angleSpindleAxisToCoverslipPlaneInDegrees =
 				90.0 - Math.abs( 180.0 / Math.PI *
 						Transforms.getAngle( new double[]{ 0, 0, 1 }, poleToPoleVectorInCSCS ) );
-
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
-				SPINDLE_AXIS_TO_COVERSLIP_PLANE_ANGLE_DEGREES,
-				angleSpindleAxisToCoverslipPlaneInDegrees );
 	}
 
-	public void measureDnaCenterToSpindleCenterDistance( double[] workingCalibration, ArrayList< double[] > spindlePoles, double[] spindleCenter )
+	public void measureDnaCenterToSpindleCenterDistance(
+			double[] workingCalibration,
+			ArrayList< double[] > spindlePoles,
+			double[] spindleCenter )
 	{
-		final double dnaCenterToSpindleCenterDistance = LinAlgHelpers.distance( new double[]{ 0, 0, 0}, spindleCenter) * settings.workingVoxelSize;
-
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
-				DNA_SPINDLE_CENTER_DISTANCE + SEP + LENGTH_UNIT,
-				dnaCenterToSpindleCenterDistance );
-
+		spindleMeasurements.dnaCenterToSpindleCenterDistance =
+				LinAlgHelpers.distance( new double[]{ 0, 0, 0}, spindleCenter) * settings.workingVoxelSize;
 
 		if ( settings.showIntermediateResults )
 		{
@@ -525,6 +496,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			poleToPoleVector[ i ] *= 0.5;
 
 		LinAlgHelpers.add( spindlePoles.get( 1 ), poleToPoleVector, spindleCenter );
+
 		return spindleCenter;
 	}
 
@@ -562,10 +534,17 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	{
 		final RandomAccessibleInterval< T > dnaDownscaledToMetaphasePlateWidth =
 				createRescaledArrayImg(
-						settings.dnaImage,
-						getScalingFactors( settings.inputCalibration, 3.0 ) );
+						dna,
+						getScalingFactors(
+								new double[]{ settings.workingVoxelSize, settings.workingVoxelSize, settings.workingVoxelSize },
+								settings.dnaThresholdResolution ) );
+
 		final double maximumValue =
 				Algorithms.getMaximumValue( dnaDownscaledToMetaphasePlateWidth );
+
+
+		Viewers.showRai3dWithImageJ( dnaDownscaledToMetaphasePlateWidth, "DNA Threshold" );
+
 		Logger.log( "DNA downscaled maximum value: " + maximumValue );
 		Logger.log( "DNA threshold factor: " + settings.dnaThresholdFactor );
 		double dnaThreshold = maximumValue * settings.dnaThresholdFactor;
@@ -665,15 +644,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final ArrayList< CoordinateAndValue > dnaAxialBoundaries =
 				CurveAnalysis.leftMaxAndRightMinLoc( dnaProfileAlongDnaAxisDerivative );
 
-		final double dnaAxialExtend =
+		spindleMeasurements.dnaAxialExtend =
 				dnaAxialBoundaries.get( 1 ).coordinate -
 						dnaAxialBoundaries.get( 0 ).coordinate;
-
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
-				DNA_AXIAL_EXTEND + SEP + LENGTH_UNIT,
-				dnaAxialExtend);
 
 		logDnaAxialThreshold( dnaProfileAlongDnaAxis, dnaAxialBoundaries );
 
@@ -700,7 +673,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		}
 	}
 
-	public ProfileAndRadius measureDnaLateralExtend( RandomAccessibleInterval< T > alignedDNA )
+	public ProfileAndRadius measureDnaLateralExtend(
+			RandomAccessibleInterval< T > alignedDNA )
 	{
 		Logger.log( "Measuring DNA lateral extend..." );
 
@@ -714,13 +688,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 						"dna lateral",
 						settings.derivativeDelta );
 
-		dnaLateralExtend = 2.0 * dnaLateralProfileAndRadius.radius;
-
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
-				DNA_LATERAL_EXTEND + SEP + LENGTH_UNIT,
-				dnaLateralExtend );
+		spindleMeasurements.dnaLateralExtend = 2.0 * dnaLateralProfileAndRadius.radius;
 
 		return dnaLateralProfileAndRadius;
 	}
@@ -737,50 +705,34 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		addPoleRefinementDistanceMeasurements( dnaAxisBasedSpindlePoles, spindlePoles );
 
-		spindleAxialExtend = LinAlgHelpers.distance(
+		spindleMeasurements.spindleAxialExtend = LinAlgHelpers.distance(
 				spindlePoles.get( 0 ), spindlePoles.get( 1 ) );
-
-		addMeasurement( SPINDLE_AXIAL_EXTEND + SEP + LENGTH_UNIT, spindleAxialExtend );
 
 		return spindlePoles;
 	}
 
-	public void addMeasurement( String name, double value )
-	{
-		Logger.log( name + ": " + value  );
-
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
-				name,
-				value );
-	}
 
 	public RandomAccessibleInterval< BitType > measureDnaVolume(
 			RandomAccessibleInterval< T > dna,
 			ProfileAndRadius dnaLateralExtendAndProfile )
 	{
-		final double dnaLateralIntensityValueAtRadius =
+		spindleMeasurements.dnaVolumeThreshold =
 				dnaLateralExtendAndProfile.profile.values.get(
 						dnaLateralExtendAndProfile.radiusIndex );
 
-		Logger.log( "DNA lateral threshold: " + dnaLateralIntensityValueAtRadius );
-
-		addMeasurement( "DNA_Intensity_Threshold", dnaLateralIntensityValueAtRadius );
-
 		final RandomAccessibleInterval< BitType > dnaVolumeMask =
-				createCentralObjectsMask( dna, dnaLateralIntensityValueAtRadius );
+				createCentralObjectsMask( dna, spindleMeasurements.dnaVolumeThreshold );
 
-		final long dnaVolumeInPixels = Measurements.measureSizeInPixels( dnaVolumeMask );
+		final long dnaVolumeInPixels =
+				Measurements.measureSizeInPixels( dnaVolumeMask );
 
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
-				DNA_VOLUME + SEP + VOLUME_UNIT,
-				dnaVolumeInPixels * Math.pow( settings.workingVoxelSize, 3 ) );
+		spindleMeasurements.dnaVolumeCalibrated =
+				dnaVolumeInPixels * Math.pow( settings.workingVoxelSize, 3 );
+
 
 		if ( settings.showIntermediateResults )
-			show( dnaVolumeMask, "dna volume mask", null, workingCalibration, false );
+			show( dnaVolumeMask, "dna volume mask",
+					null, workingCalibration, false );
 
 		return dnaVolumeMask;
 	}
@@ -792,7 +744,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				Utils.computeMaximumIntensitiesAlongAxis(
 						tubulinAlignedAlongShortestAxisOfDNA,
 						settings.maxDnaAxisDist,
-						ALIGNED_DNA_AXIS,
+						SpindleMeasurements.ALIGNED_DNA_AXIS,
 						settings.workingVoxelSize );
 
 		final CoordinatesAndValues tubulinProfileDerivative =
@@ -841,33 +793,23 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final double dnaCenterMaxIntensity = dnaLateralProfileAndRadius.profile.values.get( 0 );
 
-		final double dnaRelativeCentralIntensity =
+		spindleMeasurements.dnaRelativeCentralIntensity =
 				dnaCenterMaxIntensity / dnaLateralRadialProfileMaxIntensity;
 
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
-				DNA_RELATIVE_CENTRAL_INTENSITY,
-				dnaRelativeCentralIntensity );
 	}
 
 	public void addPoleRefinementDistanceMeasurements(
 			ArrayList< double[] > dnaAxisBasedSpindlePoles,
 			ArrayList< double[] > spindlePoles )
 	{
-		for ( int pole = 0; pole < 2; pole++ )
-		{
-			final double distance =
-					LinAlgHelpers.distance(
-							dnaAxisBasedSpindlePoles.get( pole ), spindlePoles.get( pole ) );
+		spindleMeasurements.spindlePoleARefinementDistance =
+				LinAlgHelpers.distance(
+						dnaAxisBasedSpindlePoles.get( 0 ), spindlePoles.get( 0 ) );
 
-			Measurements.addMeasurement(
-					objectMeasurements,
-					0,
-					SPINDLE_POLE_REFINEMENT_DISTANCE + SEP
-							+ "Pole" + pole + SEP + LENGTH_UNIT,
-					distance );
-		}
+		spindleMeasurements.spindlePoleBRefinementDistance =
+				LinAlgHelpers.distance(
+						dnaAxisBasedSpindlePoles.get( 1 ), spindlePoles.get( 1 ) );
+
 	}
 
 	private ArrayList< double[] > getRefinedSpindlePoles(
@@ -1018,7 +960,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		rotation.inverse().apply( zAxis, spindleAxis );
 
 		// set z-component of spindleAxis to zero, because we want to rotate parallel to coverslip
-		spindleAxis[ ALIGNED_DNA_AXIS ] = 0;
+		spindleAxis[ SpindleMeasurements.ALIGNED_DNA_AXIS ] = 0;
 
 		// compute rotation vector
 		// note: we do not know in which direction of the spindle the spindleAxis vector points,
@@ -1026,7 +968,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final double angleBetweenXAxisAndSpindleWithVector = angleOfSpindleAxisToXAxisInRadians( spindleAxis );
 
 		AffineTransform3D rotationTransform = new AffineTransform3D();
-		rotationTransform.rotate( ALIGNED_DNA_AXIS,  angleBetweenXAxisAndSpindleWithVector );
+		rotationTransform.rotate( SpindleMeasurements.ALIGNED_DNA_AXIS,  angleBetweenXAxisAndSpindleWithVector );
 
 		Logger.log( "Rotating input data around z-axis by [degrees]: " + 180 / Math.PI * angleBetweenXAxisAndSpindleWithVector );
 
@@ -1263,12 +1205,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		mask = opService.morphology().fillHoles( mask );
 
 		return mask;
-	}
-
-	@Deprecated
-	public static String getSpindleWidthKey()
-	{
-		return SPINDLE_LATERAL_EXTEND + SEP + LENGTH_UNIT;
 	}
 
 }

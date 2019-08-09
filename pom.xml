@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>de.embl.cba</groupId>
 		<artifactId>pom-embl-cba</artifactId>
-		<version>0.3.5</version>
+		<version>0.3.6</version>
 		<relativePath>../pom-embl-cba</relativePath>
 	</parent>
 	<groupId>de.embl.cba</groupId>
@@ -75,6 +75,7 @@
 		<license.copyrightOwners>EMBL</license.copyrightOwners>
 		<imagej.app.directory>/Applications/Fiji.app/</imagej.app.directory>
 		<native-lib-loader.version>2.2.0</native-lib-loader.version>
+		<enforcer.skip>true</enforcer.skip>
 	</properties>
 	<repositories>
 		<!-- for SciJava dependencies -->
