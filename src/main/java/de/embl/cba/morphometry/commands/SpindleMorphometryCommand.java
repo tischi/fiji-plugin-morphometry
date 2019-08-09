@@ -53,7 +53,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter ( label = "DNA threshold factor" )
 	public double dnaThresholdFactor = 1.0;
 
-	@Parameter ( label = "Minimal dynamic value range [gray values]" )
+	@Parameter ( label = "Minimum dynamic ranges [segmentation threshold gray values]" )
 	public int minimalDynamicRange = settings.minimalDynamicRange;
 
 	@Parameter ( label = "DNA Channel [one-based index]" )

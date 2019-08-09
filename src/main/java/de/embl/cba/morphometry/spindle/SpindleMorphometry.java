@@ -116,17 +116,19 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	private String measure()
 	{
+
+		/**
+		 * TODO:
+		 * - maybe smooth the dna and tubulin image to reduce noise?
+		 * - for low dynamic ranges, the smoothing should be done in a doubletype image
+		 */
+
 		createIsotropicallyResampledImages();
 
-		Pair< Double, Double > minMaxValues = Algorithms.getMinMaxValues( dna );
-		if ( minMaxValues.getB() - minMaxValues.getA() < settings.minimalDynamicRange )
-			return SpindleMeasurements.TOO_LOW_DYNAMIC_RANGE_IN_DNA_IMAGE;
-
-		minMaxValues = Algorithms.getMinMaxValues( tubulin );
-		if ( minMaxValues.getB() - minMaxValues.getA() < settings.minimalDynamicRange )
-			return SpindleMeasurements.TOO_LOW_DYNAMIC_RANGE_IN_TUBULIN_IMAGE;
-
 		double dnaThreshold = determineDnaThreshold();
+
+		if ( dnaThreshold < settings.minimalDynamicRange )
+			return SpindleMeasurements.TOO_LOW_DYNAMIC_RANGE_IN_DNA_IMAGE;
 
 		segmentedDna = segmentDna( dna, dnaThreshold );
 
@@ -154,6 +156,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		spindleThreshold =
 				measureSpindleThreshold( poleToPoleAlignedSpindleRai );
+
+		if ( spindleThreshold < settings.minimalDynamicRange )
+			return SpindleMeasurements.TOO_LOW_DYNAMIC_RANGE_IN_TUBULIN_IMAGE;
 
 		spindleVolumeMask =
 				measureSpindleVolume( poleToPoleAlignedSpindleRai, spindleThreshold );
@@ -560,19 +565,22 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				createRescaledArrayImg(
 						dna,
 						getScalingFactors(
-								new double[]{ settings.workingVoxelSize, settings.workingVoxelSize, settings.workingVoxelSize },
+								new double[]{
+										settings.workingVoxelSize,
+										settings.workingVoxelSize,
+										settings.workingVoxelSize },
 								settings.dnaThresholdResolution ) );
 
 		final double maximumValue =
 				Algorithms.getMaximumValue( dnaDownscaledToMetaphasePlateWidth );
 
-
-		Viewers.showRai3dWithImageJ( dnaDownscaledToMetaphasePlateWidth, "DNA Threshold" );
+//		Viewers.showRai3dWithImageJ( dnaDownscaledToMetaphasePlateWidth, "DNA Threshold" );
 
 		Logger.log( "DNA downscaled maximum value: " + maximumValue );
 		Logger.log( "DNA threshold factor: " + settings.dnaThresholdFactor );
 		double dnaThreshold = maximumValue * settings.dnaThresholdFactor;
 		Logger.log( "DNA threshold: " + dnaThreshold );
+
 		return dnaThreshold;
 	}
 
