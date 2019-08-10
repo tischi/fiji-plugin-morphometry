@@ -123,6 +123,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 		SpindleMorphometry morphometry = new SpindleMorphometry( settings, opService );
 		final String log = morphometry.run();
+		Logger.log( log );
 
 		objectMeasurements = morphometry.getObjectMeasurements();
 
@@ -136,7 +137,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		{
 			new File( getOutputDirectory() ).mkdirs();
 
-			if ( log.equals( SpindleMeasurements.NO_PROBLEM ))
+			if ( log.equals( SpindleMeasurements.ANALYSIS_FINISHED ))
 				saveOutputImageAndAddImagePathsToMeasurements( morphometry.getOutputImage() );
 
 			saveMeasurements( morphometry );

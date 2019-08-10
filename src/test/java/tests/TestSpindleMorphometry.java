@@ -130,7 +130,7 @@ public class TestSpindleMorphometry
 		final String comment = ( String) measurements.get( 0 ).get(
 				SpindleMeasurements.COMMENT );
 
-		assertEquals( comment, SpindleMeasurements.TOO_LOW_DYNAMIC_RANGE_IN_DNA_IMAGE  );
+		assertEquals( comment, SpindleMeasurements.ANALYSIS_INTERRUPTED_LOW_DYNAMIC_DNA );
 	}
 
 

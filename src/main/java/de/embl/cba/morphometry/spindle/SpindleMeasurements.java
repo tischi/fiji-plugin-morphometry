@@ -24,9 +24,11 @@ public class SpindleMeasurements
 	public static final String SPINDLE_POLE_REFINEMENT_DISTANCE = "Spindle_Pole_Refinement_Distance";
 	public static final String SPINDLE_AXIAL_EXTEND = "Spindle_Length";
 	public static final String SPINDLE_LATERAL_EXTEND = "Spindle_Width";
-	public static final String TOO_LOW_DYNAMIC_RANGE_IN_DNA_IMAGE = "Too low dynamic range in DNA image";
-	public static final String TOO_LOW_DYNAMIC_RANGE_IN_TUBULIN_IMAGE = "Too low dynamic range in Tubulin image";
-	public static final String NO_PROBLEM = "No problem";
+	public static final String ANALYSIS_INTERRUPTED_LOW_DYNAMIC_DNA =
+			"Analysis interrupted: Too low dynamic range in DNA image";
+	public static final String ANALYSIS_INTERRUPTED_LOW_DYNAMIC_TUBULIN =
+			"Analysis interrupted: Too low dynamic range in tubulin image";
+	public static final String ANALYSIS_FINISHED = "Analysis finished.";
 
 	public Double dnaLateralExtend = Double.NaN;
 	public Double dnaAxialExtend = Double.NaN;
@@ -42,7 +44,7 @@ public class SpindleMeasurements
 	public Double dnaCenterToSpindleCenterDistance = Double.NaN;
 	public Double angleSpindleAxisToCoverslipPlaneInDegrees = Double.NaN;
 	public Double dnaVolumeThreshold = Double.NaN;
-	public String log = NO_PROBLEM;
+	public String log = ANALYSIS_FINISHED;
 
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
 

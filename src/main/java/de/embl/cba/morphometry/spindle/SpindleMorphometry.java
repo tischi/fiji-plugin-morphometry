@@ -7,7 +7,6 @@ import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidVectors;
 import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.regions.Regions;
-import de.embl.cba.morphometry.viewing.Viewers;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.CompositeImage;
 import ij.IJ;
@@ -36,7 +35,6 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
-import net.imglib2.util.Pair;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
@@ -110,8 +108,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		spindleMeasurements.setObjectMeasurements();
 
-		return spindleMeasurements.log;
+		spindleMeasurements.log = SpindleMeasurements.ANALYSIS_FINISHED;
 
+		return spindleMeasurements.log;
 	}
 
 	private String measure()
@@ -128,7 +127,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		double dnaThreshold = determineDnaThreshold();
 
 		if ( dnaThreshold < settings.minimalDynamicRange )
-			return SpindleMeasurements.TOO_LOW_DYNAMIC_RANGE_IN_DNA_IMAGE;
+			return SpindleMeasurements.ANALYSIS_INTERRUPTED_LOW_DYNAMIC_DNA;
 
 		segmentedDna = segmentDna( dna, dnaThreshold );
 
@@ -158,7 +157,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				measureSpindleThreshold( poleToPoleAlignedSpindleRai );
 
 		if ( spindleThreshold < settings.minimalDynamicRange )
-			return SpindleMeasurements.TOO_LOW_DYNAMIC_RANGE_IN_TUBULIN_IMAGE;
+			return SpindleMeasurements.ANALYSIS_INTERRUPTED_LOW_DYNAMIC_TUBULIN;
 
 		spindleVolumeMask =
 				measureSpindleVolume( poleToPoleAlignedSpindleRai, spindleThreshold );
