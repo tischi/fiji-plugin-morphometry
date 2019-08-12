@@ -22,6 +22,7 @@ import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.interpolation.randomaccess.ClampingNLinearInterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform2D;
@@ -77,11 +78,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	private ProfileAndRadius dnaLateralProfileAndRadius;
 	private double[] spindlePoleToPoleVector;
 	private double[] spindleCenter;
-	private ProfileAndRadius spindleLateralRadiusAndProfile;
 	private RandomAccessibleInterval< T > poleToPoleAlignedSpindleRai;
-	private double spindleThreshold;
-	private double dnaLateralExtend;
-	private double spindleAxialExtend;
+
 	private SpindleMeasurements spindleMeasurements;
 
 	public SpindleMorphometry( SpindleMorphometrySettings settings, OpService opService )
@@ -153,14 +151,15 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		poleToPoleAlignedSpindleRai =
 				createSpindlePolesAlignedRai( spindlePoles, spindleCenter );
 
-		spindleThreshold =
+		spindleMeasurements.spindleThreshold =
 				measureSpindleThreshold( poleToPoleAlignedSpindleRai );
 
-		if ( spindleThreshold < settings.minimalDynamicRange )
+		if ( spindleMeasurements.spindleThreshold < settings.minimalDynamicRange )
 			return SpindleMeasurements.ANALYSIS_INTERRUPTED_LOW_DYNAMIC_TUBULIN;
 
 		spindleVolumeMask =
-				measureSpindleVolume( poleToPoleAlignedSpindleRai, spindleThreshold );
+				measureSpindleVolume( poleToPoleAlignedSpindleRai,
+						spindleMeasurements.spindleThreshold );
 
 		measureSpindleLateralExtends( spindleVolumeMask );
 
@@ -244,9 +243,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final ArrayList< Double > thresholdCandidates =
 				measureRadialThresholds( spindleProjection );
 
-		spindleMeasurements.spindleThreshold = Utils.median( thresholdCandidates );
-
-		return spindleMeasurements.spindleThreshold ;
+		return Utils.median( thresholdCandidates ) ;
 	}
 
 	private RandomAccessibleInterval< T > createMaximumProjectionAlongSpindleAxis(
@@ -274,9 +271,12 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		long[] min = new long[3];
 		long[] max = new long[3];
 
-		max[ 0 ] = (long) Math.ceil( dnaLateralExtend / 2.0 / settings.workingVoxelSize );
-		max[ 1 ] = (long) Math.ceil( dnaLateralExtend / 2.0 / settings.workingVoxelSize );
-		max[ 2 ] = (long) Math.ceil( 1.2 * spindleAxialExtend / 2.0 / settings.workingVoxelSize );
+		max[ 0 ] = (long) Math.ceil( spindleMeasurements.dnaLateralExtend
+				/ 2.0 / settings.workingVoxelSize );
+		max[ 1 ] = (long) Math.ceil( spindleMeasurements.dnaLateralExtend
+				/ 2.0 / settings.workingVoxelSize );
+		max[ 2 ] = (long) Math.ceil( 1.2 * spindleMeasurements.spindleAxialExtend
+				/ 2.0 / settings.workingVoxelSize );
 
 		for ( int d = 0; d < 3; d++ )
 			min[ d ] = - max[ d ];
@@ -422,12 +422,12 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	public ArrayList< Double > measureRadialThresholds( RandomAccessibleInterval< T > rai )
 	{
-
 		final ArrayList< Double > thresholdCandidates = new ArrayList<>();
 
 		RealRandomAccessible< T > rra =
 				Views.interpolate(
-						Views.extendZero( rai ), new NLinearInterpolatorFactory<>() );
+						Views.extendZero( rai ),
+						new ClampingNLinearInterpolatorFactory<>() );
 
 		double dAngle = Math.PI / 5;
 
@@ -457,14 +457,15 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			final ArrayList< CoordinateAndValue > extrema
 					= CurveAnalysis.leftMaxAndRightMinLoc( derivatives );
 
-
-			final double leftLoc = extrema.get( 0 ).coordinate - settings.spindleDerivativeDelta / 2.0;
+			final double leftLoc = extrema.get( 0 ).coordinate
+					- settings.spindleDerivativeDelta / 2.0;
 
 			thresholdCandidates.add( CurveAnalysis.getValueAtCoordinate(
 					intensities,
 					leftLoc ) );
 
-			final double rightLoc = extrema.get( 1 ).coordinate + settings.spindleDerivativeDelta / 2.0;
+			final double rightLoc = extrema.get( 1 ).coordinate
+					+ settings.spindleDerivativeDelta / 2.0;
 
 			thresholdCandidates.add( CurveAnalysis.getValueAtCoordinate(
 					intensities,
@@ -915,8 +916,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		long[] position = new long[ 3 ];
 
-		final double maximumPerpendicularAxisDistanceSquared = Math.pow( dnaLateralExtend / 2, 2 );
-		final double maximumAlongAxisDistance = 1.1 * spindleAxialExtend / 2;
+		final double maximumPerpendicularAxisDistanceSquared = Math.pow(
+				spindleMeasurements.dnaLateralExtend / 2, 2 );
+		final double maximumAlongAxisDistance = 1.1 *
+				spindleMeasurements.spindleAxialExtend / 2;
 
 		while ( cursor.hasNext() )
 		{

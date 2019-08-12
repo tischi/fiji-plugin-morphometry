@@ -5,6 +5,7 @@ import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.registration.drospholia.DrosophilaRegistrationSettings;
 import de.embl.cba.morphometry.registration.drospholia.DrosophilaSingleChannelRegistration;
 import ij.ImagePlus;
+import loci.common.DebugTools;
 import net.imagej.ImageJ;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
@@ -21,6 +22,9 @@ public class TestDrosophilaRegistration < T extends RealType< T > & NativeType< 
 	@Test
 	public void testRegistration000()
 	{
+
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
 		final ImageJ ij = new ImageJ();
 
 		final OpService opService = ij.op();
@@ -46,6 +50,8 @@ public class TestDrosophilaRegistration < T extends RealType< T > & NativeType< 
 	@Test
 	public void testRegistration001()
 	{
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
 		final ImageJ ij = new ImageJ();
 
 		final OpService opService = ij.op();
@@ -77,6 +83,8 @@ public class TestDrosophilaRegistration < T extends RealType< T > & NativeType< 
 			double[] calibration,
 			RandomAccessibleInterval< T > images )
 	{
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
 		RandomAccessibleInterval< T > image =
 				Utils.getChannelImage( images, 0  );
 

@@ -2,6 +2,7 @@ package tests;
 
 import de.embl.cba.morphometry.commands.SpindleMorphometryCommand;
 import de.embl.cba.morphometry.spindle.SpindleMeasurements;
+import loci.common.DebugTools;
 import net.imagej.ImageJ;
 import net.imglib2.type.numeric.RealType;
 import org.junit.Test;
@@ -17,6 +18,8 @@ public class TestSpindleMorphometry
 	@Test
 	public < R extends RealType< R > > void testSmallSpindle( )
 	{
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
 		final ImageJ ij = new ImageJ();
 
 		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
@@ -39,12 +42,14 @@ public class TestSpindleMorphometry
 		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
 				SpindleMeasurements.getSpindleWidthMaxKey() );
 
-		assertEquals( spindleWidth, 7.5, 1.0 );
+		assertEquals( 7.5, spindleWidth, 1.0 );
 	}
 
 	@Test
 	public < R extends RealType< R > > void testLargeSpindle()
 	{
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
 		final ImageJ ij = new ImageJ();
 
 		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
@@ -67,13 +72,15 @@ public class TestSpindleMorphometry
 		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
 				SpindleMeasurements.getSpindleWidthMaxKey() );
 
-		assertEquals( spindleWidth, 8.79, 1.0 );
+		assertEquals( 8.79, spindleWidth, 1.0 );
 	}
 
 
 	@Test
 	public < R extends RealType< R > > void testSpindleWithBrightOtherDNA()
 	{
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
 		final ImageJ ij = new ImageJ();
 
 		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
@@ -103,6 +110,8 @@ public class TestSpindleMorphometry
 	@Test
 	public < R extends RealType< R > > void testDimDNA()
 	{
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
 		final ImageJ ij = new ImageJ();
 		//ij.ui().showUI();
 
@@ -136,9 +145,9 @@ public class TestSpindleMorphometry
 
 	public static void main( String[] args )
 	{
-		new TestSpindleMorphometry().testDimDNA();
+//		new TestSpindleMorphometry().testDimDNA();
 //		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
-//		new TestSpindleMorphometry().testSmallSpindle();
+		new TestSpindleMorphometry().testSmallSpindle();
 //		new TestSpindleMorphometry().testLargeSpindle();
 	}
 
