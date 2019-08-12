@@ -6,8 +6,6 @@ import de.embl.cba.morphometry.measurements.Measurements;
 import java.util.HashMap;
 import java.util.Map;
 
-import static de.embl.cba.morphometry.spindle.SpindleMorphometry.*;
-
 public class SpindleMeasurements
 {
 	public static final String DNA_AXIAL_EXTEND = "DNA_Width";
@@ -29,6 +27,7 @@ public class SpindleMeasurements
 	public static final String ANALYSIS_INTERRUPTED_LOW_DYNAMIC_TUBULIN =
 			"Analysis interrupted: Too low dynamic range in tubulin image";
 	public static final String ANALYSIS_FINISHED = "Analysis finished.";
+	public static final String SEP = "_";
 
 	public Double dnaLateralExtend = Double.NaN;
 	public Double dnaAxialExtend = Double.NaN;

@@ -15,6 +15,7 @@ import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.morphology.Closing;
 import net.imglib2.algorithm.morphology.Dilation;
 import net.imglib2.algorithm.morphology.Erosion;
+import net.imglib2.algorithm.morphology.Opening;
 import net.imglib2.algorithm.morphology.distance.DistanceTransform;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
@@ -1030,10 +1031,43 @@ public class Algorithms
 				Utils.getEnlargedRai( morphed, closingRadius );
 
 		Shape closingShape = new HyperSphereShape( closingRadius );
+
 		Closing.close(
 				Views.extendZero( enlargedMask ),
 				Views.iterable( enlargedMorphed ),
 				closingShape,
+				1 );
+
+
+		return Views.interval( enlargedMorphed, mask );
+	}
+
+
+	public static RandomAccessibleInterval< BitType > open(
+			RandomAccessibleInterval< BitType > mask,
+			int radius )
+	{
+		if ( radius <= 0 ) return mask;
+
+		// TODO: Bug(?!) in imglib2 makes enlargement necessary,
+		//  otherwise one gets weird results at boundaries
+
+		RandomAccessibleInterval< BitType > morphed =
+				ArrayImgs.bits( Intervals.dimensionsAsLongArray( mask ) );
+
+		morphed = Views.translate( morphed, Intervals.minAsLongArray( mask ) );
+
+		final RandomAccessibleInterval< BitType > enlargedMask =
+				Utils.getEnlargedRai( mask, radius );
+		final RandomAccessibleInterval< BitType > enlargedMorphed =
+				Utils.getEnlargedRai( morphed, radius );
+
+		Shape shape = new HyperSphereShape( radius );
+
+		Opening.open(
+				Views.extendZero( enlargedMask ),
+				Views.iterable( enlargedMorphed ),
+				shape,
 				1 );
 
 
@@ -1242,4 +1276,5 @@ public class Algorithms
 
 		return type.getRealDouble();
 	}
+
 }

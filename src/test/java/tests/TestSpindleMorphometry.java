@@ -32,7 +32,7 @@ public class TestSpindleMorphometry
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
 		command.voxelSpacingDuringAnalysis = 0.25;
-		command.showIntermediateResults = true;
+		command.showIntermediateResults = false;
 		command.saveResults = false;
 		command.run();
 
@@ -42,7 +42,11 @@ public class TestSpindleMorphometry
 		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
 				SpindleMeasurements.getSpindleWidthMaxKey() );
 
-		assertEquals( 7.5, spindleWidth, 1.0 );
+		final Double dnaLateralExtend = ( Double ) measurements.get( 0 ).get(
+				getDnaLateralExtendKey() );
+
+		assertEquals( 9.5, dnaLateralExtend, 1.0 );
+		assertEquals( 9.0, spindleWidth, 1.0 );
 	}
 
 	@Test
@@ -71,7 +75,11 @@ public class TestSpindleMorphometry
 		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
 				SpindleMeasurements.getSpindleWidthMaxKey() );
 
-		assertEquals( 10.0, spindleWidth,  1.0 );
+		final Double dnaLateralExtend = ( Double ) measurements.get( 0 ).get(
+				getDnaLateralExtendKey() );
+
+		assertEquals( 12.0, dnaLateralExtend, 1.0 );
+		assertEquals( 11.0, spindleWidth, 1.0 );
 	}
 
 
@@ -89,10 +97,10 @@ public class TestSpindleMorphometry
 				TestSpindleMorphometry.class.getResource(
 						"../test-data/spindle/BrightOtherDNA.zip" ).getFile() );
 
-		command.spindleChannelIndexOneBased = 2; // This is the other way around than in the others!
+		command.spindleChannelIndexOneBased = 2;
 		command.dnaChannelIndexOneBased = 1;
-		command.showIntermediateResults = true;
-		command.saveResults = true;
+		command.showIntermediateResults = false;
+		command.saveResults = false;
 		command.outputDirectory = new File("/Users/tischer/" +
 				"Documents/fiji-plugin-morphometry/src" +
 				"/test/resources/test-data/spindle/output" );
@@ -104,8 +112,17 @@ public class TestSpindleMorphometry
 		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
 				SpindleMeasurements.getSpindleWidthMaxKey() );
 
-		// TODO: Add DNA Lateral Extend!
-		assertEquals( 9.25, spindleWidth, 1.0 );
+		final Double dnaLateralExtend = ( Double ) measurements.get( 0 ).get(
+				getDnaLateralExtendKey() );
+
+		assertEquals( 15.5, dnaLateralExtend, 1.0 );
+		assertEquals( 13.0, spindleWidth, 1.0 );
+	}
+
+	private String getDnaLateralExtendKey()
+	{
+		return SpindleMeasurements.DNA_LATERAL_EXTEND
+				+ SpindleMeasurements.SEP + SpindleMeasurements.LENGTH_UNIT;
 	}
 
 
@@ -127,7 +144,7 @@ public class TestSpindleMorphometry
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
 		command.showIntermediateResults = false;
-		command.saveResults = true;
+		command.saveResults = false;
 		command.outputDirectory = new File("/Users/tischer/" +
 				"Documents/fiji-plugin-morphometry/src" +
 				"/test/resources/test-data/spindle/output" );
@@ -145,10 +162,10 @@ public class TestSpindleMorphometry
 
 	public static void main( String[] args )
 	{
-//		new TestSpindleMorphometry().testDimDNA();
-//		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
+		new TestSpindleMorphometry().testDimDNA();
+		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
 		new TestSpindleMorphometry().testSmallSpindle();
-//		new TestSpindleMorphometry().testLargeSpindle();
+		new TestSpindleMorphometry().testLargeSpindle();
 	}
 
 }

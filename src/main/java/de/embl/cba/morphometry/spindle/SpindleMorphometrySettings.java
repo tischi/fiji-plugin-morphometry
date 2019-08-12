@@ -41,6 +41,7 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	{
 		String settings = new String();
 
+		settings += "\n";
 		settings += "## Spindle Morphometry Settings\n";
 		settings += "workingVoxelSize: " + workingVoxelSize + "\n";
 		settings += "dnaThresholdResolution: " + dnaThresholdResolution + "\n";

@@ -51,8 +51,6 @@ import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 {
 
-	public static final String SEP = "_";
-
 	final SpindleMorphometrySettings< T > settings;
 	final OpService opService;
 
@@ -106,8 +104,6 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		spindleMeasurements.setObjectMeasurements();
 
-		spindleMeasurements.log = SpindleMeasurements.ANALYSIS_FINISHED;
-
 		return spindleMeasurements.log;
 	}
 
@@ -154,7 +150,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		spindleMeasurements.spindleThreshold =
 				measureSpindleThresholdAtDNAPeriphery( poleToPoleAlignedSpindleRai );
 
-		Logger.log( "Spindle DNA periphery threshold: " + spindleMeasurements.spindleThreshold );
+		Logger.log( "Spindle DNA periphery threshold: "
+				+ spindleMeasurements.spindleThreshold );
 
 		if ( spindleMeasurements.spindleThreshold < settings.minimalDynamicRange )
 			return SpindleMeasurements.ANALYSIS_INTERRUPTED_LOW_DYNAMIC_TUBULIN;
@@ -171,22 +168,23 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		measureSpindleAxisToCoverslipPlaneAngle( spindlePoleToPoleVector );
 
-		return "No comment";
+		return SpindleMeasurements.ANALYSIS_FINISHED;
 	}
 
 	private void measureSpindleLateralExtends(
 			RandomAccessibleInterval< BitType > alignedSpindleMask )
 	{
+
 		Logger.log( "Creating projection of spindle mask along spindle axis..." );
 
-		final RandomAccessibleInterval< BitType > projectedMask =
+		RandomAccessibleInterval< BitType > projectedMask =
 				new Projection<>(
 					alignedSpindleMask,
 					2 ).maximum();
 
-//		Regions.onlyKeepLargestRegion(
-//				projectedMask,
-//				ConnectedComponents.StructuringElement.EIGHT_CONNECTED  );
+
+		// remove spurious microtubules sticking out
+		projectedMask = Algorithms.open( projectedMask, 2 );
 
 		if ( settings.showIntermediateResults )
 			show( projectedMask,
@@ -987,7 +985,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		final Set< LabelRegion< Integer > > centralRegions = Regions.getCentralRegions(
 				imgLabeling,
 				new double[]{ 0, 0, 0 },
-				( long ) ( ( spindleMeasurements.dnaLateralExtend - 1.0 ) / settings.workingVoxelSize ) );
+				( long ) ( 3.0 / settings.workingVoxelSize ) );
 
 		final RandomAccessibleInterval< BitType > centralRegionsMask =
 				Regions.asMask( centralRegions,

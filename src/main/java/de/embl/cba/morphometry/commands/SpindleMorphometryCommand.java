@@ -48,7 +48,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter ( label = "Voxel Size for Analysis" )
 	public double voxelSpacingDuringAnalysis = settings.workingVoxelSize;
 
-	@Parameter ( label = "DNA threshold factor" )
+//	@Parameter ( label = "DNA threshold factor" )
 	public double dnaThresholdFactor = settings.dnaThresholdFactor;
 
 	@Parameter ( label = "Minimum dynamic range [segmentation threshold gray value]" )
