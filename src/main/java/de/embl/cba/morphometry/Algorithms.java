@@ -229,25 +229,6 @@ public class Algorithms
 		return centralObjectImg;
 	}
 
-	public static Img< BitType > createMaskFromLabelRegions( Set< LabelRegion< Integer > > regions, long[] dimensions )
-	{
-		final Img< BitType > regionsMask = ArrayImgs.bits( dimensions );
-		final RandomAccess< BitType > maskAccess = regionsMask.randomAccess();
-
-		for ( LabelRegion region : regions )
-		{
-			final Cursor< Void > regionCursor = region.cursor();
-			while ( regionCursor.hasNext() )
-			{
-				regionCursor.fwd();
-				maskAccess.setPosition( regionCursor );
-				maskAccess.get().set( true );
-			}
-		}
-
-		return regionsMask;
-	}
-
 
 	public static ArrayList< RealPoint > origin()
 	{
@@ -274,11 +255,13 @@ public class Algorithms
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
+	RandomAccessibleInterval< BitType > createMask(
+			RandomAccessibleInterval< T > rai,
+			double threshold )
 	{
 		Logger.log( "Computing mask..." );
 		RandomAccessibleInterval< BitType > mask =
-				Converters.convert( downscaled, ( i, o )
+				Converters.convert( rai, ( i, o )
 						-> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
 
 		return Utils.copyAsArrayImg( mask );
@@ -749,7 +732,7 @@ public class Algorithms
 									localMaxima );
 
 				final ImgLabeling< Integer, IntType > watershedImgLabeling = createEmptyImgLabeling( labelRegionMask );
-				final ImgLabeling< Integer, IntType > seedsImgLabeling = Utils.asImgLabeling( seeds, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+				final ImgLabeling< Integer, IntType > seedsImgLabeling = Regions.asImgLabeling( seeds, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 				opService.image().watershed(
 						watershedImgLabeling,
@@ -956,7 +939,7 @@ public class Algorithms
 
 			if ( splitObjectLabel == WATERSHED )
 			{
-				final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( Regions.asMask( region ), ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+				final ImgLabeling< Integer, IntType > imgLabeling = Regions.asImgLabeling( Regions.asMask( region ), ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 				final LabelRegions< Integer > splitRegions = new LabelRegions( imgLabeling );
 
 				long maximalLength = 0;

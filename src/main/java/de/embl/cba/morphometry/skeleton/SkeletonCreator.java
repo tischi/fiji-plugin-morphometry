@@ -2,7 +2,7 @@ package de.embl.cba.morphometry.skeleton;
 
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Logger;
-import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.regions.Regions;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
@@ -48,7 +48,7 @@ public class SkeletonCreator< T extends RealType< T > & NativeType< T > >
 			Logger.log( "Creating skeletons, frame " + ( t + 1 ) + " / " + ( ( tMax - tMin ) + 1 ) );
 
 			final ImgLabeling< Integer, IntType > imgLabeling =
-					Utils.asImgLabeling(
+					Regions.asImgLabeling(
 							masks.get( t ),
 							ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 

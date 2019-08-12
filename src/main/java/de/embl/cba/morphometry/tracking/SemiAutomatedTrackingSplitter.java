@@ -6,6 +6,7 @@ import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.microglia.Constants;
 import de.embl.cba.morphometry.microglia.MicrogliaSettings;
+import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.splitting.ShapeAndIntensitySplitter;
 import ij.IJ;
 import ij.ImagePlus;
@@ -77,7 +78,7 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 			{
 				final RandomAccessibleInterval splitMask = getSplitMask( t );
 
-				final ImgLabeling imgLabeling = Utils.asImgLabeling(
+				final ImgLabeling imgLabeling = Regions.asImgLabeling(
 						splitMask,
 						ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
@@ -129,7 +130,7 @@ public class SemiAutomatedTrackingSplitter< T extends RealType< T > & NativeType
 			RandomAccessibleInterval< IntType > previousLabeling )
 	{
 		final ImgLabeling< Integer, IntType > currentImgLabeling =
-				Utils.asImgLabeling(
+				Regions.asImgLabeling(
 						masks.get( currentTimePoint ),
 						ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 

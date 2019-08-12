@@ -45,6 +45,7 @@ public class SpindleMeasurements
 	public Double angleSpindleAxisToCoverslipPlaneInDegrees = Double.NaN;
 	public Double dnaVolumeThreshold = Double.NaN;
 	public String log = ANALYSIS_FINISHED;
+	public Double dnaInitialThreshold = Double.NaN;
 
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
 
@@ -72,47 +73,39 @@ public class SpindleMeasurements
 	public void setObjectMeasurements( )
 	{
 
-		addMeasurement( "DNA_Intensity_Threshold", dnaVolumeThreshold );
+		addMeasurement( "DNA_Initial_Threshold", dnaInitialThreshold );
 
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
+		addMeasurement( "DNA_Volume_Threshold", dnaVolumeThreshold );
+
+
+		addMeasurement(
 				DNA_AXIAL_EXTEND + SEP + LENGTH_UNIT,
 				dnaAxialExtend );
 
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
+		addMeasurement(
 				SpindleMeasurements.DNA_LATERAL_EXTEND + SEP + SpindleMeasurements.LENGTH_UNIT,
 				dnaLateralExtend );
 
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
+		addMeasurement(
 				SpindleMeasurements.DNA_VOLUME + SEP + SpindleMeasurements.VOLUME_UNIT,
 				dnaVolumeCalibrated );
 
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
+		addMeasurement(
 				SpindleMeasurements.DNA_RELATIVE_CENTRAL_INTENSITY,
 				dnaRelativeCentralIntensity );
 
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
+		addMeasurement(
 				SPINDLE_POLE_REFINEMENT_DISTANCE + SEP
 						+ "PoleA" + SEP + SpindleMeasurements.LENGTH_UNIT,
 				spindlePoleARefinementDistance );
 
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
+		addMeasurement(
 				SPINDLE_POLE_REFINEMENT_DISTANCE + SEP
 						+ "PoleB" + SEP + SpindleMeasurements.LENGTH_UNIT,
 				spindlePoleBRefinementDistance );
 
-		addMeasurement( SPINDLE_AXIAL_EXTEND + SEP + SpindleMeasurements.LENGTH_UNIT, spindleAxialExtend );
+		addMeasurement( SPINDLE_AXIAL_EXTEND + SEP + SpindleMeasurements.LENGTH_UNIT,
+				spindleAxialExtend );
 
 		addMeasurement( "Spindle_Intensity_Threshold",  spindleThreshold );
 
@@ -123,15 +116,11 @@ public class SpindleMeasurements
 
 		addMeasurement( SpindleMeasurements.getSpindleWidthMaxKey(), spindleWidthMax );
 
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
+		addMeasurement(
 				SpindleMeasurements.DNA_SPINDLE_CENTER_DISTANCE + SEP + SpindleMeasurements.LENGTH_UNIT,
 				dnaCenterToSpindleCenterDistance );
 
-		Measurements.addMeasurement(
-				objectMeasurements,
-				0,
+		addMeasurement(
 				SpindleMeasurements.SPINDLE_AXIS_TO_COVERSLIP_PLANE_ANGLE_DEGREES,
 				angleSpindleAxisToCoverslipPlaneInDegrees );
 

@@ -1,6 +1,7 @@
 package de.embl.cba.morphometry.tracking;
 
 import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.regions.Regions;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
@@ -91,7 +92,7 @@ public class TrackingUtils
 		final HashSet< Integer > newObjectIds = new HashSet<>();
 
 		final LabelRegions< Integer > currentRegions = new LabelRegions(
-				Utils.asImgLabeling(
+				Regions.asImgLabeling(
 						currentMask,
 						ConnectedComponents.StructuringElement.FOUR_CONNECTED ) );
 

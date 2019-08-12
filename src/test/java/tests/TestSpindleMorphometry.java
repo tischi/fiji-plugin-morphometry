@@ -32,7 +32,7 @@ public class TestSpindleMorphometry
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
 		command.voxelSpacingDuringAnalysis = 0.25;
-		command.showIntermediateResults = false;
+		command.showIntermediateResults = true;
 		command.saveResults = false;
 		command.run();
 
@@ -61,7 +61,6 @@ public class TestSpindleMorphometry
 
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
-		command.voxelSpacingDuringAnalysis = 0.25;
 		command.showIntermediateResults = false;
 		command.saveResults = false;
 		command.run();
@@ -72,7 +71,7 @@ public class TestSpindleMorphometry
 		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
 				SpindleMeasurements.getSpindleWidthMaxKey() );
 
-		assertEquals( 8.79, spindleWidth, 1.0 );
+		assertEquals( 10.0, spindleWidth,  1.0 );
 	}
 
 
@@ -92,9 +91,11 @@ public class TestSpindleMorphometry
 
 		command.spindleChannelIndexOneBased = 2; // This is the other way around than in the others!
 		command.dnaChannelIndexOneBased = 1;
-		command.voxelSpacingDuringAnalysis = 0.25;
-		command.showIntermediateResults = false;
-		command.saveResults = false;
+		command.showIntermediateResults = true;
+		command.saveResults = true;
+		command.outputDirectory = new File("/Users/tischer/" +
+				"Documents/fiji-plugin-morphometry/src" +
+				"/test/resources/test-data/spindle/output" );
 		command.run();
 
 		final HashMap< Integer, Map< String, Object > > measurements =
@@ -103,7 +104,8 @@ public class TestSpindleMorphometry
 		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
 				SpindleMeasurements.getSpindleWidthMaxKey() );
 
-		assertEquals( spindleWidth, 9.25, 1.0 );
+		// TODO: Add DNA Lateral Extend!
+		assertEquals( 9.25, spindleWidth, 1.0 );
 	}
 
 
@@ -124,8 +126,6 @@ public class TestSpindleMorphometry
 
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
-		command.voxelSpacingDuringAnalysis = 0.25;
-		command.minimalDynamicRange = 20;
 		command.showIntermediateResults = false;
 		command.saveResults = true;
 		command.outputDirectory = new File("/Users/tischer/" +

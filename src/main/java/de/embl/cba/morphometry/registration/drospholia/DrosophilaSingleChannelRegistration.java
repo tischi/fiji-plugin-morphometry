@@ -255,7 +255,7 @@ public class  DrosophilaSingleChannelRegistration< T extends RealType< T > & Nat
 
 		if ( centralRegions.size() == 0 ) return false;
 
-		embryoMask = Algorithms.createMaskFromLabelRegions(
+		embryoMask = Regions.asMask(
 				centralRegions,
 				Intervals.dimensionsAsLongArray( labeling ) );
 
@@ -563,7 +563,7 @@ public class  DrosophilaSingleChannelRegistration< T extends RealType< T > & Nat
 				localMaximaDistanceThreshold );
 
 		final ImgLabeling< Integer, IntType > seedsLabelImg =
-				Utils.asImgLabeling( seeds,
+				Regions.asImgLabeling( seeds,
 						ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		if ( settings.showIntermediateResults )

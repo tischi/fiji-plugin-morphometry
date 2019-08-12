@@ -3,6 +3,7 @@ package de.embl.cba.morphometry.splitting;
 import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.microglia.MicrogliaSettings;
+import de.embl.cba.morphometry.regions.Regions;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.roi.labeling.ImgLabeling;
@@ -40,7 +41,7 @@ public class ShapeAndIntensitySplitter< T extends RealType< T > & NativeType< T 
 		 * Get objects
 		 */
 
-		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+		final ImgLabeling< Integer, IntType > imgLabeling = Regions.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		/**
 		 * Estimate number of objects from skeleton

@@ -2,6 +2,7 @@ package de.embl.cba.morphometry;
 
 import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
+import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.ImagePlus;
 import ij.io.FileSaver;
@@ -37,7 +38,6 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.AbstractIntegerType;
 import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.type.numeric.integer.UnsignedIntType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
@@ -174,11 +174,21 @@ public class Utils
 		}
 		return 0;
 	}
+
 	public static double mean( List<Double> a ){
 		double sum = sum( a );
 		double mean = 0;
 		mean = sum / ( a.size() * 1.0 );
 		return mean;
+	}
+
+	public static double sdev( List<Double> a, Double mean ){
+		double sdev = 0;
+		for( double v : a )
+			sdev += ( v - mean ) * ( v - mean );
+		sdev /= ( a.size() * 1.0 );
+		sdev = Math.sqrt( sdev );
+		return sdev;
 	}
 
 	public static double median( List<Double> input )
@@ -899,48 +909,6 @@ public class Utils
 		}
 	}
 
-	public static < T extends RealType< T > & NativeType< T >  >
-	ImgLabeling< Integer, IntType > asImgLabeling(
-			RandomAccessibleInterval< T > masks,
-			ConnectedComponents.StructuringElement structuringElement )
-	{
-
-		RandomAccessibleInterval< IntType > labelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( masks ) );
-		labelImg = Transforms.getWithAdjustedOrigin( masks, labelImg );
-		final ImgLabeling< Integer, IntType > imgLabeling = new ImgLabeling<>( labelImg );
-
-		final java.util.Iterator< Integer > labelCreator = new java.util.Iterator< Integer >()
-		{
-			int id = 1;
-
-			@Override
-			public boolean hasNext()
-			{
-				return true;
-			}
-
-			@Override
-			public synchronized Integer next()
-			{
-				return id++;
-			}
-		};
-
-		final RandomAccessibleInterval< UnsignedIntType > unsignedIntTypeRandomAccessibleInterval =
-				Converters.convert(
-						masks,
-						( i, o ) -> o.set( i.getRealDouble() > 0 ? 1 : 0 ),
-						new UnsignedIntType() );
-
-		ConnectedComponents.labelAllConnectedComponents(
-				Views.extendBorder( unsignedIntTypeRandomAccessibleInterval ),
-				imgLabeling,
-				labelCreator,
-				structuringElement );
-
-		return imgLabeling;
-	}
-
 	public static ImgLabeling< Integer, IntType > labelMapAsImgLabeling( RandomAccessibleInterval< IntType > labelMap )
 	{
 		final ImgLabeling< Integer, IntType > imgLabeling = new ImgLabeling<>( labelMap );
@@ -1069,7 +1037,7 @@ public class Utils
 	public static < T extends RealType< T > & NativeType< T > >
 	int getNumObjects( RandomAccessibleInterval< T > mask )
 	{
-		final LabelRegions labelRegions = new LabelRegions( asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED )  );
+		final LabelRegions labelRegions = new LabelRegions( Regions.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED )  );
 		return labelRegions.getExistingLabels().size() - 1;
 	}
 

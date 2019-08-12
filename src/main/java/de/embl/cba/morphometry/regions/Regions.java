@@ -8,6 +8,8 @@ import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
+import net.imglib2.converter.Converters;
+import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
@@ -19,7 +21,9 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.type.numeric.integer.UnsignedIntType;
 import net.imglib2.util.Intervals;
+import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import java.util.ArrayList;
@@ -159,7 +163,7 @@ public abstract class Regions
 	{
 		Logger.log( "Remove small regions..." );
 		final ImgLabeling< Integer, IntType > imgLabeling =
-				Utils.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+				asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		long minimalObjectSize = ( long ) ( sizeInCalibratedUnits / Math.pow( calibration, imgLabeling.numDimensions() ) );
 
@@ -190,7 +194,7 @@ public abstract class Regions
 			RandomAccessibleInterval< T > mask,
 			long minimalObjectSize )
 	{
-		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+		final ImgLabeling< Integer, IntType > imgLabeling = asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 		for ( LabelRegion labelRegion : labelRegions )
@@ -247,7 +251,7 @@ public abstract class Regions
 			RandomAccessibleInterval< R > invertedMembraneMask,
 			ConnectedComponents.StructuringElement structuringElement )
 	{
-		final ImgLabeling< Integer, IntType > imgLabeling = Utils.asImgLabeling(
+		final ImgLabeling< Integer, IntType > imgLabeling = asImgLabeling(
 				invertedMembraneMask,
 				structuringElement );
 
@@ -264,4 +268,92 @@ public abstract class Regions
 
 		return regionsAndSizes;
 	}
+
+	public static < T extends RealType< T > & NativeType< T >  >
+	ImgLabeling< Integer, IntType > asImgLabeling(
+			RandomAccessibleInterval< T > masks,
+			ConnectedComponents.StructuringElement structuringElement )
+	{
+
+		RandomAccessibleInterval< IntType > labelImg = ArrayImgs.ints( Intervals.dimensionsAsLongArray( masks ) );
+		labelImg = Transforms.getWithAdjustedOrigin( masks, labelImg );
+		final ImgLabeling< Integer, IntType > imgLabeling = new ImgLabeling<>( labelImg );
+
+		final java.util.Iterator< Integer > labelCreator = new java.util.Iterator< Integer >()
+		{
+			int id = 1;
+
+			@Override
+			public boolean hasNext()
+			{
+				return true;
+			}
+
+			@Override
+			public synchronized Integer next()
+			{
+				return id++;
+			}
+		};
+
+		final RandomAccessibleInterval< UnsignedIntType > unsignedIntTypeRandomAccessibleInterval =
+				Converters.convert(
+						masks,
+						( i, o ) -> o.set( i.getRealDouble() > 0 ? 1 : 0 ),
+						new UnsignedIntType() );
+
+		ConnectedComponents.labelAllConnectedComponents(
+				Views.extendBorder( unsignedIntTypeRandomAccessibleInterval ),
+				imgLabeling,
+				labelCreator,
+				structuringElement );
+
+		return imgLabeling;
+	}
+
+	public static Img< BitType > asMask(
+			Set< LabelRegion< Integer > > regions,
+			long[] dimensions )
+	{
+		final Img< BitType > regionsMask = ArrayImgs.bits( dimensions );
+		final RandomAccess< BitType > maskAccess = regionsMask.randomAccess();
+
+		for ( LabelRegion region : regions )
+		{
+			final Cursor< Void > regionCursor = region.cursor();
+			while ( regionCursor.hasNext() )
+			{
+				regionCursor.fwd();
+				maskAccess.setPosition( regionCursor );
+				maskAccess.get().set( true );
+			}
+		}
+
+		return regionsMask;
+	}
+
+	public static RandomAccessibleInterval< BitType > asMask(
+			Set< LabelRegion< Integer > > regions,
+			long[] dimensions,
+			long[] offset )
+	{
+		RandomAccessibleInterval< BitType > regionsMask = ArrayImgs.bits( dimensions );
+		regionsMask = Views.translate( regionsMask, offset );
+
+		final RandomAccess< BitType > maskAccess = regionsMask.randomAccess();
+
+		for ( LabelRegion region : regions )
+		{
+			final Cursor< Void > regionCursor = region.cursor();
+			while ( regionCursor.hasNext() )
+			{
+				regionCursor.fwd();
+				maskAccess.setPosition( regionCursor );
+				maskAccess.get().set( true );
+			}
+		}
+
+		return regionsMask;
+	}
+
 }

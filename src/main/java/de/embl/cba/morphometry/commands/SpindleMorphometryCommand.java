@@ -29,9 +29,7 @@ import java.util.Map;
 @Plugin(type = Command.class, menuPath = "Plugins>Measure>Spindle Morphometry" )
 public class SpindleMorphometryCommand< R extends RealType< R > > implements Command
 {
-
 	private SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
-
 
 	@Parameter
 	public OpService opService;
@@ -48,10 +46,10 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	public File outputDirectory;
 
 	@Parameter ( label = "Voxel Size for Analysis" )
-	public double voxelSpacingDuringAnalysis = 0.25;
+	public double voxelSpacingDuringAnalysis = settings.workingVoxelSize;
 
 	@Parameter ( label = "DNA threshold factor" )
-	public double dnaThresholdFactor = 1.0;
+	public double dnaThresholdFactor = settings.dnaThresholdFactor;
 
 	@Parameter ( label = "Minimum dynamic range [segmentation threshold gray value]" )
 	public int minimalDynamicRange = settings.minimalDynamicRange;
@@ -94,6 +92,8 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.outputDirectory = outputDirectory;
 		settings.dnaThresholdFactor = dnaThresholdFactor;
 		settings.minimalDynamicRange = minimalDynamicRange;
+
+		Logger.log( settings.toString() );
 	}
 
 	public HashMap< Integer, Map< String, Object > > getObjectMeasurements()
@@ -154,8 +154,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	private void logStart()
 	{
-		Logger.log( " " );
-		Logger.log( "# Spindle Morphometry" );
+		Logger.log( "## Spindle Morphometry Measurement" );
 		Logger.log( "Processing file " + imageName );
 	}
 

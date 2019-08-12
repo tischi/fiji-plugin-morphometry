@@ -547,7 +547,7 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 				globalDistanceThreshold,
 				localMaximaDistanceThreshold );
 
-		final ImgLabeling< Integer, IntType > seedsLabelImg = Utils.asImgLabeling( seeds, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
+		final ImgLabeling< Integer, IntType > seedsLabelImg = Regions.asImgLabeling( seeds, ConnectedComponents.StructuringElement.FOUR_CONNECTED );
 
 		if ( settings.showIntermediateResults ) show( Utils.asIntImg( seedsLabelImg ), "watershed seeds", null, Utils.as3dDoubleArray( settings.registrationResolution ), false );
 

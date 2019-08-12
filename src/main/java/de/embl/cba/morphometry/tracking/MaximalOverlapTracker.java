@@ -1,6 +1,7 @@
 package de.embl.cba.morphometry.tracking;
 
 import de.embl.cba.morphometry.Utils;
+import de.embl.cba.morphometry.regions.Regions;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.type.NativeType;
@@ -32,7 +33,7 @@ public class MaximalOverlapTracker< T extends RealType< T > & NativeType< T > >
 
 		maxIndex = Utils.getNumObjects( masks.get( t ) );
 
-		RandomAccessibleInterval< IntType > previousLabeling = Utils.asImgLabeling( masks.get( tMin ), ConnectedComponents.StructuringElement.FOUR_CONNECTED ).getSource();
+		RandomAccessibleInterval< IntType > previousLabeling = Regions.asImgLabeling( masks.get( tMin ), ConnectedComponents.StructuringElement.FOUR_CONNECTED ).getSource();
 
 		labelings = initLabelings( masks.get( tMin )  );
 
@@ -59,7 +60,7 @@ public class MaximalOverlapTracker< T extends RealType< T > & NativeType< T > >
 	public ArrayList< RandomAccessibleInterval< IntType > > initLabelings( RandomAccessibleInterval< T > mask )
 	{
 		final ArrayList< RandomAccessibleInterval< IntType > > updatedLabelings = new ArrayList<>();
-		updatedLabelings.add( Utils.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED ).getIndexImg() );
+		updatedLabelings.add( Regions.asImgLabeling( mask, ConnectedComponents.StructuringElement.FOUR_CONNECTED ).getIndexImg() );
 		return updatedLabelings;
 	}
 
