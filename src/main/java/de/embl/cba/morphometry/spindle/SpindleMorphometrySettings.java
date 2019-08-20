@@ -17,8 +17,6 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public double thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 
 	public double[] inputCalibration;
-	public RandomAccessibleInterval<T> dnaImage;
-	public RandomAccessibleInterval<T> tubulinImage;
 
 	public double maxDnaAxisDist;
 	public double interestPointsRadius;
@@ -35,7 +33,10 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public double dnaThresholdFactor = 0.5;
 	public double dnaThresholdResolution = 1.5;
 	public int minimalDynamicRange = 7;
-
+	public String version;
+	public long dnaChannelIndex;
+	public long tubulinChannelIndex;
+	public boolean showOutputImage = false;
 
 	public String toString()
 	{

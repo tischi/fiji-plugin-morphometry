@@ -48,10 +48,10 @@ import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 
 
-public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
+public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 {
 
-	final SpindleMorphometrySettings< T > settings;
+	final SpindleMorphometrySettings< R > settings;
 	final OpService opService;
 
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
@@ -65,8 +65,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	private RandomAccessibleInterval dnaAlignedDna;
 	private RandomAccessibleInterval dnaAlignedDnaMask;
 	private RandomAccessibleInterval dnaAlignedTubulin;
-	private RandomAccessibleInterval< T > dna;
-	private RandomAccessibleInterval< T > tubulin;
+	private RandomAccessibleInterval< R > dna;
+	private RandomAccessibleInterval< R > tubulin;
 	private ArrayList< double[] > spindlePoles;
 	private RandomAccessibleInterval< BitType > dnaVolumeMask;
 	private RandomAccessibleInterval< BitType > spindleVolumeMask;
@@ -76,9 +76,11 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	private ProfileAndRadius dnaLateralProfileAndRadius;
 	private double[] spindlePoleToPoleVector;
 	private double[] spindleCenter;
-	private RandomAccessibleInterval< T > poleToPoleAlignedSpindleRai;
+	private RandomAccessibleInterval< R > poleToPoleAlignedSpindleRai;
 
 	private SpindleMeasurements spindleMeasurements;
+	private RandomAccessibleInterval< R > raiXYCZ;
+	private ArrayList< RandomAccessibleInterval< R > > rescaledVolumes;
 
 	public SpindleMorphometry( SpindleMorphometrySettings settings, OpService opService )
 	{
@@ -86,8 +88,10 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		this.opService = opService;
 	}
 
-	public String run()
+	public String run( RandomAccessibleInterval<R> raiXYCZ )
 	{
+		this.raiXYCZ = raiXYCZ;
+
 		objectMeasurements = new HashMap<>();
 
 		spindleMeasurements = new SpindleMeasurements( objectMeasurements );
@@ -109,6 +113,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	private String measure()
 	{
+
+		spindleMeasurements.version = settings.version;
 
 		/**
 		 * TODO:
@@ -207,7 +213,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 	public RandomAccessibleInterval< BitType > measureSpindleVolume(
-			RandomAccessibleInterval< T > poleToPoleAlignedSpindle,
+			RandomAccessibleInterval< R > poleToPoleAlignedSpindle,
 			double spindleThreshold )
 	{
 		final RandomAccessibleInterval< BitType > spindleMask =
@@ -236,9 +242,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	 * @return
 	 */
 	public double measureSpindleThresholdMethodProjectionRadial(
-			RandomAccessibleInterval< T > poleToPoleAlignedSpindleRai )
+			RandomAccessibleInterval< R > poleToPoleAlignedSpindleRai )
 	{
-		final RandomAccessibleInterval< T > spindleProjection =
+		final RandomAccessibleInterval< R > spindleProjection =
 				createMaximumProjectionAlongSpindleAxis( poleToPoleAlignedSpindleRai );
 
 		final ArrayList< Double > thresholdCandidates =
@@ -254,7 +260,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	 * @return
 	 */
 	public double measureSpindleThresholdAtDNAPeriphery(
-			RandomAccessibleInterval< T > poleToPoleAlignedSpindleRai )
+			RandomAccessibleInterval< R > poleToPoleAlignedSpindleRai )
 	{
 		final double dnaRadius = spindleMeasurements.dnaLateralExtend / 2.0 ;
 		final long lateralExtend = (long) ( ( dnaRadius + 1.0 ) / settings.workingVoxelSize );
@@ -268,7 +274,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				lateralExtend,
 				axialExtend );
 
-		final Cursor< T > cursor = Views.iterable(
+		final Cursor< R > cursor = Views.iterable(
 				Views.interval( poleToPoleAlignedSpindleRai, interval ) ).cursor();
 
 		double[] lateralVoxelPosition = new double[ 3 ];
@@ -303,8 +309,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return threshold;
 	}
 
-	private RandomAccessibleInterval< T > createMaximumProjectionAlongSpindleAxis(
-			RandomAccessibleInterval< T > poleToPoleAlignedSpindleRai )
+	private RandomAccessibleInterval< R > createMaximumProjectionAlongSpindleAxis(
+			RandomAccessibleInterval< R > poleToPoleAlignedSpindleRai )
 	{
 		Logger.log( "Computing maximum projection of spindle along spindle axis..." );
 
@@ -314,7 +320,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				Views.interval( poleToPoleAlignedSpindleRai, spindleInterval ),
 				2 );
 
-		final RandomAccessibleInterval< T > maximum = projection.maximum();
+		final RandomAccessibleInterval< R > maximum = projection.maximum();
 
 		if ( settings.showIntermediateResults )
 			show( maximum, "Spindle maximum projection along pole to pole axis",
@@ -350,7 +356,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	 * @param spindleCenter
 	 * @return
 	 */
-	private RandomAccessibleInterval< T > createSpindlePolesAlignedRai(
+	private RandomAccessibleInterval< R > createSpindlePolesAlignedRai(
 			ArrayList< double[] > spindlePoles,
 			double[] spindleCenter )
 	{
@@ -365,7 +371,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 				Transforms.getRotationTransform3D( new double[]{ 0, 0, 1 }, poleToPoleAxis );
 		spindleTransform = spindleTransform.preConcatenate( poleToPoleAxisRotation );
 
-		final RandomAccessibleInterval< T > spindleAlignedAlongSpindlePoleToPoleAxis
+		final RandomAccessibleInterval< R > spindleAlignedAlongSpindlePoleToPoleAxis
 				= Transforms.createTransformedView( dnaAlignedTubulin, spindleTransform );
 
 		final double[] newPole00 = new double[ 3 ];
@@ -393,9 +399,9 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 	@Deprecated
-	public void measureRadialWidthsOld( RandomAccessibleInterval< T > rai )
+	public void measureRadialWidthsOld( RandomAccessibleInterval< R > rai )
 	{
-		RealRandomAccessible< T > rra =
+		RealRandomAccessible< R > rra =
 				Views.interpolate(
 						Views.extendZero( rai ), new NLinearInterpolatorFactory<>() );
 
@@ -406,7 +412,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			final AffineTransform2D transform2D = new AffineTransform2D();
 			transform2D.rotate( angle );
 
-			IntervalView< T > rotated =
+			IntervalView< R > rotated =
 					Views.interval(
 							Views.raster(
 									RealViews.transform( rra, transform2D ) ), rai );
@@ -477,11 +483,11 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	}
 
-	public ArrayList< Double > measureRadialThresholds( RandomAccessibleInterval< T > rai )
+	public ArrayList< Double > measureRadialThresholds( RandomAccessibleInterval< R > rai )
 	{
 		final ArrayList< Double > thresholdCandidates = new ArrayList<>();
 
-		RealRandomAccessible< T > rra =
+		RealRandomAccessible< R > rra =
 				Views.interpolate(
 						Views.extendZero( rai ),
 						new ClampingNLinearInterpolatorFactory<>() );
@@ -493,7 +499,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			final AffineTransform2D transform2D = new AffineTransform2D();
 			transform2D.rotate( angle );
 
-			IntervalView< T > rotated =
+			IntervalView< R > rotated =
 					Views.interval(
 							Views.raster(
 									RealViews.transform( rra, transform2D ) ), rai );
@@ -603,13 +609,24 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		workingCalibration = Utils.as3dDoubleArray( settings.workingVoxelSize );
 
-		dna = createRescaledArrayImg(
-				settings.dnaImage,
-				getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		long numChannels = raiXYCZ.dimension( 2 );
 
-		tubulin = createRescaledArrayImg(
-				settings.tubulinImage,
-				getScalingFactors( settings.inputCalibration, settings.workingVoxelSize ) );
+		rescaledVolumes = new ArrayList<>();
+
+		final double[] scalingFactors = getScalingFactors( settings.inputCalibration, settings.workingVoxelSize );
+
+		for ( int c = 0; c < numChannels; c++ )
+		{
+			final IntervalView< R > volume = Views.hyperSlice( raiXYCZ, 2, c );
+			final RandomAccessibleInterval< R > rescaledVolume =
+					createRescaledArrayImg(
+						volume,
+						scalingFactors );
+			rescaledVolumes.add( rescaledVolume );
+		}
+
+		dna = rescaledVolumes.get( (int) settings.dnaChannelIndex );
+		tubulin = rescaledVolumes.get( (int) settings.tubulinChannelIndex );
 
 		if ( settings.showIntermediateResults )
 			show( dna, "DNA isotropic voxel size", null, workingCalibration, false );
@@ -620,7 +637,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	public double determineDnaThreshold()
 	{
-		final RandomAccessibleInterval< T > dnaDownscaledToMetaphasePlateWidth =
+		final RandomAccessibleInterval< R > dnaDownscaledToMetaphasePlateWidth =
 				createRescaledArrayImg(
 						dna,
 						getScalingFactors(
@@ -644,7 +661,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 	public RandomAccessibleInterval< BitType > segmentDna(
-			RandomAccessibleInterval< T > dna,
+			RandomAccessibleInterval< R > dna,
 			double dnaThreshold )
 	{
 		final RandomAccessibleInterval< BitType > dnaMask =
@@ -673,8 +690,8 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 	public void computeDnaAlignmentTransformAndAlignImages(
-			RandomAccessibleInterval< T > dna,
-			RandomAccessibleInterval< T > tubulin,
+			RandomAccessibleInterval< R > dna,
+			RandomAccessibleInterval< R > tubulin,
 			RandomAccessibleInterval< BitType > dnaMask,
 			EllipsoidVectors ellipsoidVectors )
 	{
@@ -765,13 +782,13 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 	public ProfileAndRadius measureDnaLateralExtend(
-			RandomAccessibleInterval< T > alignedDNA )
+			RandomAccessibleInterval< R > alignedDNA )
 	{
 		Logger.log( "Measuring DNA lateral extend..." );
 
 		Projection projection = new Projection( alignedDNA, 2 );
 
-		final RandomAccessibleInterval< T > dnaProjectionAlongDnaAxis = projection.maximum();
+		final RandomAccessibleInterval< R > dnaProjectionAlongDnaAxis = projection.maximum();
 
 		final ProfileAndRadius dnaLateralProfileAndRadius =
 				measureRadialProfileAndRadius(
@@ -806,7 +823,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 
 	public RandomAccessibleInterval< BitType > measureDnaVolume(
-			RandomAccessibleInterval< T > dna,
+			RandomAccessibleInterval< R > dna,
 			ProfileAndRadius dnaLateralExtendAndProfile )
 	{
 		spindleMeasurements.dnaVolumeThreshold =
@@ -922,7 +939,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		for ( int pole = 0; pole < 2; pole++ )
 		{
-			RandomAccessibleInterval< T > tubulinIntensitySlice =
+			RandomAccessibleInterval< R > tubulinIntensitySlice =
 					Views.hyperSlice(
 							tubulinAlignedAlongShortestAxisOfDNA,
 							2,
@@ -944,7 +961,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 	private RandomAccessibleInterval< BitType > createCentralObjectsMask(
-			RandomAccessibleInterval< T > image,
+			RandomAccessibleInterval< R > image,
 			double threshold )
 	{
 		RandomAccessibleInterval< BitType > mask = createMask( image, threshold );
@@ -971,7 +988,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 
 	private RandomAccessibleInterval< BitType > createSpindleMask(
-			RandomAccessibleInterval< T > poleToPoleAlignedSpindle,
+			RandomAccessibleInterval< R > poleToPoleAlignedSpindle,
 			double spindleThreshold )
 	{
 
@@ -997,14 +1014,14 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 
 	private RandomAccessibleInterval< BitType > createSpindleMask00(
-			RandomAccessibleInterval< T > poleToPoleAlignedSpindle,
+			RandomAccessibleInterval< R > poleToPoleAlignedSpindle,
 			double spindleThreshold )
 	{
 
 		final RandomAccessibleInterval< BitType > mask =
 				Utils.createEmptyMask( poleToPoleAlignedSpindle );
 
-		final Cursor< T > cursor =
+		final Cursor< R > cursor =
 				Views.iterable( poleToPoleAlignedSpindle ).localizingCursor();
 
 		final RandomAccess< BitType > access = mask.randomAccess();
@@ -1041,19 +1058,14 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 			}
 
 		}
-
 		return mask;
-
 	}
 
-
-	private void createOutputImage(
-			RandomAccessibleInterval< T > dna,
-			RandomAccessibleInterval< T > spindle,
+	private void createTransformedImages(
 			RandomAccessibleInterval< BitType > dnaVolumeMask,
 			RandomAccessibleInterval< BitType > spindleVolumeMask,
 			AffineTransform3D alignmentTransform,
-			RandomAccessibleInterval< T > interestPointsImage )
+			RandomAccessibleInterval< R > interestPointsImage )
 	{
 		AffineTransform3D rotation = alignmentTransform.copy(); // "rotation" rotates the data such that the spindle axis is the zAxis
 		rotation.setTranslation( new double[ 3 ] );
@@ -1077,32 +1089,46 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		Logger.log( "Rotating input data around z-axis by [degrees]: " + 180 / Math.PI * angleBetweenXAxisAndSpindleWithVector );
 
-		transformedDNAView = Transforms.createTransformedView( dna, rotationTransform );
-		transformedSpindleView = Transforms.createTransformedView( spindle, rotationTransform );
-		transformedDNAVolumeView = Transforms.createTransformedView( dnaVolumeMask, rotationTransform );
-		transformedSpindleVolumeView = Transforms.createTransformedView( spindleVolumeMask, rotationTransform );
-		transformedInterestPointView = Transforms.createTransformedView( interestPointsImage, rotationTransform, new NearestNeighborInterpolatorFactory() );
+		final ArrayList< RandomAccessibleInterval< R > > transformedVolumes = new ArrayList<>();
+
+		transformedVolumes.add( Transforms.createTransformedView(
+				dnaVolumeMask,
+				rotationTransform,
+				new NearestNeighborInterpolatorFactory()  ) );
+
+		transformedVolumes.add( Transforms.createTransformedView(
+				spindleVolumeMask,
+				rotationTransform,
+				new NearestNeighborInterpolatorFactory()  ) );
+
+		transformedVolumes.add( Transforms.createTransformedView(
+				interestPointsImage,
+				rotationTransform,
+				new NearestNeighborInterpolatorFactory() ) );
+
+		for ( int c = 0; c < rescaledVolumes.size(); c++ )
+			transformedVolumes.add( Transforms.createTransformedView( rescaledVolumes.get( c ), rotationTransform ) );
 
 	}
 
-	private RandomAccessibleInterval< T > createInterestPointImage(
-			RandomAccessibleInterval< T > dna,
+	private RandomAccessibleInterval< R > createInterestPointImage(
+			RandomAccessibleInterval< R > dna,
 			AffineTransform3D alignmentTransform,
 			ArrayList< double[] > spindlePoles )
 	{
-		RandomAccessibleInterval< T > interestPointsImage = Utils.copyAsArrayImg( dna );
+		RandomAccessibleInterval< R > interestPointsImage = Utils.copyAsArrayImg( dna );
 		Utils.setValues( interestPointsImage, 0.0 );
 
 		final double[] origin = { 0, 0, 0 };
 		drawTransformedPoint( alignmentTransform, interestPointsImage, origin, 255 );
 
 		for ( int p = 0; p < 2; p++ )
-		{
 			drawTransformedPoint( alignmentTransform, interestPointsImage, spindlePoles.get( p ), 255 );
-		}
 
 		return interestPointsImage;
 	}
+
+
 
 	class ProfileAndRadius
 	{
@@ -1112,7 +1138,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 	private ProfileAndRadius measureRadialProfileAndRadius(
-			final RandomAccessibleInterval< T > image,
+			final RandomAccessibleInterval< R > image,
 			final String name,
 			double derivativeDelta )
 	{
@@ -1145,17 +1171,18 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 		return profileAndRadius;
 	}
 
-	public CompositeImage getOutputImage( )
+	public CompositeImage createOutputImage( )
 	{
-		RandomAccessibleInterval< T > interestPointsImage =
+		RandomAccessibleInterval< R > interestPointsImage =
 				createInterestPointImage( dna, dnaAxesAlignmentTransform, spindlePoles );
 
-		createOutputImage(
-				dna, tubulin,
-				dnaVolumeMask, spindleVolumeMask,
-				dnaAxesAlignmentTransform, interestPointsImage );
+		createTransformedImages(
+				dnaVolumeMask,
+				spindleVolumeMask,
+				dnaAxesAlignmentTransform,
+				interestPointsImage );
 
-		RandomAccessibleInterval< T > image = getRandomAccessibleIntervalOutput();
+		RandomAccessibleInterval< R > image = getRandomAccessibleIntervalOutput();
 
 		image = Views.permute( image, 2, 3 );
 
@@ -1170,31 +1197,33 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 		final CompositeImage compositeImage = new CompositeImage( imp );
 
-		compositeImage.setC(1);
-		IJ.run(compositeImage, "Blue", "");
+		compositeImage.setC( 1 );
+		IJ.run( compositeImage, "Blue", "");
 
-		compositeImage.setC(2);
-		IJ.run(compositeImage, "Blue", "");
+		compositeImage.setC( 2 );
+		IJ.run( compositeImage, "Green", "");
 		compositeImage.setDisplayRange( 0, 2 );
 
-		compositeImage.setC(3);
-		IJ.run(compositeImage, "Green", "");
+		compositeImage.setC( 3 );
+		IJ.run( compositeImage, "White", "" );
 
-		compositeImage.setC(4);
-		IJ.run(compositeImage, "Green", "");
-		compositeImage.setDisplayRange( 0, 2);
+		compositeImage.setC( 4 + (int) settings.dnaChannelIndex );
+		IJ.run( compositeImage, "Blue", "" );
 
-		compositeImage.setC(5);
-		IJ.run(compositeImage, "Cyan", "");
+		compositeImage.setC( 4 + (int) settings.tubulinChannelIndex );
+		IJ.run( compositeImage, "Blue", "" );
+
+//		compositeImage.setC( 5 );
+//		IJ.run(compositeImage, "Cyan", "");
 
 		compositeImage.setDisplayMode( CompositeImage.COMPOSITE );
 
 		return compositeImage;
 	}
 
-	public RandomAccessibleInterval< T > getRandomAccessibleIntervalOutput()
+	public RandomAccessibleInterval< R > getRandomAccessibleIntervalOutput()
 	{
-		final ArrayList< RandomAccessibleInterval< T > > list = new ArrayList<>();
+		final ArrayList< RandomAccessibleInterval< R > > list = new ArrayList<>();
 		list.add( transformedDNAView );
 		list.add( transformedDNAVolumeView );
 		list.add( transformedSpindleView );
@@ -1206,7 +1235,7 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 
 	private void drawTransformedPoint(
 			AffineTransform3D alignmentTransform,
-			RandomAccessibleInterval< T > interestPointsImage,
+			RandomAccessibleInterval< R > interestPointsImage,
 			double[] point,
 			int value )
 	{
@@ -1276,18 +1305,18 @@ public class SpindleMorphometry  < T extends RealType< T > & NativeType< T > >
 	}
 
 	private void drawPoint(
-			RandomAccessibleInterval< T > rai,
+			RandomAccessibleInterval< R > rai,
 			double[] position,
 			double calibratedRadius, double calibration, int value )
 	{
 		Shape shape = new HyperSphereShape( (int) Math.ceil( calibratedRadius / calibration ) );
-		final RandomAccessible< Neighborhood< T > > nra = shape.neighborhoodsRandomAccessible( rai );
-		final RandomAccess< Neighborhood< T > > neighborhoodRandomAccess = nra.randomAccess();
+		final RandomAccessible< Neighborhood< R > > nra = shape.neighborhoodsRandomAccessible( rai );
+		final RandomAccess< Neighborhood< R > > neighborhoodRandomAccess = nra.randomAccess();
 
 		neighborhoodRandomAccess.setPosition( Utils.asLongs( position )  );
-		final Neighborhood< T > neighborhood = neighborhoodRandomAccess.get();
+		final Neighborhood< R > neighborhood = neighborhoodRandomAccess.get();
 
-		final Cursor< T > cursor = neighborhood.cursor();
+		final Cursor< R > cursor = neighborhood.cursor();
 		while( cursor.hasNext() )
 		{
 			try

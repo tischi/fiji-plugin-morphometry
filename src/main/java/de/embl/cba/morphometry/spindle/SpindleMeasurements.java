@@ -45,6 +45,7 @@ public class SpindleMeasurements
 	public Double dnaVolumeThreshold = Double.NaN;
 	public String log = ANALYSIS_FINISHED;
 	public Double dnaInitialThreshold = Double.NaN;
+	public String version;
 
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
 
@@ -71,11 +72,11 @@ public class SpindleMeasurements
 
 	public void setObjectMeasurements( )
 	{
+		addMeasurement( "Version", version );
 
 		addMeasurement( "DNA_Initial_Threshold", dnaInitialThreshold );
 
 		addMeasurement( "DNA_Volume_Threshold", dnaVolumeThreshold );
-
 
 		addMeasurement(
 				DNA_AXIAL_EXTEND + SEP + LENGTH_UNIT,
@@ -132,7 +133,7 @@ public class SpindleMeasurements
 	}
 
 
-	private void addMeasurement( String name, double value )
+	private void addMeasurement( String name, Object value )
 	{
 		Logger.log( name + ": " + value  );
 

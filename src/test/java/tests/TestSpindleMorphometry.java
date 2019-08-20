@@ -15,12 +15,18 @@ import static org.junit.Assert.assertEquals;
 
 public class TestSpindleMorphometry
 {
+
+	public static boolean showImageJUI = false;
+
 	@Test
 	public < R extends RealType< R > > void testSmallSpindle( )
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
 
 		final ImageJ ij = new ImageJ();
+
+		if ( showImageJUI )
+			ij.ui().showUI();
 
 		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
 		command.opService = ij.op();
@@ -34,6 +40,7 @@ public class TestSpindleMorphometry
 		command.voxelSpacingDuringAnalysis = 0.25;
 		command.showIntermediateResults = false;
 		command.saveResults = false;
+		command.settings.showOutputImage = true;
 		command.run();
 
 		final HashMap< Integer, Map< String, Object > > measurements =
@@ -125,7 +132,6 @@ public class TestSpindleMorphometry
 				+ SpindleMeasurements.SEP + SpindleMeasurements.LENGTH_UNIT;
 	}
 
-
 	@Test
 	public < R extends RealType< R > > void testDimDNA()
 	{
@@ -162,10 +168,10 @@ public class TestSpindleMorphometry
 
 	public static void main( String[] args )
 	{
-		new TestSpindleMorphometry().testDimDNA();
-		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
-		new TestSpindleMorphometry().testSmallSpindle();
-		new TestSpindleMorphometry().testLargeSpindle();
+//		new TestSpindleMorphometry().testDimDNA();
+//		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
+		showImageJUI = true; new TestSpindleMorphometry().testSmallSpindle();
+//		new TestSpindleMorphometry().testLargeSpindle();
 	}
 
 }

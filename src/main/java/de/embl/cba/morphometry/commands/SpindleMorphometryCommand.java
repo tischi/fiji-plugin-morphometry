@@ -7,13 +7,13 @@ import de.embl.cba.morphometry.spindle.SpindleMeasurements;
 import de.embl.cba.morphometry.spindle.SpindleMorphometry;
 import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import de.embl.cba.tables.Tables;
+import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.view.Views;
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
@@ -29,7 +29,7 @@ import java.util.Map;
 @Plugin(type = Command.class, menuPath = "Plugins>Measure>Spindle Morphometry" )
 public class SpindleMorphometryCommand< R extends RealType< R > > implements Command
 {
-	private SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
+	public SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
 
 	@Parameter
 	public OpService opService;
@@ -64,7 +64,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	public boolean showIntermediateResults = false;
 
 	@Parameter( visibility = ItemVisibility.MESSAGE )
-	private String version = "Spindle Morphometry Version: 0.5.6";
+	private String version = "Spindle Morphometry Version: 0.5.7";
+
+
 
 	public boolean saveResults = true;
 
@@ -92,6 +94,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.outputDirectory = outputDirectory;
 		settings.dnaThresholdFactor = dnaThresholdFactor;
 		settings.minimalDynamicRange = minimalDynamicRange;
+		settings.version = version;
 
 		Logger.log( settings.toString() );
 	}
@@ -110,19 +113,13 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		final ImagePlus imagePlus = IJ.openImage( file.toString() );
 		setSettingsFromImagePlus( imagePlus );
 
-		final RandomAccessibleInterval< R > rai = ImageJFunctions.wrapReal( imagePlus );
+		final RandomAccessibleInterval< R > raiXYCZ = ImageJFunctions.wrapReal( imagePlus );
 
-		final RandomAccessibleInterval< R > dapi =
-				Views.hyperSlice( rai, 2, dnaChannelIndexOneBased - 1 );
-
-		final RandomAccessibleInterval< R > tubulin =
-				Views.hyperSlice( rai, 2, spindleChannelIndexOneBased - 1 );
-
-		settings.dnaImage = dapi;
-		settings.tubulinImage = tubulin;
+		settings.dnaChannelIndex = dnaChannelIndexOneBased - 1;
+		settings.tubulinChannelIndex = spindleChannelIndexOneBased - 1;
 
 		SpindleMorphometry morphometry = new SpindleMorphometry( settings, opService );
-		final String log = morphometry.run();
+		final String log = morphometry.run( raiXYCZ );
 		Logger.log( log );
 
 		objectMeasurements = morphometry.getObjectMeasurements();
@@ -138,7 +135,14 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 			new File( getOutputDirectory() ).mkdirs();
 
 			if ( log.equals( SpindleMeasurements.ANALYSIS_FINISHED ))
-				saveOutputImageAndAddImagePathsToMeasurements( morphometry.getOutputImage() );
+			{
+				final CompositeImage outputImage = morphometry.createOutputImage();
+
+				if ( settings.showOutputImage == true )
+					outputImage.show();
+
+				saveOutputImageAndAddImagePathsToMeasurements( outputImage );
+			}
 
 			saveMeasurements( morphometry );
 		}
