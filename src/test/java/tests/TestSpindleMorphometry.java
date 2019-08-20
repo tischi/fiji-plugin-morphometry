@@ -39,8 +39,11 @@ public class TestSpindleMorphometry
 		command.dnaChannelIndexOneBased = 2;
 		command.voxelSpacingDuringAnalysis = 0.25;
 		command.showIntermediateResults = false;
-		command.saveResults = false;
+		command.saveResults = true;
 		command.settings.showOutputImage = true;
+		command.outputDirectory = new File("/Users/tischer/" +
+				"Documents/fiji-plugin-morphometry/src" +
+				"/test/resources/test-data/spindle/output" );
 		command.run();
 
 		final HashMap< Integer, Map< String, Object > > measurements =
