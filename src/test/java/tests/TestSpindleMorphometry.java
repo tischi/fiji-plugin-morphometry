@@ -92,6 +92,85 @@ public class TestSpindleMorphometry
 		assertEquals( 11.0, spindleWidth, 1.0 );
 	}
 
+	@Test
+	public < R extends RealType< R > > void testSmallSpindle( )
+	{
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
+		final ImageJ ij = new ImageJ();
+
+		if ( showImageJUI )
+			ij.ui().showUI();
+
+		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		command.opService = ij.op();
+
+		command.inputImageFile = new File(
+				TestSpindleMorphometry.class.getResource(
+						"../test-data/spindle/SpindleWidthSmall.zip" ).getFile() );
+
+		command.spindleChannelIndexOneBased = 1;
+		command.dnaChannelIndexOneBased = 2;
+		command.voxelSpacingDuringAnalysis = 0.25;
+		command.showIntermediateResults = false;
+		command.saveResults = true;
+		command.settings.showOutputImage = true;
+		command.outputDirectory = new File("/Users/tischer/" +
+				"Documents/fiji-plugin-morphometry/src" +
+				"/test/resources/test-data/spindle/output" );
+		command.run();
+
+		final HashMap< Integer, Map< String, Object > > measurements =
+				command.getObjectMeasurements();
+
+		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
+				SpindleMeasurements.getSpindleWidthMaxKey() );
+
+		final Double dnaLateralExtend = ( Double ) measurements.get( 0 ).get(
+				getDnaLateralExtendKey() );
+
+		assertEquals( 9.5, dnaLateralExtend, 1.0 );
+		assertEquals( 9.0, spindleWidth, 1.0 );
+	}
+
+	@Test
+	public < R extends RealType< R > > void weirdDNA3Channels()
+	{
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
+		final ImageJ ij = new ImageJ();
+
+		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		command.opService = ij.op();
+
+		command.inputImageFile = new File(
+				TestSpindleMorphometry.class.getResource(
+						"../test-data/spindle/WeirdDNA3Channels.zip" ).getFile() );
+
+		command.spindleChannelIndexOneBased = 2;
+		command.dnaChannelIndexOneBased = 1;
+		command.showIntermediateResults = false;
+		command.saveResults = true;
+		command.settings.showOutputImage = true;
+		command.outputDirectory = new File("/Users/tischer/" +
+				"Documents/fiji-plugin-morphometry/src" +
+				"/test/resources/test-data/spindle/output" );
+		command.run();
+
+		final HashMap< Integer, Map< String, Object > > measurements =
+				command.getObjectMeasurements();
+
+		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
+				SpindleMeasurements.getSpindleWidthMaxKey() );
+
+		final Double dnaLateralExtend = ( Double ) measurements.get( 0 ).get(
+				getDnaLateralExtendKey() );
+
+//		assertEquals( 12.0, dnaLateralExtend, 1.0 );
+//		assertEquals( 11.0, spindleWidth, 1.0 );
+	}
+
+
 
 	@Test
 	public < R extends RealType< R > > void testSpindleWithBrightOtherDNA()
@@ -173,7 +252,8 @@ public class TestSpindleMorphometry
 	{
 //		new TestSpindleMorphometry().testDimDNA();
 //		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
-		showImageJUI = true; new TestSpindleMorphometry().testSmallSpindle();
+//		showImageJUI = true; new TestSpindleMorphometry().testSmallSpindle();
+		showImageJUI = true; new TestSpindleMorphometry().weirdDNA3Channels();
 //		new TestSpindleMorphometry().testLargeSpindle();
 	}
 
