@@ -198,7 +198,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		addImagePathToMeasurements( parentPath, outputImageFile, objectMeasurements, "Path_OutputImage" );
 
 		Logger.log( "Saving: " + outputImageFile );
-		IJ.saveAsTiff( imagePlus, outputImageFile.toString() );
+		IJ.saveAs( imagePlus, "ZIP", outputImageFile.toString() );
 	}
 
 	private static void addImagePathToMeasurements(

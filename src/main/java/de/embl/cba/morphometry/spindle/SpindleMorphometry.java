@@ -1228,7 +1228,11 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 			else
 				IJ.run( compositeImage, "Grays", "" );
 
-			compositeImage.setDisplayRange( 0, 255 );
+			if ( compositeImage.getBitDepth() == 8 )
+				compositeImage.setDisplayRange( 0, 255 );
+			else if ( compositeImage.getBitDepth() == 16 )
+				compositeImage.setDisplayRange( 0, 65535 );
+
 		}
 
 		// Binary masks
@@ -1244,7 +1248,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		// Interest points
 
 		compositeImage.setC( numChannels + 3 );
-		IJ.run( compositeImage, "Red", "" );
+		IJ.run( compositeImage, "Grays", "" );
 		compositeImage.setDisplayRange( 0, 1 );
 
 		compositeImage.setDisplayMode( CompositeImage.COMPOSITE );
