@@ -2,6 +2,7 @@ package de.embl.cba.morphometry;
 
 import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
+import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.ImagePlus;
@@ -625,9 +626,9 @@ public class Utils
 		return maxLoc;
 	}
 
-
 	public static < T extends RealType< T > & NativeType< T > >
-	double computeAverage( final RandomAccessibleInterval< T > rai, final RandomAccessibleInterval< BitType > mask )
+	double computeAverage( final RandomAccessibleInterval< T > rai,
+						   final RandomAccessibleInterval< BitType > mask )
 	{
 		final Cursor< BitType > cursor = Views.iterable( mask ).cursor();
 		final RandomAccess< T > randomAccess = rai.randomAccess();
@@ -652,9 +653,34 @@ public class Utils
 		return average;
 	}
 
+	public static < T extends RealType< T > & NativeType< T > >
+	ArrayList< Double > getValuesWithinMaskAsList(
+			final RandomAccessibleInterval< T > rai,
+			final RandomAccessibleInterval< BitType > mask )
+	{
+		final Cursor< BitType > maskCursor = Views.iterable( mask ).cursor();
+		final RandomAccess< T > intensityAccess = rai.randomAccess();
+
+		intensityAccess.setPosition( maskCursor );
+
+		final ArrayList< Double > doubles = new ArrayList<>();
+
+		while ( maskCursor.hasNext() )
+		{
+			if ( maskCursor.next().get() )
+			{
+				intensityAccess.setPosition( maskCursor );
+				doubles.add( intensityAccess.get().getRealDouble() );
+			}
+		}
+
+		return doubles;
+	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	List< RealPoint > computeLocalMaxima( RandomAccessibleInterval< T > blurred, int sigmaForBlurringAverageProjection )
+	List< RealPoint > computeLocalMaxima(
+			RandomAccessibleInterval< T > blurred,
+			int sigmaForBlurringAverageProjection )
 	{
 		Shape shape = new HyperSphereShape( sigmaForBlurringAverageProjection );
 
@@ -1406,5 +1432,21 @@ public class Utils
 		imp.setCalibration( calibration );
 		new FileSaver( imp ).saveAsTiff( outputPath );
 		Logger.log( "Movie saved: " + outputPath );
+	}
+
+	public static < R extends RealType< R > & NativeType< R > >
+	double measureCoefficientOfVariation(
+			RandomAccessibleInterval< R > intensities,
+			RandomAccessibleInterval< BitType > mask,
+			Double meanOffset )
+	{
+		final ArrayList< Double > doubles =
+				getValuesWithinMaskAsList( intensities, mask );
+
+		final double mean = Utils.mean( doubles );
+		final double sdev = Utils.sdev( doubles, mean );
+
+		double cov = sdev / ( mean - meanOffset );
+		return cov;
 	}
 }

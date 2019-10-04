@@ -28,6 +28,7 @@ public class SpindleMeasurements
 			"Analysis interrupted: Too low dynamic range in tubulin image";
 	public static final String ANALYSIS_FINISHED = "Analysis finished.";
 	public static final String SEP = "_";
+	public static final String SPINDLE_COV = "Spindle_CoV";
 
 	public Double dnaLateralExtend = Double.NaN;
 	public Double dnaAxialExtend = Double.NaN;
@@ -46,6 +47,7 @@ public class SpindleMeasurements
 	public String log = ANALYSIS_FINISHED;
 	public Double dnaInitialThreshold = Double.NaN;
 	public String version;
+	public Double spindleCoefficientOfVariation;
 
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
 
@@ -108,6 +110,9 @@ public class SpindleMeasurements
 				SpindleMeasurements.SPINDLE_AXIS_TO_COVERSLIP_PLANE_ANGLE_DEGREES,
 				angleSpindleAxisToCoverslipPlaneInDegrees );
 
+		addMeasurement(
+				SPINDLE_COV,
+				spindleCoefficientOfVariation );
 
 		Measurements.addMeasurement(
 				objectMeasurements,
