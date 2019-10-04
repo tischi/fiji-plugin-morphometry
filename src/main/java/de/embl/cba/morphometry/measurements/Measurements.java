@@ -12,10 +12,8 @@ import ij.process.ImageProcessor;
 
 import inra.ijpb.geometry.Ellipse;
 import net.imagej.ops.OpService;
-import net.imglib2.Cursor;
-import net.imglib2.Point;
+import net.imglib2.*;
 import net.imglib2.RandomAccess;
-import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.roi.geom.real.Polygon2D;
@@ -142,7 +140,6 @@ public class Measurements
 			RandomAccessibleInterval< BitType > annotation,
 			int gaussianBlurSigma )
 	{
-
 		final LabelRegions< Integer > labelRegions = new LabelRegions<>( imgLabeling );
 
 		for ( LabelRegion labelRegion : labelRegions )
@@ -150,29 +147,31 @@ public class Measurements
 			final RandomAccessibleInterval< T > blur =
 					getBlurredIntensityImage( intensity, labelRegion, gaussianBlurSigma );
 
-			final Point maximumLocation = getMaximumLocation( blur, null );
-			final long[] position = new long[ maximumLocation.numDimensions() ];
-			maximumLocation.localize( position );
+			final RealPoint maximumLocation = getMaximumLocation( blur, null );
+			final double[] pixelUnitsPosition = new double[ maximumLocation.numDimensions() ];
+			maximumLocation.localize( pixelUnitsPosition );
 
-			for ( int d = 0; d < position.length; ++d )
+			for ( int d = 0; d < pixelUnitsPosition.length; ++d )
 			{
-				if ( calibration != null ) position[ d ] *= calibration[ d ];
+				double calibratedPosition = pixelUnitsPosition[ d ];
+
+				if ( calibration != null ) calibratedPosition *= calibration[ d ];
 
 				addMeasurement(
 						objectMeasurements,
 						( int ) ( labelRegion.getLabel() ),
 						getCoordinateName( BRIGHTEST_POINT, d ),
-						position[ d ] );
+						calibratedPosition  );
 			}
 
-			drawPosition( annotation, position );
+			drawPosition( annotation, Utils.asLongs( pixelUnitsPosition ) );
 
 			final RandomAccessibleInterval< DoubleType > squaredDistances
 					= Algorithms.computeSquaredDistances( Regions.asMask( labelRegion ) );
 
 			final RandomAccess< DoubleType > access = squaredDistances.randomAccess();
 
-			access.setPosition( position );
+			access.setPosition( Utils.asLongs( pixelUnitsPosition ) );
 			final double distanceAtPosition = Math.sqrt( access.get().getRealDouble() );
 
 			addMeasurement(

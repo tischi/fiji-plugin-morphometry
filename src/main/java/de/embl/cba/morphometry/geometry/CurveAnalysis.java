@@ -224,7 +224,7 @@ public abstract class CurveAnalysis
 		rangeMinMax[ 1 ] = Double.MAX_VALUE;
 		extrema.add( minimum( coordinatesAndValues, rangeMinMax ) );
 
-		return extrema;
+ 		return extrema;
 	}
 
 	public static Double getValueAtCoordinate(

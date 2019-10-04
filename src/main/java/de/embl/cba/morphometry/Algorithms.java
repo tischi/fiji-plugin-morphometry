@@ -48,17 +48,25 @@ import static java.lang.Math.abs;
 
 public class Algorithms
 {
-
 	public static final int WATERSHED = -1;
 	private static int closingRadius;
 
+	public static < T extends RealType< T > & NativeType< T > >
+	RealPoint getMaximumLocation(
+			RandomAccessibleInterval< T > rai,
+			double[] calibration )
+	{
+		return getMaximumLocation( Views.iterable( rai ), calibration );
+	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	Point getMaximumLocation( RandomAccessibleInterval< T > rai, double[] calibration )
+	RealPoint getMaximumLocation(
+			IterableInterval< T > ii,
+			double[] calibration )
 	{
-		Cursor< T > cursor = Views.iterable( rai ).localizingCursor();
+		Cursor< T > cursor = ii.localizingCursor();
 
-		double maxValue = Double.MIN_VALUE;
+		double maxValue = - Double.MAX_VALUE;
 
 		long[] maxLoc = new long[ cursor.numDimensions() ];
 		cursor.localize( maxLoc );
@@ -73,12 +81,14 @@ public class Algorithms
 			}
 		}
 
+		double[] calibratedMaxLoc = new double[ maxLoc.length ];
+		for ( int d = 0; d < ii.numDimensions(); ++d )
+			if ( calibration != null )
+				calibratedMaxLoc[ d ] = maxLoc[ d ] * calibration[ d ];
+			else
+				calibratedMaxLoc[ d ] = maxLoc[ d ];
 
-		if ( calibration != null )
-			for ( int d = 0; d < rai.numDimensions(); ++d )
-				maxLoc[ d ] *= calibration[ d ];
-		
-		Point point = new Point( maxLoc );
+		RealPoint point = new RealPoint( calibratedMaxLoc );
 
 		return point;
 	}
@@ -484,7 +494,6 @@ public class Algorithms
 			double minimalDistanceBetweenMaxima,
 			double threshold )
 	{
-
 		Shape shape = new HyperSphereShape( (long) minimalDistanceBetweenMaxima );
 		RandomAccessible< Neighborhood< T > > neighborhoods = shape.neighborhoodsRandomAccessible( Views.extendPeriodic( rai ) );
 		final Cursor< Neighborhood< T > > neighborhoodCursor = Views.iterable( Views.interval( neighborhoods, rai ) ).cursor();

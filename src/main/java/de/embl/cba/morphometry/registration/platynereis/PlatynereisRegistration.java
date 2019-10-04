@@ -482,7 +482,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 				blurSigma,
 				settings.registrationResolution );
 
-		final Point maximum = Algorithms.getMaximumLocation( blurred, Utils.as2dDoubleArray( settings.registrationResolution ));
+		final RealPoint maximum = Algorithms.getMaximumLocation( blurred, Utils.as2dDoubleArray( settings.registrationResolution ));
 		final List< RealPoint > realPoints = Utils.asRealPointList( maximum );
 		realPoints.add( new RealPoint( new double[]{ 0, 0 } ) );
 
@@ -503,7 +503,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 
 	private static
-	AffineTransform3D createXAxisRollTransform( Point maximum2DinYZPlane )
+	AffineTransform3D createXAxisRollTransform( RealPoint maximum2DinYZPlane )
 	{
 		double angleToZAxisInDegrees = Angles.angle2DToCoordinateSystemsAxisInDegrees( maximum2DinYZPlane );
 		AffineTransform3D rollTransform = new AffineTransform3D();

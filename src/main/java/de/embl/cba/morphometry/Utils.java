@@ -415,13 +415,16 @@ public class Utils
 		return numPoints;
 	}
 
-
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > createBlurredRai( RandomAccessibleInterval< T > rai, double sigma, double scaling )
+	RandomAccessibleInterval< T > createBlurredRai(
+			RandomAccessibleInterval< T > rai,
+			double sigma,
+			double scaling )
 	{
 		ImgFactory< T > imgFactory = new ArrayImgFactory( rai.randomAccess().get()  );
 
-		RandomAccessibleInterval< T > blurred = imgFactory.create( Intervals.dimensionsAsLongArray( rai ) );
+		RandomAccessibleInterval< T > blurred = imgFactory.create(
+				Intervals.dimensionsAsLongArray( rai ) );
 
 		blurred = Views.translate( blurred, Intervals.minAsLongArray( rai ) );
 
@@ -431,7 +434,9 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > createGaussFilteredArrayImg( RandomAccessibleInterval< T > rai, double[] sigmas )
+	RandomAccessibleInterval< T > createGaussFilteredArrayImg(
+			RandomAccessibleInterval< T > rai,
+			double[] sigmas )
 	{
 		ImgFactory< T > imgFactory = new ArrayImgFactory( rai.randomAccess().get()  );
 
@@ -601,7 +606,9 @@ public class Utils
 
 
 	public static < T extends RealType< T > & NativeType< T > >
-	double[] computeMaximumLocation( final RandomAccessibleInterval< T > rai, double maxAxisDist )
+	double[] computeMaximumLocation(
+			final RandomAccessibleInterval< T > rai,
+			double maxAxisDist )
 	{
 		final Cursor< T > cursor = Views.iterable( rai ).cursor();
 
@@ -689,7 +696,7 @@ public class Utils
 		return points;
 	}
 
-	public static List< RealPoint > asRealPointList( Point maximum )
+	public static List< RealPoint > asRealPointList( RealPoint maximum )
 	{
 		List< RealPoint > realPoints = new ArrayList<>();
 		final double[] doubles = new double[ maximum.numDimensions() ];
@@ -822,9 +829,7 @@ public class Utils
 	public static void divide( double[] doubles, double factor )
 	{
 		for ( int i = 0; i < doubles.length; ++i )
-		{
 			doubles[ i ] /= factor;
-		}
 	}
 
 	public static RandomAccessibleInterval< IntType >  asIntImg( ImgLabeling< Integer, IntType > labeling )

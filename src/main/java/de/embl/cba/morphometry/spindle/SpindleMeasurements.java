@@ -91,8 +91,7 @@ public class SpindleMeasurements
 						+ "PoleB" + SEP + SpindleMeasurements.LENGTH_UNIT,
 				spindlePoleBRefinementDistance );
 
-		addMeasurement( SPINDLE_AXIAL_EXTEND + SEP + SpindleMeasurements.LENGTH_UNIT,
-				spindleAxialExtend );
+		addMeasurement( getSpindleLengthKey(), spindleAxialExtend );
 
 		addMeasurement( "Spindle_Intensity_Threshold",  spindleThreshold );
 
@@ -119,6 +118,11 @@ public class SpindleMeasurements
 				0,
 				COMMENT,
 				log );
+	}
+
+	public static String getSpindleLengthKey()
+	{
+		return SPINDLE_AXIAL_EXTEND + SEP + SpindleMeasurements.LENGTH_UNIT;
 	}
 
 	private void addMeasurement( String name, Object value )

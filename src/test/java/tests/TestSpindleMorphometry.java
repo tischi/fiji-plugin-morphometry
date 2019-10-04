@@ -387,7 +387,6 @@ public class TestSpindleMorphometry
 		assertEquals( 1.22, spindleCoV, 0.2 );
 	}
 
-
 	@Test
 	public < R extends RealType< R > > void testSmallCoV()
 	{
@@ -416,7 +415,43 @@ public class TestSpindleMorphometry
 		final double spindleCoV = ( Double) measurements.get( 0 ).get(
 				SpindleMeasurements.SPINDLE_COV );
 
+		final double spindleLength = ( Double) measurements.get( 0 ).get(
+				SpindleMeasurements.getSpindleLengthKey() );
+
 		assertEquals( 0.73, spindleCoV, 0.2 );
+		assertEquals( 10.0, spindleLength, 1.0 );
+	}
+
+	@Test
+	public < R extends RealType< R > > void testSpindleLength()
+	{
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
+		final ImageJ ij = new ImageJ();
+		//ij.ui().showUI();
+
+		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		command.opService = ij.op();
+
+		command.inputImageFile = new File(
+				TestSpindleMorphometry.class.getResource(
+						"../test-data/spindle/SpindleLength9.5.zip" ).getFile() );
+
+		command.spindleChannelIndexOneBased = 3;
+		command.dnaChannelIndexOneBased = 1;
+		command.showIntermediateResults = false;
+		command.settings.showOutputImage = true;
+		command.saveResults = false;
+		command.run();
+
+		final HashMap< Integer, Map< String, Object > > measurements =
+				command.getObjectMeasurements();
+
+		final double spindleLength = ( Double) measurements.get( 0 ).get(
+				SpindleMeasurements.getSpindleLengthKey() );
+
+		// manual GT is 10.8
+		assertEquals( 10.8, spindleLength, 1.0 );
 	}
 
 	public static void main( String[] args )
@@ -427,8 +462,8 @@ public class TestSpindleMorphometry
 //		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
 //		showImageJUI = true; new TestSpindleMorphometry().testSmallSpindle();
 //		showImageJUI = true; new TestSpindleMorphometry().weirdDNA3Channels();
-//		new TestSpindleMorphometry().testExceptionCausingImage();
-		new TestSpindleMorphometry().testSmallCoV();
+//		new TestSpindleMorphometry().testSmallCoV();
+		new TestSpindleMorphometry().testSpindleLength();
 	}
 
 }

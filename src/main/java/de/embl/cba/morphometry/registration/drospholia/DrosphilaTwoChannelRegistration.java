@@ -19,6 +19,7 @@ import net.imglib2.histogram.Histogram1d;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
+import net.imglib2.ops.parse.token.Real;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegion;
@@ -593,7 +594,7 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 				blurSigma,
 				settings.registrationResolution );
 
-		final Point maximum = Algorithms.getMaximumLocation( blurred, Utils.as2dDoubleArray( settings.registrationResolution ));
+		final RealPoint maximum = Algorithms.getMaximumLocation( blurred, Utils.as2dDoubleArray( settings.registrationResolution ));
 		final List< RealPoint > realPoints = Utils.asRealPointList( maximum );
 		realPoints.add( new RealPoint( new double[]{ 0, 0 } ) );
 
@@ -714,7 +715,7 @@ public class DrosphilaTwoChannelRegistration< T extends RealType< T > & NativeTy
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	AffineTransform3D createXAxisRollTransform( Point maximum2DinYZPlane )
+	AffineTransform3D createXAxisRollTransform( RealPoint maximum2DinYZPlane )
 	{
 		double angleToZAxisInDegrees = Angles.angle2DToCoordinateSystemsAxisInDegrees( maximum2DinYZPlane );
 		AffineTransform3D rollTransform = new AffineTransform3D();

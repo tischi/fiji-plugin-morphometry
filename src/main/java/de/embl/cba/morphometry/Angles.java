@@ -2,6 +2,7 @@ package de.embl.cba.morphometry;
 
 import de.embl.cba.transforms.utils.Transforms;
 import net.imglib2.Point;
+import net.imglib2.RealPoint;
 import net.imglib2.util.LinAlgHelpers;
 
 import static de.embl.cba.morphometry.Constants.X;
@@ -12,7 +13,7 @@ import static java.lang.Math.toDegrees;
 
 public abstract class Angles
 {
-	public static double angle2DToCoordinateSystemsAxisInDegrees( Point point )
+	public static double angle2DToCoordinateSystemsAxisInDegrees( RealPoint point )
 	{
 		final double[] vector = Vectors.asDoubles( point );
 
