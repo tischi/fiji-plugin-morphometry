@@ -264,9 +264,11 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		double[] lateralVoxelPosition = new double[ 3 ];
 		double distSquared = 0;
 		final double minDistSquared = Math.pow( dnaRadius, 2);
+		final double minInsideDistSquared = Math.pow( dnaRadius - 2.0, 2);
 		final double maxDistSquared = Math.pow( dnaRadius + 1.0, 2);
 
-		final ArrayList< Double > tubulinValues = new ArrayList<>();
+		final ArrayList< Double > cytoplasmicTubulinValues = new ArrayList<>();
+		final ArrayList< Double > spindleTubulinValues = new ArrayList<>();
 
 		final RandomAccess< BitType > dnaAlignedDnaMaskAccess = dnaAlignedDnaMask.randomAccess();
 
@@ -289,16 +291,24 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 			for ( int d = 0; d < 2; d++ )
 				distSquared += Math.pow( lateralVoxelPosition[ d ] * settings.workingVoxelSize, 2 );
 
+			if ( distSquared < minInsideDistSquared )
+			{
+				spindleTubulinValues.add( cursor.get().getRealDouble() );
+				continue;
+			}
+
 			if ( distSquared > maxDistSquared ) continue;
 			if ( distSquared < minDistSquared ) continue;
 
-			tubulinValues.add( cursor.get().getRealDouble() );
+			cytoplasmicTubulinValues.add( cursor.get().getRealDouble() );
 		}
 
-		final double mean = Utils.mean( tubulinValues );
-		final double sdev = Utils.sdev( tubulinValues, mean );
+		final double meanCytoplasmic = Utils.mean( cytoplasmicTubulinValues );
+		final double sdev = Utils.sdev( cytoplasmicTubulinValues, meanCytoplasmic );
 
-		final double threshold = mean + 4 * sdev;
+		final double meanInsideSpindle = Utils.mean( spindleTubulinValues );
+
+		final double threshold = ( meanCytoplasmic + meanInsideSpindle ) / 2;
 
 		Logger.log( "Spindle threshold: " + threshold );
 

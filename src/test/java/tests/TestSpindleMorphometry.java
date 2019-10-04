@@ -130,7 +130,81 @@ public class TestSpindleMorphometry
 
 //		assertEquals( 12.0, dnaLateralExtend, 1.0 );
 //		assertEquals( 11.0, spindleWidth, 1.0 );
-		assertEquals( 500, spindleVolume, 50 );
+		assertEquals( 330, spindleVolume, 50 );
+	}
+
+	@Test
+	public < R extends RealType< R > > void testSpindleVolume01()
+	{
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
+		final ImageJ ij = new ImageJ();
+
+		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		command.opService = ij.op();
+
+		command.inputImageFile = new File(
+				TestSpindleMorphometry.class.getResource(
+						"../test-data/spindle/SpindleVolumeTest01.zip" ).getFile() );
+
+		command.spindleChannelIndexOneBased = 1;
+		command.dnaChannelIndexOneBased = 2;
+		command.showIntermediateResults = false;
+		command.saveResults = false;
+		command.settings.showOutputImage = true;
+		command.run();
+
+		final HashMap< Integer, Map< String, Object > > measurements =
+				command.getObjectMeasurements();
+
+		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
+				SpindleMeasurements.getSpindleWidthMaxKey() );
+
+		final Double dnaLateralExtend = ( Double ) measurements.get( 0 ).get(
+				SpindleMeasurements.getDnaLateralExtendKey() );
+
+		final Double spindleVolume = ( Double ) measurements.get( 0 ).get( SpindleMeasurements.getSpindleVolumeKey() );
+
+//		assertEquals( 12.0, dnaLateralExtend, 1.0 );
+//		assertEquals( 11.0, spindleWidth, 1.0 );
+		assertEquals( 400, spindleVolume, 50 );
+	}
+
+	@Test
+	public < R extends RealType< R > > void testSpindleVolume02()
+	{
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
+		final ImageJ ij = new ImageJ();
+
+		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		command.opService = ij.op();
+
+		command.inputImageFile = new File(
+				TestSpindleMorphometry.class.getResource(
+						"../test-data/spindle/SpindleVolumeTest02.zip" ).getFile() );
+
+		command.spindleChannelIndexOneBased = 1;
+		command.dnaChannelIndexOneBased = 2;
+		command.showIntermediateResults = false;
+		command.saveResults = false;
+		command.settings.showOutputImage = true;
+		command.run();
+
+		final HashMap< Integer, Map< String, Object > > measurements =
+				command.getObjectMeasurements();
+
+		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
+				SpindleMeasurements.getSpindleWidthMaxKey() );
+
+		final Double dnaLateralExtend = ( Double ) measurements.get( 0 ).get(
+				SpindleMeasurements.getDnaLateralExtendKey() );
+
+		final Double spindleVolume = ( Double ) measurements.get( 0 ).get( SpindleMeasurements.getSpindleVolumeKey() );
+
+//		assertEquals( 12.0, dnaLateralExtend, 1.0 );
+//		assertEquals( 11.0, spindleWidth, 1.0 );
+		assertEquals( 400, spindleVolume, 50 );
 	}
 
 	@Test
@@ -254,7 +328,7 @@ public class TestSpindleMorphometry
 //		showImageJUI = true; new TestSpindleMorphometry().testSmallSpindle();
 //		showImageJUI = true; new TestSpindleMorphometry().weirdDNA3Channels();
 //		new TestSpindleMorphometry().testLargeSpindle();
-		new TestSpindleMorphometry().testSpindleVolume00();
+		new TestSpindleMorphometry().testSpindleVolume01();
 	}
 
 }
