@@ -54,21 +54,6 @@ public class SpindleMeasurements
 		this.objectMeasurements = objectMeasurements;
 	}
 
-	public static String getSpindleWidthMaxKey()
-	{
-		return "Spindle_Width_Max" + SEP + LENGTH_UNIT;
-	}
-
-	public static String getSpindleWidthMinKey()
-	{
-		return "Spindle_Width_Min" + SEP + LENGTH_UNIT;
-	}
-
-	@Deprecated
-	public static String getSpindleWidthKey()
-	{
-		return SPINDLE_LATERAL_EXTEND + SEP + LENGTH_UNIT;
-	}
 
 	public void setObjectMeasurements( )
 	{
@@ -109,8 +94,7 @@ public class SpindleMeasurements
 
 		addMeasurement( "Spindle_Intensity_Threshold",  spindleThreshold );
 
-		addMeasurement( SpindleMeasurements.SPINDLE_VOLUME + SEP + SpindleMeasurements.VOLUME_UNIT,
-				spindleVolume );
+		addMeasurement( getSpindleVolumeKey(), spindleVolume );
 
 		addMeasurement( SpindleMeasurements.getSpindleWidthMinKey(), spindleWidthMin );
 
@@ -132,7 +116,6 @@ public class SpindleMeasurements
 				log );
 	}
 
-
 	private void addMeasurement( String name, Object value )
 	{
 		Logger.log( name + ": " + value  );
@@ -144,4 +127,30 @@ public class SpindleMeasurements
 				value );
 	}
 
+	public static String getSpindleVolumeKey()
+	{
+		return SpindleMeasurements.SPINDLE_VOLUME + SEP + SpindleMeasurements.VOLUME_UNIT;
+	}
+
+	public static String getSpindleWidthMaxKey()
+	{
+		return "Spindle_Width_Max" + SEP + LENGTH_UNIT;
+	}
+
+	public static String getSpindleWidthMinKey()
+	{
+		return "Spindle_Width_Min" + SEP + LENGTH_UNIT;
+	}
+
+	@Deprecated
+	public static String getSpindleWidthKey()
+	{
+		return SPINDLE_LATERAL_EXTEND + SEP + LENGTH_UNIT;
+	}
+
+	public static String getDnaLateralExtendKey()
+	{
+		return DNA_LATERAL_EXTEND
+				+ SEP + LENGTH_UNIT;
+	}
 }

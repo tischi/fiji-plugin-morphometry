@@ -797,6 +797,7 @@ public class Algorithms
 
 		RandomAccessibleInterval< BitType > skeletons =
 				ArrayImgs.bits( Intervals.dimensionsAsLongArray( imgLabeling ) );
+
 		skeletons = Transforms.getWithAdjustedOrigin( imgLabeling.getSource(), skeletons );
 
 		final LabelRegions< IntType > labelRegions = new LabelRegions( imgLabeling );

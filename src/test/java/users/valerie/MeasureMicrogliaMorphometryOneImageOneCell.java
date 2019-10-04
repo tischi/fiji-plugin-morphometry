@@ -1,5 +1,7 @@
 package users.valerie;
 
+import bdv.util.BdvFunctions;
+import bdv.viewer.SourceAndConverter;
 import de.embl.cba.morphometry.commands.MicrogliaMorphometryCommand;
 import de.embl.cba.tables.command.ExploreObjectsTableCommand;
 import net.imglib2.type.NativeType;
@@ -22,11 +24,9 @@ public class MeasureMicrogliaMorphometryOneImageOneCell
 
 		measure.run();
 
-
 		final ExploreObjectsTableCommand explore = new ExploreObjectsTableCommand();
 		explore.tableFile = measure.getTableOutputFile();
 		explore.is2D = true;
-		explore.isPathMapping = false;
 		explore.isRelativeImagePath = true;
 		explore.imageRootFolder = measure.outputDirectory;
 		explore.isOneBasedTimePoint = true;

@@ -40,7 +40,6 @@ public class MeasureMicrogliaMorphometryMultipleLargeData
 		final ExploreObjectsTableCommand explore = new ExploreObjectsTableCommand();
 		explore.tableFile = concatTablesCommand.outputTable;
 		explore.is2D = true;
-		explore.isPathMapping = false;
 		explore.imageRootFolder = inputDir;
 		explore.isOneBasedTimePoint = true;
 		explore.imagePathColumnsId = "Path_";

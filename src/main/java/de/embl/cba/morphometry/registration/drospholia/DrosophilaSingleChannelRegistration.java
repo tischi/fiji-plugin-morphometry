@@ -242,7 +242,6 @@ public class  DrosophilaSingleChannelRegistration< T extends RealType< T > & Nat
 
 	private boolean extractCentralEmbryoMask( ImgLabeling< Integer, IntType > labeling )
 	{
-
 		Logger.log( "Extract central embryo..." );
 
 		final double[] center = getApproximateEmbryoCenter( labeling );
@@ -257,7 +256,7 @@ public class  DrosophilaSingleChannelRegistration< T extends RealType< T > & Nat
 
 		embryoMask = Regions.asMask(
 				centralRegions,
-				Intervals.dimensionsAsLongArray( labeling ) );
+				labeling );
 
 		if ( settings.showIntermediateResults )
 			show( Utils.copyAsArrayImg( embryoMask ),

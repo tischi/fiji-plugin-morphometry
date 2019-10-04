@@ -5,6 +5,7 @@ import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.transforms.utils.Transforms;
 import net.imglib2.Cursor;
+import net.imglib2.Interval;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
@@ -23,7 +24,6 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
 import net.imglib2.util.Intervals;
-import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import java.util.ArrayList;
@@ -311,11 +311,15 @@ public abstract class Regions
 		return imgLabeling;
 	}
 
-	public static Img< BitType > asMask(
+	public static RandomAccessibleInterval< BitType > asMask(
 			Set< LabelRegion< Integer > > regions,
-			long[] dimensions )
+			Interval interval )
 	{
-		final Img< BitType > regionsMask = ArrayImgs.bits( dimensions );
+		RandomAccessibleInterval< BitType > regionsMask =  ArrayImgs.bits(
+				Intervals.dimensionsAsLongArray( interval ) );
+
+		regionsMask = Transforms.getWithAdjustedOrigin( interval, regionsMask );
+
 		final RandomAccess< BitType > maskAccess = regionsMask.randomAccess();
 
 		for ( LabelRegion region : regions )

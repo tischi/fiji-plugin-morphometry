@@ -7,6 +7,7 @@ import de.embl.cba.morphometry.geometry.ellipsoids.EllipsoidVectors;
 import de.embl.cba.morphometry.geometry.ellipsoids.Ellipsoids3DImageSuite;
 import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.regions.Regions;
+import de.embl.cba.morphometry.viewing.Viewers;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.CompositeImage;
 import ij.IJ;
@@ -20,7 +21,6 @@ import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
-import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.ClampingNLinearInterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
@@ -57,15 +57,15 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
 	private AffineTransform3D rescaledToDnaAlignmentTransform;
 	private RandomAccessibleInterval dnaAlignedDna;
-	private RandomAccessibleInterval dnaAlignedDnaMask;
+	private RandomAccessibleInterval dnaAlignedInitialDnaMask;
 	private RandomAccessibleInterval dnaAlignedTubulin;
 	private RandomAccessibleInterval< R > dna;
 	private RandomAccessibleInterval< R > tubulin;
 	private ArrayList< double[] > dnaAlignedSpindlePoles;
-	private RandomAccessibleInterval< BitType > dnaVolumeMask;
+	private RandomAccessibleInterval< BitType > dnaAlignedDnaMask;
 	private RandomAccessibleInterval< BitType > spindleAlignedSpindleMask;
 	private double[] workingCalibration;
-	private RandomAccessibleInterval< BitType > segmentedDna;
+	private RandomAccessibleInterval< BitType > initialDnaMask;
 	private EllipsoidVectors dnaEllipsoidVectors;
 	private ProfileAndRadius dnaLateralProfileAndRadius;
 	private double[] spindlePoleToPoleVector;
@@ -101,8 +101,8 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		}
 		catch ( Exception e )
 		{
-			e.printStackTrace();
-			spindleMeasurements.log = "Exception during computation.";
+			 e.printStackTrace();
+			spindleMeasurements.log = "Exception during computation: \n" + e.toString();
 		}
 
 		spindleMeasurements.setObjectMeasurements();
@@ -112,7 +112,6 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 	private String measure()
 	{
-
 		spindleMeasurements.version = settings.version;
 
 		/**
@@ -128,40 +127,39 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		if ( spindleMeasurements.dnaInitialThreshold < settings.minimalDynamicRange )
 			return SpindleMeasurements.ANALYSIS_INTERRUPTED_LOW_DYNAMIC_DNA;
 
-		segmentedDna = segmentDna( dna, spindleMeasurements.dnaInitialThreshold );
+		initialDnaMask = segmentDna( dna, spindleMeasurements.dnaInitialThreshold );
 
-		dnaEllipsoidVectors = determineDnaAxes( segmentedDna );
+		dnaEllipsoidVectors = determineDnaAxes( initialDnaMask );
 
 		computeDnaAlignmentTransformAndAlignImages(
-				dna, tubulin, segmentedDna, dnaEllipsoidVectors );
+				dna, tubulin, initialDnaMask, dnaEllipsoidVectors );
 
 		measureDnaAxialExtend( dnaAlignedDna );
 
 		dnaLateralProfileAndRadius = measureDnaLateralExtend( dnaAlignedDna );
 
-		dnaVolumeMask = measureDnaVolume( dna, dnaLateralProfileAndRadius );
+		dnaAlignedDnaMask = measureDnaVolume( dnaAlignedDna, dnaLateralProfileAndRadius );
+
+		spindleMeasurements.spindleThreshold =
+				measureSpindleThresholdAtDNAPeriphery( dnaAlignedTubulin, dnaAlignedDnaMask );
 
 		measureDnaHole( dnaLateralProfileAndRadius );
 
-		dnaAlignedSpindlePoles = measureSpindlePoleLocationsAndSpindleThreshold( dnaAlignedTubulin );
+		// TODO: this could be done on the spindle mask, or?
+		dnaAlignedSpindlePoles = measureSpindlePoleLocations( dnaAlignedTubulin );
 
 		spindlePoleToPoleVector = getSpindleAxisVector( dnaAlignedSpindlePoles );
 
 		spindleCenter = getSpindleCenter( dnaAlignedSpindlePoles, spindlePoleToPoleVector );
 
-
-				createSpindlePolesAlignedImages( dnaAlignedSpindlePoles, spindleCenter );
-
-		spindleMeasurements.spindleThreshold =
-				measureSpindleThresholdAtDNAPeriphery( spindleAlignedTublin );
-
-		Logger.log( "Spindle DNA periphery threshold: "
-				+ spindleMeasurements.spindleThreshold );
+		createSpindlePolesAlignedImages( dnaAlignedSpindlePoles, spindleCenter );
 
 		if ( spindleMeasurements.spindleThreshold < settings.minimalDynamicRange )
 			return SpindleMeasurements.ANALYSIS_INTERRUPTED_LOW_DYNAMIC_TUBULIN;
 
-		spindleAlignedSpindleMask = createSpindleMask( spindleAlignedTublin, spindleMeasurements.spindleThreshold );
+		spindleAlignedSpindleMask = createSpindleMask(
+				spindleAlignedTublin,
+				spindleMeasurements.spindleThreshold );
 
 		measureSpindleVolume( spindleAlignedSpindleMask );
 
@@ -237,15 +235,20 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 	/**
 	 *
-	 * @param poleToPoleAlignedSpindleRai
+	 * @param dnaAlignedTubulin
+	 * @param dnaAlignedDnaMask
 	 * @return
 	 */
 	public double measureSpindleThresholdAtDNAPeriphery(
-			RandomAccessibleInterval< R > poleToPoleAlignedSpindleRai )
+			RandomAccessibleInterval< R > dnaAlignedTubulin,
+			RandomAccessibleInterval< BitType > dnaAlignedDnaMask )
 	{
 		final double dnaRadius = spindleMeasurements.dnaLateralExtend / 2.0 ;
 		final long lateralExtend = (long) ( ( dnaRadius + 1.0 ) / settings.workingVoxelSize );
 		final long axialExtend = (long) ( 1.0 / settings.workingVoxelSize );
+
+		Viewers.showRai3dWithImageJ( dnaAlignedTubulin, "tubulin" );
+		Viewers.showRai3dWithImageJ( dnaAlignedTubulin, "dnaAlignedDnaMask" );
 
 		final FinalInterval interval = FinalInterval.createMinMax(
 				-lateralExtend,
@@ -256,20 +259,30 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 				axialExtend );
 
 		final Cursor< R > cursor = Views.iterable(
-				Views.interval( poleToPoleAlignedSpindleRai, interval ) ).cursor();
+				Views.interval( dnaAlignedTubulin, interval ) ).cursor();
 
 		double[] lateralVoxelPosition = new double[ 3 ];
 		double distSquared = 0;
 		final double minDistSquared = Math.pow( dnaRadius, 2);
 		final double maxDistSquared = Math.pow( dnaRadius + 1.0, 2);
 
-		final double[] origin = { 0, 0 };
-
 		final ArrayList< Double > tubulinValues = new ArrayList<>();
+
+		final RandomAccess< BitType > dnaAlignedDnaMaskAccess = dnaAlignedDnaMask.randomAccess();
 
 		while( cursor.hasNext() )
 		{
 			cursor.next();
+
+			dnaAlignedDnaMaskAccess.setPosition( cursor );
+
+			if ( dnaAlignedDnaMaskAccess.get().get() )
+			{
+				// pixels containing DNA exclude tubulin and thus would
+				// lead to a too low threshold
+				continue;
+			}
+
 			cursor.localize( lateralVoxelPosition );
 
 			distSquared = 0;
@@ -286,6 +299,8 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		final double sdev = Utils.sdev( tubulinValues, mean );
 
 		final double threshold = mean + 4 * sdev;
+
+		Logger.log( "Spindle threshold: " + threshold );
 
 		return threshold;
 	}
@@ -362,9 +377,8 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		spindleAlignedDna
 				= Transforms.createTransformedView( dnaAlignedDna, dnaAlignedToSpindleAlignedTransform );
 		spindleAlignedDnaMask
-				= Transforms.createTransformedView( dnaAlignedDnaMask, dnaAlignedToSpindleAlignedTransform,
+				= Transforms.createTransformedView( dnaAlignedInitialDnaMask, dnaAlignedToSpindleAlignedTransform,
 				new NearestNeighborInterpolatorFactory() );
-
 
 		spindleAlignedSpindlePoles = new ArrayList<>();
 		final double[] newPole00 = new double[ 3 ];
@@ -375,7 +389,6 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		spindleAlignedSpindlePoles.add( newPole01 );
 		final double[] newCenter = new double[ 3 ];
 		dnaAlignedToSpindleAlignedTransform.apply( spindleCenter, newCenter );
-
 
 		if ( settings.showIntermediateResults )
 		{
@@ -702,7 +715,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		dnaAlignedDna = Utils.copyAsArrayImg(
 				Transforms.createTransformedView( dna, rescaledToDnaAlignmentTransform ) );
 
-		dnaAlignedDnaMask = Utils.copyAsArrayImg(
+		dnaAlignedInitialDnaMask = Utils.copyAsArrayImg(
 				Transforms.createTransformedView( dnaMask, rescaledToDnaAlignmentTransform ) );
 
 		if ( settings.showIntermediateResults )
@@ -714,7 +727,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 					workingCalibration, false );
 
 		if ( settings.showIntermediateResults )
-			show( dnaAlignedDnaMask, "DNA mask aligned along DNA shortest axis",
+			show( dnaAlignedInitialDnaMask, "DNA mask aligned along DNA shortest axis",
 					Transforms.origin(), workingCalibration, false );
 
 //		if ( settings.showIntermediateResults ) Viewer3D.show3D( dnaAlignedDnaMask );
@@ -796,15 +809,14 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		return dnaLateralProfileAndRadius;
 	}
 
-	public ArrayList< double[] > measureSpindlePoleLocationsAndSpindleThreshold(
+	public ArrayList< double[] > measureSpindlePoleLocations(
 			RandomAccessibleInterval dnaAlignedTubulin )
 	{
 		final ArrayList< double[] > dnaAxisBasedSpindlePoles =
-				getSpindlePolesAlongDnaAxisAndDetermineSpindleThreshold(
-						dnaAlignedTubulin );
+				determineSpindlePolesAlongDnaAxis( dnaAlignedTubulin );
 
 		final ArrayList< double[] > spindlePoles =
-				getRefinedSpindlePoles(
+				determineRefinedSpindlePoles(
 					dnaAlignedTubulin,
 					dnaAxisBasedSpindlePoles );
 
@@ -815,7 +827,6 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 		return spindlePoles;
 	}
-
 
 	public RandomAccessibleInterval< BitType > measureDnaVolume(
 			RandomAccessibleInterval< R > dna,
@@ -834,7 +845,6 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		spindleMeasurements.dnaVolumeCalibrated =
 				dnaVolumeInPixels * Math.pow( settings.workingVoxelSize, 3 );
 
-
 		if ( settings.showIntermediateResults )
 			show( dnaVolumeMask, "dna volume mask",
 					null, workingCalibration, false );
@@ -842,7 +852,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		return dnaVolumeMask;
 	}
 
-	public ArrayList< double[] > getSpindlePolesAlongDnaAxisAndDetermineSpindleThreshold(
+	public ArrayList< double[] > determineSpindlePolesAlongDnaAxis(
 			RandomAccessibleInterval tubulinAlignedAlongShortestAxisOfDNA )
 	{
 		final CoordinatesAndValues tubulinProfile =
@@ -867,21 +877,21 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		dnaAxisBasedSpindlePoles.add(
 				new double[]{ 0, 0, tubulinExtrema.get( 1 ).coordinate });
 
-		spindleMeasurements.spindleThreshold = 0.0;
-
-		for ( int p = 0; p < 2; p++ )
-		{
-			final Double value =
-					CurveAnalysis.getValueAtCoordinate(
-							tubulinProfile,
-							tubulinExtrema.get( p ).coordinate );
-
-			Logger.log( "Spindle axial threshold " + p + ": " + value );
-
-			spindleMeasurements.spindleThreshold += value;
-		}
-
-		spindleMeasurements.spindleThreshold /= 2;
+//		spindleMeasurements.spindleThreshold = 0.0;
+//
+//		for ( int p = 0; p < 2; p++ )
+//		{
+//			final Double value =
+//					CurveAnalysis.getValueAtCoordinate(
+//							tubulinProfile,
+//							tubulinExtrema.get( p ).coordinate );
+//
+//			Logger.log( "Spindle axial threshold " + p + ": " + value );
+//
+//			spindleMeasurements.spindleThreshold += value;
+//		}
+//
+//		spindleMeasurements.spindleThreshold /= 2;
 
 		if ( settings.showIntermediateResults )
 			Plots.plot(
@@ -926,7 +936,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 	}
 
-	private ArrayList< double[] > getRefinedSpindlePoles(
+	private ArrayList< double[] > determineRefinedSpindlePoles(
 			RandomAccessibleInterval tubulinAlignedAlongShortestAxisOfDNA,
 			ArrayList< double[] > dnaAxisBasedSpindlePoleCoordinates )
 	{
@@ -974,9 +984,10 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		final Set< LabelRegion< Integer > > centralRegions =
 				Regions.getCentralRegions( labelImg, Transforms.getCenter( labelImg ), radius );
 
-		final Img< BitType > maskFromLabelRegions = Regions.asMask(
-				centralRegions,
-				Intervals.dimensionsAsLongArray( labelImg ) );
+		final RandomAccessibleInterval< BitType > maskFromLabelRegions =
+				Regions.asMask(
+					centralRegions,
+					labelImg );
 
 		return maskFromLabelRegions;
 	}
@@ -1091,7 +1102,6 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 		return Views.stack( alignedAndRotatedVolumes );
 	}
-
 
 	/**
 	 *
@@ -1313,7 +1323,6 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		}
 	}
 
-
 	private double[] transformToPixelUnitsCoverslipCoordinateSystem(
 			AffineTransform3D alignmentTransform,
 			double[] point )
@@ -1359,11 +1368,18 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 	}
 
 	private < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< BitType > createMask( RandomAccessibleInterval< T > downscaled, double threshold )
+	RandomAccessibleInterval< BitType > createMask(
+			RandomAccessibleInterval< T > rai,
+			double threshold )
 	{
-		RandomAccessibleInterval< BitType > mask = Converters.convert( downscaled, ( i, o ) -> o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
+		RandomAccessibleInterval< BitType > mask
+				= Converters.convert( rai, ( i, o ) ->
+				o.set( i.getRealDouble() > threshold ? true : false ), new BitType() );
 
-		mask = opService.morphology().fillHoles( mask );
+		// "Bug" in ops requires a Views.zeroMin().
+		mask = opService.morphology().fillHoles( Views.zeroMin( mask ) );
+
+		mask = Transforms.getWithAdjustedOrigin( rai, mask );
 
 		return mask;
 	}

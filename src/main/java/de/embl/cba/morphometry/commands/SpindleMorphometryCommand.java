@@ -66,8 +66,6 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter( visibility = ItemVisibility.MESSAGE )
 	private String version = "Spindle Morphometry Version: 0.5.7";
 
-
-
 	public boolean saveResults = true;
 
 	private String imageName;
@@ -106,7 +104,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	private void processFile( File file )
 	{
-		imageName = inputImageFile.getName().replace( ".tif", "" );
+		removeImageNameSuffix();
 
 		logStart();
 
@@ -130,25 +128,36 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 				objectMeasurements,
 				"Path_InputImage" );
 
+
 		if ( saveResults )
 		{
 			new File( getOutputDirectory() ).mkdirs();
+			saveMeasurements( morphometry );
+		}
 
-			if ( log.equals( SpindleMeasurements.ANALYSIS_FINISHED ))
+		if ( log.equals( SpindleMeasurements.ANALYSIS_FINISHED ))
+		{
+			if ( settings.showOutputImage == true || saveResults )
 			{
 				final CompositeImage outputImage = morphometry.createOutputImage();
 
 				if ( settings.showOutputImage == true )
 					outputImage.show();
 
-				saveOutputImageAndAddImagePathsToMeasurements( outputImage );
+				if ( saveResults )
+					saveOutputImageAndAddImagePathsToMeasurements( outputImage );
 			}
-
-			saveMeasurements( morphometry );
 		}
 
 		logEnd();
 
+	}
+
+	private void removeImageNameSuffix()
+	{
+		imageName = inputImageFile.getName().replace( ".tif", "" );
+		imageName = inputImageFile.getName().replace( ".ome", "" );
+		imageName = inputImageFile.getName().replace( ".zip", "" );
 	}
 
 	private void logEnd()
@@ -193,7 +202,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		final Path parentPath = inputImageFilesParentDirectory.toPath();
 
 		final File outputImageFile =
-				new File( getOutputDirectory() + imageName + "-out.tif" );
+				new File( getOutputDirectory() + imageName + "-out.zip" );
 
 		addImagePathToMeasurements( parentPath, outputImageFile, objectMeasurements, "Path_OutputImage" );
 

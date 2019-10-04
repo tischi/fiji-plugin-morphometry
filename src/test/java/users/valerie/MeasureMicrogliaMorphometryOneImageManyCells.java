@@ -31,7 +31,6 @@ public class MeasureMicrogliaMorphometryOneImageManyCells
 		final ExploreObjectsTableCommand explore = new ExploreObjectsTableCommand();
 		explore.tableFile = measure.getTableOutputFile();
 		explore.is2D = true;
-		explore.isPathMapping = false;
 		explore.isRelativeImagePath = true;
 		explore.imageRootFolder = measure.outputDirectory;
 		explore.isOneBasedTimePoint = true;
