@@ -32,6 +32,7 @@ public class PlatynereisRegistrationSettings
 	public boolean invertImage = true;
 	public double[] inputCalibration;
 	public ThresholdMethod thresholdMethod = ThresholdMethod.Yen;
+	public int binaryOpeningRadiusPixels = 2;
 
 	public enum ThresholdMethod
 	{

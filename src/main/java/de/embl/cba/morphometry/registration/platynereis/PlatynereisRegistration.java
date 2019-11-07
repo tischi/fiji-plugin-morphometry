@@ -245,8 +245,8 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 	private void open( RandomAccessibleInterval< BitType > mask )
 	{
-		this.mask = Algorithms.erode( mask, 1 );
-		this.mask = Algorithms.dilate( this.mask, 1 );
+		this.mask = Algorithms.erode( mask, settings.binaryOpeningRadiusPixels );
+		this.mask = Algorithms.dilate( this.mask, settings.binaryOpeningRadiusPixels );
 	}
 
 	private RandomAccessibleInterval< BitType > binarise()
@@ -450,7 +450,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 					coordinatesAndValues.coordinates,
 					coordinatesAndValues.values,
 					"x",
-					"average intensity" );
+					"average intensity along body axis" );
 
 		CoordinateAndValue maximum =
 				CurveAnalysis.maximum( coordinatesAndValues, null );
