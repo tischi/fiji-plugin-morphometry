@@ -24,6 +24,7 @@ import java.util.ArrayList;
 @Plugin(type = Command.class, menuPath = "Plugins>Registration>EMBL>Platynereis Registration" )
 public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeType< R > > implements Command
 {
+	public static final String SAVE_AS_BDV = "Save as bdv";
 
 	@Parameter
 	public OpService opService;
@@ -33,41 +34,41 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 	@Parameter( style = "directory" )
 	public File inputDirectory;
 
+	// TODO: change to path
 	@Parameter( style = "directory" )
 	public File outputDirectory;
 
-	@Parameter
-	public String fileNameEndsWith = ".png";
+	@Parameter( label = "Only open files ending with" )
+	public String fileNameEndsWith = ".tiff";
 
-	@Parameter
+	@Parameter( label = "Show intermediate results (for debugging)")
 	public boolean showIntermediateResults = settings.showIntermediateResults;
 
-	@Parameter ( label = "Input image isotropic pixel size [micrometer]" )
+	@Parameter( label = "Input image isotropic pixel size [micrometer]" )
 	public double inputResolutionMicrometer;
 
-	@Parameter ( label = "Invert image (pixels of interest are dark)" )
-	public boolean invertImage;
+	@Parameter( label = "Invert image (pixels of interest are dark)" )
+	public boolean invertImage = settings.invertImage;
 
-	@Parameter ( label = "Output resolution [micrometer]")
+	@Parameter( label = "Registration resolution [micrometer]")
+	public double registrationResolution = settings.registrationResolution;
+
+	@Parameter( label = "Output resolution [micrometer]" )
 	public double outputResolution = settings.outputResolution;
 
-	@Parameter ( label = "Registration resolution [micrometer]")
-	public double registrationResolution = settings.registrationResolution;
+	@Parameter( label = "Output modality", choices = { SAVE_AS_BDV } )
+	public String outputModality = SAVE_AS_BDV;
 
 
 	public void run()
 	{
 		setSettings();
 
-		final double[] calibration = new double[]{
-				inputResolutionMicrometer,
-				inputResolutionMicrometer,
-				inputResolutionMicrometer };
-
 		// Open image
 		//
 		Logger.log( "Opening image: " + inputDirectory.getAbsolutePath() );
-		final ImagePlus imagePlus = FolderOpener.open( inputDirectory.getAbsolutePath(),
+		final ImagePlus imagePlus = FolderOpener.open(
+				inputDirectory.getAbsolutePath(),
 				" file=(.*" + fileNameEndsWith + ")" );
 		final RandomAccessibleInterval< R > channelImages = Utils.getChannelImages( imagePlus );
 		RandomAccessibleInterval< R > image = Utils.getChannelImage( channelImages, 0 );
@@ -76,7 +77,7 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 		//
 		Logger.log( "Registering..." );
 		final PlatynereisRegistration< R > registration = new PlatynereisRegistration<>( settings, opService );
-		registration.run( image, calibration );
+		registration.run( image );
 
 		// Apply registration
 		//
@@ -84,7 +85,7 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 		ArrayList< RandomAccessibleInterval< R > > registeredImages =
 				Transforms.transformAllChannels(
 						channelImages,
-						registration.getRegistrationTransform( calibration, outputResolution ),
+						registration.getRegistrationTransform( settings.inputCalibration, settings.outputResolution ),
 						settings.getOutputImageInterval()
 				);
 
@@ -120,6 +121,11 @@ public class PlatynereisRegistrationCommand< R extends RealType< R > & NativeTyp
 		settings.registrationResolution = registrationResolution;
 		settings.outputResolution = outputResolution;
 		settings.invertImage = invertImage;
+		settings.inputCalibration = new double[]{
+				inputResolutionMicrometer,
+				inputResolutionMicrometer,
+				inputResolutionMicrometer };
+
 	}
 
 

@@ -48,7 +48,7 @@ public class TestTrackingSplitter
 	{
 		final MasksAndIntensities masksAndIntensities = new MasksAndIntensities();
 		masksAndIntensities.masks = IJ.openImage( TestTrackingSplitter.class.getResource( "microglia/MAX_5C-crop-t1-3-masks.tif" ).getFile().toString() );
-		masksAndIntensities.intensities = IJ.openImage( TestTrackingSplitter.class.getResource( "microglia/MAX_5C-crop-t1-3-intensities.tif" ).getFile().toString() );
+		masksAndIntensities.intensities = IJ.openImage( TestTrackingSplitter.class.getResource( "test-data/microglia/MAX_5C-crop-t1-3-intensities.tif" ).getFile().toString() );
 		return masksAndIntensities;
 	}
 

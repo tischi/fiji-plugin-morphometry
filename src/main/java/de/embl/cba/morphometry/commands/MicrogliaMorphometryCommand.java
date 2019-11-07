@@ -33,7 +33,7 @@ public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType<
 	public OpService opService;
 
 	@Parameter ( label = "Intensity image time series (single channel 2D+t)" )
-	private File intensityFile;
+	public File intensityFile;
 
 	@Parameter ( label = "Label mask time series (single channel 2D+t)" )
 	public File labelMaskFile;
@@ -51,7 +51,6 @@ public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType<
 
 	public void run()
 	{
-
 		if ( ! checkInstallationOfMorpholibJ() ) return;
 
 		Logger.log( "" );
@@ -77,7 +76,7 @@ public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType<
 
 	}
 
-	public boolean checkInstallationOfMorpholibJ()
+	private boolean checkInstallationOfMorpholibJ()
 	{
 		try {
 			new GeodesicDiameter(  );
@@ -90,14 +89,14 @@ public class MicrogliaMorphometryCommand < T extends RealType< T > & NativeType<
 		return true;
 	}
 
-	public ArrayList< RandomAccessibleInterval< T > > openLabelMasks()
+	private ArrayList< RandomAccessibleInterval< T > > openLabelMasks()
 	{
 		labelMaskImagePlus = Utils.openWithBioFormats( labelMaskFile.toString() );
 		dataSetID = labelMaskImagePlus.getTitle();
 		return Utils.get2DImagePlusMovieAsFrameList( labelMaskImagePlus, 1 );
 	}
 
-	public ArrayList< RandomAccessibleInterval< T > > openIntensities()
+	private ArrayList< RandomAccessibleInterval< T > > openIntensities()
 	{
 		intensityImagePlus = Utils.openWithBioFormats( intensityFile.toString() );
 		return Utils.get2DImagePlusMovieAsFrameList( intensityImagePlus, 1 );

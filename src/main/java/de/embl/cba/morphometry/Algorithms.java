@@ -8,6 +8,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.ops.OpService;
 import net.imagej.ops.threshold.huang.ComputeHuangThreshold;
+import net.imagej.ops.threshold.otsu.ComputeOtsuThreshold;
 import net.imagej.ops.threshold.yen.ComputeYenThreshold;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
@@ -1253,36 +1254,41 @@ public class Algorithms
 	}
 
 	public static < T extends RealType< T > >
+	double thresholdOtsu( RandomAccessibleInterval< T > rai )
+	{
+		final Histogram1d< T > histogram =
+				histogram( rai, 256 );
+
+		final T type = Views.iterable( rai ).firstElement().createVariable();
+		final ComputeOtsuThreshold< T > threshold = new ComputeOtsuThreshold<>();
+		final long bin = threshold.computeBin( histogram );
+		histogram.getCenterValue( bin, type );
+
+		return type.getRealDouble();
+	}
+
+	public static < T extends RealType< T > >
 	double thresholdHuang( RandomAccessibleInterval< T > rai )
 	{
 		final Histogram1d< T > histogram =
 				histogram( rai, 256 );
 
 		final T type = Views.iterable( rai ).firstElement().createVariable();
-		final ComputeHuangThreshold< T > huangThreshold = new ComputeHuangThreshold<>();
-		final long bin = huangThreshold.computeBin( histogram );
+		final ComputeHuangThreshold< T > threshold = new ComputeHuangThreshold<>();
+		final long bin = threshold.computeBin( histogram );
 		histogram.getCenterValue( bin, type );
-
-//		final double huang = opService.threshold().huang( histogram ).getRealDouble();
-//		final double otsu = opService.threshold().otsu( histogram ).getRealDouble();
-//		final double yen = opService.threshold().yen( histogram ).getRealDouble();
 
 		return type.getRealDouble();
 	}
-
 
 	public static < T extends RealType< T > >
 	double thresholdYen( RandomAccessibleInterval< T > rai )
 	{
 		final Histogram1d< T > histogram = histogram( rai, 256 );
 		final T type = Views.iterable( rai ).firstElement().createVariable();
-		final ComputeYenThreshold< T > computeYenThreshold = new ComputeYenThreshold<>();
-		final long bin = computeYenThreshold.computeBin( histogram );
+		final ComputeYenThreshold< T > threshold = new ComputeYenThreshold<>();
+		final long bin = threshold.computeBin( histogram );
 		histogram.getCenterValue( bin, type );
-
-//		final double huang = opService.threshold().huang( histogram ).getRealDouble();
-//		final double otsu = opService.threshold().otsu( histogram ).getRealDouble();
-//		final double yen = opService.threshold().yen( histogram ).getRealDouble();
 
 		return type.getRealDouble();
 	}

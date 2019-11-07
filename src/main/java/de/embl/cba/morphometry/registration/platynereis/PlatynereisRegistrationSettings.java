@@ -29,7 +29,16 @@ public class PlatynereisRegistrationSettings
 	public double projectionXMin = -8.0;
 	public double projectionXMax = +8.0;
 	public double projectionBlurSigma = 8.0;
-	public boolean invertImage = false;
+	public boolean invertImage = true;
+	public double[] inputCalibration;
+	public ThresholdMethod thresholdMethod = ThresholdMethod.Yen;
+
+	public enum ThresholdMethod
+	{
+		Yen,
+		Otsu,
+		Huang
+	}
 
 	public FinalInterval getOutputImageInterval()
 	{

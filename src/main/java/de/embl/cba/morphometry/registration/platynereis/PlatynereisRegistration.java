@@ -31,8 +31,6 @@ import java.util.List;
 
 import static de.embl.cba.morphometry.Constants.*;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
-import static de.embl.cba.transforms.utils.Scalings.createResampledArrayImg;
-import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 import static java.lang.Math.toRadians;
 
@@ -53,7 +51,6 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 	private RandomAccessibleInterval< BitType > yawAlignedMask;
 	private RandomAccessibleInterval yawAlignedIntensity;
 	private CoordinateAndValue axialEmbryoCenter;
-	private double[] inputCalibration;
 
 	public PlatynereisRegistration(
 			final PlatynereisRegistrationSettings settings,
@@ -63,9 +60,8 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		this.opService = opService;
 	}
 
-	public boolean run( RandomAccessibleInterval< T > image, double[] inputCalibration )
+	public boolean run( RandomAccessibleInterval< T > image )
 	{
-		this.inputCalibration = inputCalibration;
 		this.image = image;
 
 //		if ( settings.showIntermediateResults )
@@ -98,7 +94,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 	public RandomAccessibleInterval< T >  downSampleUsingImageJ1( RandomAccessibleInterval< T > image )
 	{
 		Logger.log( "Down-sampling to registration resolution: " + settings.registrationResolution + " micrometer" );
-		final double[] scalingFactors = getScalingFactors( inputCalibration, settings.registrationResolution );
+		final double[] scalingFactors = getScalingFactors( settings.inputCalibration, settings.registrationResolution );
 		Logger.log( "Scaling factor X: " + scalingFactors[ 0 ] );
 		Logger.log( "Scaling factor Y: " + scalingFactors[ 1 ] );
 		Logger.log( "Scaling factor Z: " + scalingFactors[ 2 ] );
@@ -259,8 +255,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		 *  Compute threshold
 		 */
 
-		double threshold = Algorithms.thresholdYen( isotropic );
-		Logger.log( "Threshold: " + threshold );
+		double threshold = getThreshold();
 
 		/**
 		 * Create mask
@@ -273,6 +268,18 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 					registrationCalibration, false );
 
 		return mask;
+	}
+
+	private double getThreshold()
+	{
+		double threshold = 0.0;
+		if ( settings.thresholdMethod.equals( PlatynereisRegistrationSettings.ThresholdMethod.Yen ) )
+			 threshold = Algorithms.thresholdYen( isotropic );
+		else if ( settings.thresholdMethod.equals( PlatynereisRegistrationSettings.ThresholdMethod.Huang ) )
+			threshold = Algorithms.thresholdHuang( isotropic );
+
+		Logger.log( "Threshold: " + threshold );
+		return threshold;
 	}
 
 	private void removeSmallRegions( RandomAccessibleInterval< BitType > mask )
@@ -308,7 +315,7 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		Logger.log( "Down-sampling to registration resolution: "
 				+ settings.registrationResolution + " micrometer" );
 
-		final double[] scalingFactors = getScalingFactors( inputCalibration, settings.registrationResolution );
+		final double[] scalingFactors = getScalingFactors( settings.inputCalibration, settings.registrationResolution );
 
 		Logger.log( "Scaling factor X: " + scalingFactors[ 0 ] );
 		Logger.log( "Scaling factor Y: " + scalingFactors[ 1 ] );
@@ -355,14 +362,12 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 		return watershedLabeling;
 	}
 
-
-	public AffineTransform3D getRegistrationTransform(
-			double[] inputCalibration, double outputResolution )
+	public AffineTransform3D getRegistrationTransform( double[] fromCalibration, double toCalibration )
 	{
 		final AffineTransform3D transform =
-				Transforms.getScalingTransform( inputCalibration, settings.registrationResolution )
+				Transforms.getScalingTransform( fromCalibration, settings.registrationResolution )
 						.preConcatenate( transformAtRegistrationResolution.copy() )
-						.preConcatenate( Transforms.getScalingTransform( settings.registrationResolution, outputResolution ) );
+						.preConcatenate( Transforms.getScalingTransform( settings.registrationResolution, toCalibration ) );
 
 		return transform;
 	}

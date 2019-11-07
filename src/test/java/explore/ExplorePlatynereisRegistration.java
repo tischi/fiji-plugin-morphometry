@@ -40,10 +40,10 @@ public class ExplorePlatynereisRegistration
 		final PlatynereisRegistrationSettings settings = new PlatynereisRegistrationSettings();
 		settings.showIntermediateResults = true;
 		settings.registrationResolution = 8; // micrometer
-
+		settings.inputCalibration = calibration;
 
 		final PlatynereisRegistration< R > registration = new PlatynereisRegistration<>( settings, opService );
 
-		registration.run( image, calibration );
+		registration.run( image);
 	}
 }

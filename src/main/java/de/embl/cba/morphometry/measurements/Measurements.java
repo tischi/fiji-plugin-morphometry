@@ -757,18 +757,17 @@ public class Measurements
 	}
 
 	public static void measureCentroidsToBrightestPointsDistances(
-			HashMap< Integer, Map< String, Object>> measurements )
+			HashMap< Integer, Map< String, Object> > measurements )
 	{
 		final Set< Integer > objectLabels = measurements.keySet();
 
 		for ( int objectLabel : objectLabels )
 		{
-
-			final long bx =
-					(long) measurements.get( objectLabel )
+			final double bx =
+					(double) measurements.get( objectLabel )
 							.get( getCoordinateName( BRIGHTEST_POINT, 0 ) );
-			final long by =
-					(long) measurements.get( objectLabel )
+			final double by =
+					(double) measurements.get( objectLabel )
 							.get( getCoordinateName( BRIGHTEST_POINT, 1 ) );
 			final double cx =
 					(double) measurements.get( objectLabel )

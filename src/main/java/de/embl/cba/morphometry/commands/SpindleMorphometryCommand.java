@@ -64,7 +64,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	public boolean showIntermediateResults = false;
 
 	@Parameter( visibility = ItemVisibility.MESSAGE )
-	private String version = "Spindle Morphometry Version: 0.5.7";
+	private String version = "Spindle Morphometry Version: 0.5.8";
 
 	public boolean saveResults = true;
 

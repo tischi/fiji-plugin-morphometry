@@ -24,7 +24,7 @@ public class PlatynereisRegistrationHighResSamplePrepMethod01
 		command.registrationResolution = settings.registrationResolution;
 		command.opService = imageJ.op();
 		command.inputDirectory = new File("/Users/tischer/Desktop/tomo_w7");
-		command.outputDirectory = new File( "/Volumes/cba/exchange/Kimberly/High_res/samplePrepMethod01/tomo_w7-aligned");
+		command.outputDirectory = new File( "/Volumes/cba/exchange/Kimberly/High_res/samplePrepMethod01/tomo_w7-aligned" );
 		command.inputResolutionMicrometer = 0.325;
 		command.fileNameEndsWith = ".*.tiff";
 		command.invertImage = true;

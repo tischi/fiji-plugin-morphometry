@@ -15,8 +15,7 @@ import static org.junit.Assert.assertEquals;
 
 public class TestSpindleMorphometry
 {
-
-	public static boolean showImageJUI = false;
+	private static boolean showOutput = false;
 
 	@Test
 	public < R extends RealType< R > > void testSmallSpindle( )
@@ -24,9 +23,6 @@ public class TestSpindleMorphometry
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
 
 		final ImageJ ij = new ImageJ();
-
-		if ( showImageJUI )
-			ij.ui().showUI();
 
 		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
 		command.opService = ij.op();
@@ -40,7 +36,7 @@ public class TestSpindleMorphometry
 		command.voxelSpacingDuringAnalysis = 0.25;
 		command.showIntermediateResults = false;
 		command.saveResults = true;
-		command.settings.showOutputImage = true;
+		command.settings.showOutputImage = showOutput;
 		command.outputDirectory = new File("/Users/tischer/" +
 				"Documents/fiji-plugin-morphometry/src" +
 				"/test/resources/test-data/spindle/output" );
@@ -66,9 +62,6 @@ public class TestSpindleMorphometry
 
 		final ImageJ ij = new ImageJ();
 
-		if ( showImageJUI )
-			ij.ui().showUI();
-
 		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
 		command.opService = ij.op();
 
@@ -81,7 +74,7 @@ public class TestSpindleMorphometry
 		command.voxelSpacingDuringAnalysis = 0.25;
 		command.showIntermediateResults = false;
 		command.saveResults = false;
-		command.settings.showOutputImage = true;
+		command.settings.showOutputImage = showOutput;
 		command.run();
 
 		final HashMap< Integer, Map< String, Object > > measurements =
@@ -115,7 +108,7 @@ public class TestSpindleMorphometry
 		command.dnaChannelIndexOneBased = 2;
 		command.showIntermediateResults = false;
 		command.saveResults = false;
-		command.settings.showOutputImage = true;
+		command.settings.showOutputImage = showOutput;
 		command.run();
 
 		final HashMap< Integer, Map< String, Object > > measurements =
@@ -134,7 +127,7 @@ public class TestSpindleMorphometry
 		assertEquals( 460, spindleVolume, 50 );
 	}
 
-	@Test
+	//@Test
 	public < R extends RealType< R > > void testSpindleVolume00()
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
@@ -152,7 +145,7 @@ public class TestSpindleMorphometry
 		command.dnaChannelIndexOneBased = 2;
 		command.showIntermediateResults = false;
 		command.saveResults = false;
-		command.settings.showOutputImage = true;
+		command.settings.showOutputImage = showOutput;
 		command.run();
 
 		final HashMap< Integer, Map< String, Object > > measurements =
@@ -171,7 +164,7 @@ public class TestSpindleMorphometry
 		assertEquals( 330, spindleVolume, 50 );
 	}
 
-	@Test
+	//@Test
 	public < R extends RealType< R > > void testSpindleVolume01()
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
@@ -189,7 +182,7 @@ public class TestSpindleMorphometry
 		command.dnaChannelIndexOneBased = 2;
 		command.showIntermediateResults = false;
 		command.saveResults = false;
-		command.settings.showOutputImage = true;
+		command.settings.showOutputImage = showOutput;
 		command.run();
 
 		final HashMap< Integer, Map< String, Object > > measurements =
@@ -208,7 +201,7 @@ public class TestSpindleMorphometry
 		assertEquals( 400, spindleVolume, 50 );
 	}
 
-	@Test
+	//@Test
 	public < R extends RealType< R > > void testSpindleVolume02()
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
@@ -226,7 +219,7 @@ public class TestSpindleMorphometry
 		command.dnaChannelIndexOneBased = 2;
 		command.showIntermediateResults = false;
 		command.saveResults = false;
-		command.settings.showOutputImage = true;
+		command.settings.showOutputImage = showOutput;
 		command.run();
 
 		final HashMap< Integer, Map< String, Object > > measurements =
@@ -252,9 +245,6 @@ public class TestSpindleMorphometry
 
 		final ImageJ ij = new ImageJ();
 
-		if ( showImageJUI )
-			ij.ui().showUI();
-
 		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
 		command.opService = ij.op();
 
@@ -266,7 +256,7 @@ public class TestSpindleMorphometry
 		command.dnaChannelIndexOneBased = 1;
 		command.showIntermediateResults = false;
 		command.saveResults = true;
-		command.settings.showOutputImage = true;
+		command.settings.showOutputImage = showOutput;
 		command.outputDirectory = new File("/Users/tischer/" +
 				"Documents/fiji-plugin-morphometry/src" +
 				"/test/resources/test-data/spindle/output" );
@@ -323,7 +313,7 @@ public class TestSpindleMorphometry
 		assertEquals( 13.0, spindleWidth, 1.0 );
 	}
 
-	@Test
+	//@Test
 	public < R extends RealType< R > > void testDimDNA()
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
@@ -356,7 +346,7 @@ public class TestSpindleMorphometry
 		assertEquals( comment, SpindleMeasurements.ANALYSIS_INTERRUPTED_LOW_DYNAMIC_DNA );
 	}
 
-	@Test
+	//@Test
 	public < R extends RealType< R > > void testLargeCoV()
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
@@ -374,7 +364,7 @@ public class TestSpindleMorphometry
 		command.spindleChannelIndexOneBased = 3;
 		command.dnaChannelIndexOneBased = 1;
 		command.showIntermediateResults = false;
-		command.settings.showOutputImage = true;
+		command.settings.showOutputImage = showOutput;
 		command.saveResults = false;
 		command.run();
 
@@ -387,7 +377,7 @@ public class TestSpindleMorphometry
 		assertEquals( 1.22, spindleCoV, 0.2 );
 	}
 
-	@Test
+	//@Test
 	public < R extends RealType< R > > void testSmallCoV()
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
@@ -405,7 +395,7 @@ public class TestSpindleMorphometry
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
 		command.showIntermediateResults = false;
-		command.settings.showOutputImage = true;
+		command.settings.showOutputImage = showOutput;
 		command.saveResults = false;
 		command.run();
 
@@ -440,7 +430,7 @@ public class TestSpindleMorphometry
 		command.spindleChannelIndexOneBased = 3;
 		command.dnaChannelIndexOneBased = 1;
 		command.showIntermediateResults = false;
-		command.settings.showOutputImage = true;
+		command.settings.showOutputImage = showOutput;
 		command.saveResults = false;
 		command.run();
 
@@ -456,8 +446,11 @@ public class TestSpindleMorphometry
 
 	public static void main( String[] args )
 	{
+		showOutput = true;
+
 		final ImageJ imageJ = new ImageJ();
 		imageJ.ui().showUI();
+
 //		new TestSpindleMorphometry().testDimDNA();
 //		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
 //		showImageJUI = true; new TestSpindleMorphometry().testSmallSpindle();
