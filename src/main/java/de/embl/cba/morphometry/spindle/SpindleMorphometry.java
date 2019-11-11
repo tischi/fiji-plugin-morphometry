@@ -112,6 +112,11 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		return measurements.log;
 	}
 
+	public SpindleMeasurements getMeasurements()
+	{
+		return measurements;
+	}
+
 	private String measure()
 	{
 		measurements.version = settings.version;

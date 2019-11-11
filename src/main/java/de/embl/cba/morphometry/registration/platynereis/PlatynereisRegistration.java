@@ -81,9 +81,9 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 		applyAlignmentToImageAndMask( ellipsoidFittingBasedTransformation );
 
-		orientLongAxis();
+		orientLongAxis(); // getting head to the left
 
-		rollTransform();
+		rollTransform(); // align belly (i.e. neuropil) to be at low z coordinate
 
 		transformAtRegistrationResolution = registration;
 
@@ -167,7 +167,6 @@ public class PlatynereisRegistration< T extends RealType< T > & NativeType< T > 
 
 	private void rollTransform()
 	{
-
 		final AffineTransform3D rollTransform =
 				computeIntensityBasedRollTransform( yawAndOrientationAlignedIntensity );
 

@@ -14,6 +14,7 @@ import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
+import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
@@ -51,7 +52,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 //	@Parameter ( label = "DNA threshold factor" )
 	public double dnaThresholdFactor = settings.dnaThresholdFactor;
 
-	@Parameter ( label = "Minimum dynamic range [segmentation threshold gray value]" )
+	@Parameter ( label = "Minimum Dynamic Range [segmentation threshold gray value]" )
 	public int minimalDynamicRange = settings.minimalDynamicRange;
 
 	@Parameter ( label = "DNA Channel [one-based index]" )
@@ -65,6 +66,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	@Parameter( visibility = ItemVisibility.MESSAGE )
 	private String version = "Spindle Morphometry Version: 0.5.8";
+
+	@Parameter( type = ItemIO.OUTPUT )
+	private double spindleVolume;
 
 	public boolean saveResults = true;
 
@@ -120,6 +124,12 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		final String log = morphometry.run( raiXYCZ );
 		Logger.log( log );
 
+		final SpindleMeasurements measurements =
+				morphometry.getMeasurements();
+
+		spindleVolume = measurements.spindleVolume;
+
+
 		objectMeasurements = morphometry.getObjectMeasurements();
 
 		addImagePathToMeasurements(
@@ -128,12 +138,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 				objectMeasurements,
 				"Path_InputImage" );
 
-
-		if ( saveResults )
-		{
-			new File( getOutputDirectory() ).mkdirs();
-			saveMeasurements( morphometry );
-		}
+		if ( saveResults ) new File( getOutputDirectory() ).mkdirs();
 
 		if ( log.equals( SpindleMeasurements.ANALYSIS_FINISHED ))
 		{
@@ -149,8 +154,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 			}
 		}
 
-		logEnd();
+		if ( saveResults ) saveMeasurements( morphometry );
 
+		logEnd();
 	}
 
 	private void removeImageNameSuffix()
