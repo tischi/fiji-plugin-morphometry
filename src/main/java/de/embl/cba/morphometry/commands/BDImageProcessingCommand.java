@@ -1,7 +1,6 @@
 package de.embl.cba.morphometry.commands;
 
 import de.embl.cba.morphometry.Logger;
-import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
@@ -9,10 +8,10 @@ import ij.io.FileSaver;
 import ij.plugin.*;
 import ij.process.ColorProcessor;
 import ij.process.LUT;
+import loci.common.DebugTools;
 import loci.formats.FormatException;
-import net.imagej.ops.OpService;
-import net.imglib2.type.numeric.RealType;
 import org.scijava.command.Command;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import loci.plugins.BF;
@@ -21,20 +20,22 @@ import java.awt.*;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.Random;
 
 @Plugin(type = Command.class, menuPath = "Plugins>EMBL>BD Processing" )
-public class BDImageProcessingCommand< R extends RealType< R > > implements Command
+public class BDImageProcessingCommand implements Command
 {
-	public SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
-
 	@Parameter
-	public OpService opService;
+	public LogService logService;
 
 	@Parameter ( style = "directory", label = "Input Directory" )
 	public File inputImageDirectory;
 
 	@Parameter ( style = "directory", label = "Output Directory" )
 	public File outputImageDirectory;
+
+	@Parameter ( label = "Minimum File Size [kb]")
+	public double minimumFileSizeKiloBytes = 10;
 
 	@Parameter ( label = "Minimum BF" )
 	public double minBF = 0.08;
@@ -49,30 +50,82 @@ public class BDImageProcessingCommand< R extends RealType< R > > implements Comm
 	public double maxGFP = 1.0;
 
 	@Parameter ( label = "Simple Overlay" )
-	public boolean isSimpleOverlay;
-	private ImagePlus bfImp;
-	private ImagePlus ssImp;
-	private ImagePlus fsImp;
+	public boolean isSimpleOverlay = false;
+
+	@Parameter ( label = "Show N Random (0 = process all)", required = false )
+	public int numShowRandom = 0;
+
+	private ImagePlus brightFieldImp;
+	private ImagePlus sideScatterImp;
+	private ImagePlus forwardScatterImp;
 	private ImagePlus gfpImp;
-	private ImagePlus bfGfpImp;
+	private ImagePlus brightFieldGfpImp;
+	private String[] fileNames;
+	private int numFiles;
 
 	public void run()
 	{
-		final String[] fileNames = inputImageDirectory.list( new FilenameFilter()
-		{
-			@Override
-			public boolean accept( File dir, String name )
-			{
-				if ( name.contains( ".tif" ) ) return true;
-				else return false;
-			}
-		} );
+		final long startMillis = System.currentTimeMillis();
 
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
+		fetchFiles();
+
+		processFiles();
+
+		logFinished( startMillis );
+	}
+
+	private void processFiles()
+	{
+		if ( numShowRandom > 0 )
+			processRandomFiles();
+		else
+			processAllFiles();
+	}
+
+	private void processAllFiles()
+	{
 		for ( String fileName : fileNames )
 		{
 			tryProcessFile( fileName );
-			break;
 		}
+	}
+
+	private void processRandomFiles()
+	{
+		final Random random = new Random();
+		for ( int i = 0; i < numShowRandom; i++ )
+		{
+			tryProcessFile( fileNames[ random.nextInt( numFiles ) ] );
+		}
+	}
+
+	private void fetchFiles()
+	{
+		final long startMillis = System.currentTimeMillis();
+		fileNames = getFileNames();
+		numFiles = fileNames.length;
+		IJ.log( "Fetched file list in " + ( System.currentTimeMillis() - startMillis) + " ms; number of files: " + numFiles );
+	}
+
+	private static double getFileSizeKiloBytes( File file )
+	{
+		return file.length() / 1024.0 ;
+	}
+
+
+	private String[] getFileNames()
+	{
+		return inputImageDirectory.list( new FilenameFilter()
+			{
+				@Override
+				public boolean accept( File dir, String name )
+				{
+					if ( name.contains( ".tif" ) ) return true;
+					else return false;
+				}
+			} );
 	}
 
 	private void tryProcessFile( String fileName )
@@ -91,42 +144,79 @@ public class BDImageProcessingCommand< R extends RealType< R > > implements Comm
 
 	private void processFile( String filePath ) throws IOException, FormatException
 	{
-		final ImagePlus[] imps = BF.openImagePlus( filePath );
-		final ImagePlus imp = imps[ 0 ];
+		final double fileSizeKiloBytes = getFileSizeKiloBytes( new File( filePath ) );
 
-		IJ.run(imp, "Scale...", "x=1.0 y=0.8 z=1.0 interpolation=Bilinear average process title=stack");
-		IJ.run(imp, "Convolve...", "text1=[0 1.6 4 1.6 0\n] normalize stack");
+		if ( fileSizeKiloBytes < minimumFileSizeKiloBytes )
+		{
+			IJ.log( "Skipped too small file: " + filePath );
+			return;
+		}
 
-		bfImp = getByteImagePlus( "bf", minBF, maxBF, 1, imp );
-		ssImp = getByteImagePlus( "ss", 0.08, 1.0, 2, imp );
-		fsImp = getByteImagePlus( "fs", 0.08, 1.0, 4, imp );
-		gfpImp = getByteImagePlus( "fitc", minGFP, maxGFP, 5, imp );
+		ImagePlus inputImp = openImage( filePath );
 
-		bfGfpImp = getBfGfpRGB( bfImp, gfpImp );
+		inputImp = processImage( inputImp );
 
-		convertImagesToRGB();
+		extractChannels( inputImp );
+
+		createRGBImages();
 
 		final ImagePlus outputImp = createOutputImp();
 
-		save( filePath, outputImp );
-
-		outputImp.show();
-
-		logEnd();
+		if ( numShowRandom > 0 )
+		{
+			showImages( filePath, inputImp, outputImp );
+		}
+		else
+		{
+			saveImage( filePath, outputImp );
+		}
 	}
 
-	private void save( String filePath, ImagePlus outputImp )
+	private void extractChannels( ImagePlus inputImp )
+	{
+		brightFieldImp = getByteImagePlus( "bf", minBF, maxBF, 1, inputImp );
+		sideScatterImp = getByteImagePlus( "ss", 0.08, 1.0, 2, inputImp );
+		forwardScatterImp = getByteImagePlus( "fs", 0.08, 1.0, 4, inputImp );
+		gfpImp = getByteImagePlus( "gfp", minGFP, maxGFP, 5, inputImp );
+	}
+
+	private ImagePlus openImage( String filePath ) throws FormatException, IOException
+	{
+		final ImagePlus[] imps = BF.openImagePlus( filePath );
+		return imps[ 0 ];
+	}
+
+	private ImagePlus processImage( ImagePlus inputImp )
+	{
+		IJ.run(inputImp, "Scale...", "x=1.0 y=0.8 z=1.0 interpolation=Bilinear average process title=stack");
+		IJ.run(inputImp, "Convolve...", "text1=[0 1.6 4 1.6 0\n] normalize stack");
+
+		return inputImp;
+	}
+
+	private void showImages( String filePath, ImagePlus inputImp, ImagePlus outputImp )
+	{
+		final String fileName = new File( filePath ).getName();
+		inputImp.setTitle( fileName );
+		inputImp.show();
+		outputImp.setTitle( fileName + "-output" );
+		outputImp.show();
+	}
+
+	private void saveImage( String filePath, ImagePlus outputImp )
 	{
 		final String outputFileName = new File( filePath ).getName().replace( ".tiff", "" );
 		final String outputFilePath = outputImageDirectory + File.separator + outputFileName + ".jpg";
+		new File( outputImageDirectory.toString() ).mkdirs();
 		new FileSaver( outputImp ).saveAsJpeg( outputFilePath  );
 	}
 
-	private void convertImagesToRGB()
+	private void createRGBImages()
 	{
-		bfImp = toRGB( bfImp );
-		ssImp = toRGB( ssImp );
-		fsImp = toRGB( fsImp );
+		brightFieldGfpImp = createBrightfieldGfpRGB( brightFieldImp, gfpImp );
+		brightFieldImp = toRGB( brightFieldImp );
+		sideScatterImp = toRGB( sideScatterImp );
+		forwardScatterImp = toRGB( forwardScatterImp );
 		gfpImp = toRGB( gfpImp );
 	}
 
@@ -139,13 +229,13 @@ public class BDImageProcessingCommand< R extends RealType< R > > implements Comm
 	{
 		if ( isSimpleOverlay )
 		{
-			return bfGfpImp;
+			return brightFieldGfpImp;
 		}
 		else
 		{
 			// make montage
-			final int width = bfImp.getWidth();
-			final int height = bfImp.getHeight();
+			final int width = brightFieldImp.getWidth();
+			final int height = brightFieldImp.getHeight();
 
 			int montageWidth = 3 * width;
 			int montageHeight = 2 * height;
@@ -153,17 +243,17 @@ public class BDImageProcessingCommand< R extends RealType< R > > implements Comm
 			final ImagePlus montageImp = new ImagePlus( "montage", new ColorProcessor( montageWidth, montageHeight ) );
 
 			final StackInserter inserter = new StackInserter();
-			inserter.insert( bfImp, montageImp, 0, 0 );
+			inserter.insert( brightFieldImp, montageImp, 0, 0 );
 			inserter.insert( gfpImp, montageImp, width, 0 );
-			inserter.insert( bfGfpImp, montageImp, 2 * width, 0 );
-			inserter.insert( ssImp, montageImp, 0, height );
-			inserter.insert( fsImp, montageImp, width, height );
+			inserter.insert( brightFieldGfpImp, montageImp, 2 * width, 0 );
+			inserter.insert( sideScatterImp, montageImp, 0, height );
+			inserter.insert( forwardScatterImp, montageImp, width, height );
 
 			return montageImp;
 		}
 	}
 
-	private CompositeImage getBfGfpRGB( ImagePlus bfImp, ImagePlus gfpImp )
+	private CompositeImage createBrightfieldGfpRGB( ImagePlus bfImp, ImagePlus gfpImp )
 	{
 		final CompositeImage bfGfpImp = ( CompositeImage ) RGBStackMerge.mergeChannels( new ImagePlus[]{ bfImp, gfpImp }, true );
 		bfGfpImp.setC( 1 );
@@ -172,8 +262,6 @@ public class BDImageProcessingCommand< R extends RealType< R > > implements Comm
 		bfGfpImp.setC( 2 );
 		bfGfpImp.setChannelLut( LUT.createLutFromColor( Color.GREEN ) );
 		bfGfpImp.setDisplayRange( 0, 255 );
-
-		bfGfpImp.show();
 
 		RGBStackConverter.convertToRGB( bfGfpImp );
 
@@ -188,8 +276,9 @@ public class BDImageProcessingCommand< R extends RealType< R > > implements Comm
 		return new ImagePlus( title, impBf.getProcessor().convertToByteProcessor() );
 	}
 
-	private void logEnd()
+	private void logFinished( double startMillis )
 	{
+		IJ.log( "Processed " + numFiles + " in " + ( System.currentTimeMillis() - startMillis ) + " ms." );
 		Logger.log( "Done!" );
 	}
 
