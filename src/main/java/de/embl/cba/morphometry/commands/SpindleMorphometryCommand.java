@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry.commands;
 
+import de.embl.cba.morphometry.ImageScience;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
@@ -10,6 +11,7 @@ import de.embl.cba.tables.Tables;
 import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
+import mcib3d.image3d.ImageInt;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
@@ -77,9 +79,11 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	public void run()
 	{
+		if ( ! ImageScience.isAvailable() ) return;
 		setSettingsFromUI();
 		processFile( inputImageFile );
 	}
+
 
 	private void setSettingsFromUI()
 	{
@@ -128,7 +132,6 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 				morphometry.getMeasurements();
 
 		spindleVolume = measurements.spindleVolume;
-
 
 		objectMeasurements = morphometry.getObjectMeasurements();
 

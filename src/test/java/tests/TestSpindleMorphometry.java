@@ -17,7 +17,7 @@ public class TestSpindleMorphometry
 {
 	private static boolean showOutput = false;
 
-	@Test
+//	@Test
 	public < R extends RealType< R > > void testSmallSpindle( )
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
@@ -55,7 +55,7 @@ public class TestSpindleMorphometry
 		assertEquals( 9.0, spindleWidth, 1.0 );
 	}
 
-	@Test
+//	@Test
 	public < R extends RealType< R > > void testExceptionCausingImage( )
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
@@ -90,7 +90,7 @@ public class TestSpindleMorphometry
 //		assertEquals( 9.0, spindleWidth, 1.0 );
 	}
 
-	@Test
+//	@Test
 	public < R extends RealType< R > > void testLargeSpindle()
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
@@ -238,7 +238,7 @@ public class TestSpindleMorphometry
 		assertEquals( 400, spindleVolume, 50 );
 	}
 
-	@Test
+//	@Test
 	public < R extends RealType< R > > void weirdDNA3Channels()
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
@@ -275,9 +275,7 @@ public class TestSpindleMorphometry
 //		assertEquals( 11.0, spindleWidth, 1.0 );
 	}
 
-
-
-	@Test
+//	@Test
 	public < R extends RealType< R > > void testSpindleWithBrightOtherDNA()
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
@@ -412,7 +410,7 @@ public class TestSpindleMorphometry
 		assertEquals( 10.0, spindleLength, 1.0 );
 	}
 
-	@Test
+//	@Test
 	public < R extends RealType< R > > void testSpindleLength()
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
