@@ -129,6 +129,7 @@ public class BDImageProcessingCommand implements Command
 		if ( fileNames != null ) return;
 
 		final long startMillis = System.currentTimeMillis();
+		IJ.log( "Fetching file list. Please wait..." );
 		fileNames = getValidFileNames();
 		numFiles = fileNames.length;
 		IJ.log( "Fetched file list in " + ( System.currentTimeMillis() - startMillis) + " ms; number of files: " + numFiles );
