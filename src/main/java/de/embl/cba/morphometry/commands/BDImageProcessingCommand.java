@@ -14,6 +14,7 @@ import org.scijava.command.Command;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.widget.Button;
 import loci.plugins.BF;
 
 import java.awt.*;
@@ -29,7 +30,7 @@ public class BDImageProcessingCommand implements Command
 	public LogService logService;
 
 	@Parameter ( style = "directory", label = "Input Directory" )
-	public File inputImageDirectory;
+	public File inputDirectory;
 
 	@Parameter ( style = "directory", label = "Output Directory" )
 	public File outputImageDirectory;
@@ -37,31 +38,34 @@ public class BDImageProcessingCommand implements Command
 	@Parameter ( label = "Minimum File Size [kb]")
 	public double minimumFileSizeKiloBytes = 10;
 
-	@Parameter ( label = "Minimum BF" )
+	@Parameter ( label = "Minimum Brightfield Intensity" )
 	public double minBF = 0.08;
 
-	@Parameter ( label = "Maximum BF" )
+	@Parameter ( label = "Maximum Brightfield Intensity" )
 	public double maxBF = 0.5;
 
-	@Parameter ( label = "Minimum GFP" )
+	@Parameter ( label = "Minimum GFP Intensity" )
 	public double minGFP = 0.08;
 
-	@Parameter ( label = "Maximum GFP" )
+	@Parameter ( label = "Maximum GFP Intensity" )
 	public double maxGFP = 1.0;
 
 	@Parameter ( label = "Simple Overlay" )
 	public boolean isSimpleOverlay = false;
 
-	@Parameter ( label = "Show N Random (0 = process all)", required = false )
-	public int numShowRandom = 0;
+	@Parameter ( label = "Preview Random Image", callback = "showRandomImage" )
+	private Button showRandomImage;
+
+	private String[] fileNames;
+	private int numFiles;
+	private ImagePlus inputImp;
+	private ImagePlus outputImp;
 
 	private ImagePlus brightFieldImp;
 	private ImagePlus sideScatterImp;
 	private ImagePlus forwardScatterImp;
 	private ImagePlus gfpImp;
 	private ImagePlus brightFieldGfpImp;
-	private String[] fileNames;
-	private int numFiles;
 
 	public void run()
 	{
@@ -71,40 +75,61 @@ public class BDImageProcessingCommand implements Command
 
 		fetchFiles();
 
-		processFiles();
+		createAndSaveImages();
 
 		logFinished( startMillis );
 	}
 
-	private void processFiles()
-	{
-		if ( numShowRandom > 0 )
-			processRandomFiles();
-		else
-			processAllFiles();
-	}
-
-	private void processAllFiles()
+	private void createAndSaveImages()
 	{
 		for ( String fileName : fileNames )
 		{
-			tryProcessFile( fileName );
+			if ( ! createOutputImage( fileName ) ) continue;
+			saveImage( fileName, outputImp );
 		}
 	}
 
-	private void processRandomFiles()
+	private boolean checkFileSize( String filePath )
+	{
+		final File file = new File( filePath );
+		final double fileSizeKiloBytes = getFileSizeKiloBytes( file );
+
+		if ( fileSizeKiloBytes < minimumFileSizeKiloBytes )
+		{
+			IJ.log( "Skipped too small file: " + file.getName() );
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+
+	private void showRandomImage()
+	{
+		if ( outputImp != null ) outputImp.close();
+
+		fetchFiles();
+
+		final String filePath = getRandomFilePath();
+
+		if ( ! createOutputImage( filePath ) ) return;
+
+		outputImp.show();
+	}
+
+	private String getRandomFilePath()
 	{
 		final Random random = new Random();
-		for ( int i = 0; i < numShowRandom; i++ )
-		{
-			tryProcessFile( fileNames[ random.nextInt( numFiles ) ] );
-		}
+		return inputDirectory + File.separator + fileNames[ random.nextInt( numFiles ) ];
 	}
 
 	private void fetchFiles()
 	{
+		if ( fileNames != null ) return;
+
 		final long startMillis = System.currentTimeMillis();
-		fileNames = getFileNames();
+		fileNames = getValidFileNames();
 		numFiles = fileNames.length;
 		IJ.log( "Fetched file list in " + ( System.currentTimeMillis() - startMillis) + " ms; number of files: " + numFiles );
 	}
@@ -114,45 +139,25 @@ public class BDImageProcessingCommand implements Command
 		return file.length() / 1024.0 ;
 	}
 
-
-	private String[] getFileNames()
+	private String[] getValidFileNames()
 	{
-		return inputImageDirectory.list( new FilenameFilter()
+		return inputDirectory.list( new FilenameFilter()
 			{
 				@Override
 				public boolean accept( File dir, String name )
 				{
-					if ( name.contains( ".tif" ) ) return true;
-					else return false;
+					if (  ! name.contains( ".tif" ) ) return false;
+
+					return true;
 				}
 			} );
 	}
 
-	private void tryProcessFile( String fileName )
+	private boolean createOutputImage( String filePath )
 	{
-		try
-		{
-			processFile( inputImageDirectory + File.separator + fileName );
-		} catch ( IOException e )
-		{
-			e.printStackTrace();
-		} catch ( FormatException e )
-		{
-			e.printStackTrace();
-		}
-	}
+		if ( ! checkFileSize( filePath ) ) return false;
 
-	private void processFile( String filePath ) throws IOException, FormatException
-	{
-		final double fileSizeKiloBytes = getFileSizeKiloBytes( new File( filePath ) );
-
-		if ( fileSizeKiloBytes < minimumFileSizeKiloBytes )
-		{
-			IJ.log( "Skipped too small file: " + filePath );
-			return;
-		}
-
-		ImagePlus inputImp = openImage( filePath );
+		inputImp = tryOpenImage( filePath );
 
 		inputImp = processImage( inputImp );
 
@@ -160,16 +165,27 @@ public class BDImageProcessingCommand implements Command
 
 		createRGBImages();
 
-		final ImagePlus outputImp = createOutputImp();
+		outputImp = createOutputImp();
 
-		if ( numShowRandom > 0 )
+		outputImp.setTitle( new File( filePath ).getName() );
+
+		return true;
+	}
+
+	private ImagePlus tryOpenImage( String filePath )
+	{
+		ImagePlus inputImp = null;
+		try
 		{
-			showImages( filePath, inputImp, outputImp );
-		}
-		else
+			inputImp = openImage( filePath );
+		} catch ( FormatException e )
 		{
-			saveImage( filePath, outputImp );
+			e.printStackTrace();
+		} catch ( IOException e )
+		{
+			e.printStackTrace();
 		}
+		return inputImp;
 	}
 
 	private void extractChannels( ImagePlus inputImp )
@@ -203,9 +219,9 @@ public class BDImageProcessingCommand implements Command
 		outputImp.show();
 	}
 
-	private void saveImage( String filePath, ImagePlus outputImp )
+	private void saveImage( String fileName, ImagePlus outputImp )
 	{
-		final String outputFileName = new File( filePath ).getName().replace( ".tiff", "" );
+		final String outputFileName = fileName.replace( ".tiff", "" );
 		final String outputFilePath = outputImageDirectory + File.separator + outputFileName + ".jpg";
 		new File( outputImageDirectory.toString() ).mkdirs();
 		new FileSaver( outputImp ).saveAsJpeg( outputFilePath  );

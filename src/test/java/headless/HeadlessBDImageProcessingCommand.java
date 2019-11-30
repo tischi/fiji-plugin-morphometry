@@ -14,10 +14,9 @@ public class HeadlessBDImageProcessingCommand
 
 		final BDImageProcessingCommand command = new BDImageProcessingCommand();
 		command.logService = ij.log();
-		command.numShowRandom = 3;
 		command.isSimpleOverlay = true;
-		command.inputImageDirectory = new File("/Users/tischer/Documents/BD-image-processing/sample_data/five_images");
-		command.outputImageDirectory = new File( command.inputImageDirectory + File.separator + "output" );
+		command.inputDirectory = new File("/Users/tischer/Documents/BD-image-processing/sample_data/five_images");
+		command.outputImageDirectory = new File( command.inputDirectory + File.separator + "output" );
 		command.minBF = 0.0;
 		command.maxBF = 1.0;
 		command.minGFP = 0.0;
