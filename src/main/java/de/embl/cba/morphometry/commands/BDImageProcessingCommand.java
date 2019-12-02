@@ -77,7 +77,9 @@ public class BDImageProcessingCommand implements Command
 	{
 		for ( String fileName : fileNames )
 		{
-			if ( ! FCCF.createProcessedImage( fileName, minimumFileSizeKiloBytes, minBF, maxBF, minGFP, maxGFP, nameToSlice, isSimpleOverlay ) ) continue;
+			final String filePath = inputDirectory + File.separator + fileName;
+			final ImagePlus processedImage = FCCF.createProcessedImage( filePath, minimumFileSizeKiloBytes, getNameToRange(), FCCF.getNameToSlice(), isSimpleOverlay );
+			if ( processedImage == null ) continue;
 			saveImage( fileName, outputImp );
 		}
 	}
@@ -90,12 +92,24 @@ public class BDImageProcessingCommand implements Command
 
 		final String filePath = getRandomFilePath();
 
+		final ImagePlus processedImage = FCCF.createProcessedImage( filePath, minimumFileSizeKiloBytes, getNameToRange(), FCCF.getNameToSlice(), isSimpleOverlay );
+
+		if ( processedImage != null )
+		{
+			outputImp = processedImage;
+			outputImp.show();
+		}
+
+	}
+
+	private HashMap< String, double[] > getNameToRange()
+	{
 		final HashMap< String, double[] > nameToRange = new HashMap<>();
-		nameToRange
-
-		if ( ! FCCF.createProcessedImage( filePath, minimumFileSizeKiloBytes, minBF, maxBF, minGFP, maxGFP, nameToSlice, isSimpleOverlay ) ) return;
-
-		outputImp.show();
+		nameToRange.put( FCCF.BRIGHTFIELD, new double[]{ minBF, maxBF } );
+		nameToRange.put( FCCF.GREEN_FLUORESCENCE, new double[]{ minGFP, maxGFP } );
+		nameToRange.put( FCCF.FOREWARD_SCATTER, new double[]{ 0.0, 1.0 } );
+		nameToRange.put( FCCF.SIDE_SCATTER, new double[]{ 0.0, 1.0 } );
+		return nameToRange;
 	}
 
 	private String getRandomFilePath()
