@@ -37,6 +37,9 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public long dnaChannelIndex;
 	public long tubulinChannelIndex;
 	public boolean showOutputImage = false;
+	public boolean showMetaphaseClassification = false;
+	public boolean useCATS = false;
+	public File classifier;
 
 	public String toString()
 	{

@@ -186,5 +186,9 @@
 			<groupId>de.embl.cba</groupId>
 			<artifactId>transforms-utils</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>de.embl.cba</groupId>
+			<artifactId>fiji-plugin-cats</artifactId>
+		</dependency>
 	</dependencies>
 </project>

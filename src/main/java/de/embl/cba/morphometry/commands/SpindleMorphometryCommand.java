@@ -63,6 +63,12 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter ( label = "Spindle Channel [one-based index]" )
 	public long spindleChannelIndexOneBased = 1;
 
+	@Parameter ( label = "Use CATS for Metaphase Detection" )
+	public boolean useCATS = true;
+
+	@Parameter ( label = "CATS Classifier" )
+	public File classifier;
+
 	@Parameter ( label = "Show Intermediate Results" )
 	public boolean showIntermediateResults = false;
 
@@ -101,6 +107,8 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.dnaThresholdFactor = dnaThresholdFactor;
 		settings.minimalDynamicRange = minimalDynamicRange;
 		settings.version = version;
+		settings.useCATS = useCATS;
+		settings.classifier  = classifier;
 
 		Logger.log( settings.toString() );
 	}

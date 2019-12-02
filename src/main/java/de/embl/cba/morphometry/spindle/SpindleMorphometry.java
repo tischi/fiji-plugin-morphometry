@@ -1,6 +1,9 @@
 package de.embl.cba.morphometry.spindle;
 
 import bdv.util.BdvFunctions;
+import de.embl.cba.cats.CATS;
+import de.embl.cba.cats.results.ResultExportSettings;
+import de.embl.cba.cats.results.ResultImage;
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
 import de.embl.cba.morphometry.geometry.CurveAnalysis;
@@ -129,6 +132,13 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 		createIsotropicallyResampledImages();
 
+		if ( settings.useCATS )
+		{
+// create instance
+			createDnaMaskWithCATS();
+			return "";
+		}
+
 		measurements.dnaInitialThreshold = determineDnaThreshold();
 
 		if ( measurements.dnaInitialThreshold < settings.minimalDynamicRange )
@@ -184,6 +194,48 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		measureSpindleAxisToCoverslipPlaneAngle( spindlePoleToPoleVector );
 
 		return SpindleMeasurements.ANALYSIS_FINISHED;
+	}
+
+	private void createDnaMaskWithCATS()
+	{
+		final CATS cats = new CATS();
+
+		final ArrayList< RandomAccessibleInterval< R > > rais = new ArrayList< RandomAccessibleInterval< R > >();
+		rais.add( tubulin );
+		rais.add( dna );
+		final ImagePlus wrap = ImageJFunctions.wrap( Views.permute( Views.stack( rais ), 2, 3 ), "" );
+
+		//IJ.run( wrap, "8-bit", "");
+
+		if ( settings.showMetaphaseClassification )
+		{
+			wrap.show();
+		}
+
+		if ( false )
+		{
+
+			cats.setInputImage( wrap );
+			cats.setResultImageRAM();
+			long memGB = 50;
+			cats.setMaxMemoryBytes( memGB * 1024 * 1024 * 1024 );
+			cats.setNumThreads( 4 );
+			cats.loadClassifier( settings.classifier );
+			cats.applyClassifierWithTiling();
+
+			// configure results export
+			final ResultExportSettings resultExportSettings = new ResultExportSettings();
+			resultExportSettings.inputImagePlus = cats.getInputImage();
+			resultExportSettings.exportType = ResultExportSettings.GET_AS_IMAGEPLUS_ARRAYLIST;
+			resultExportSettings.exportNamesPrefix = "";
+			resultExportSettings.classNames = cats.getClassNames();
+
+			final ResultImage resultImage = cats.getResultImage();
+			final ArrayList< ImagePlus > output = resultImage.exportResults( resultExportSettings );
+			output.get( 0 ).show();
+			output.get( 1 ).show();
+		}
+
 	}
 
 	private void measureSpindleLateralExtends(
