@@ -30,6 +30,9 @@ public abstract class FCCF
 	public static final String[] imageNames = new String[]{
 			BRIGHTFIELD, SIDE_SCATTER, FOREWARD_SCATTER, GREEN_FLUORESCENCE
 	};
+	public static final String VIEW_RAW = "Raw";
+	public static final String VIEW_PROCESSED_MONTAGE = "Processed Montage";
+	public static final String VIEW_PROCESSED_BF_GF_OVERLAY = "Processed BrightField GreenFluo Overlay";
 
 	public static HashMap< String, Integer > getNameToSlice()
 	{
@@ -48,11 +51,13 @@ public abstract class FCCF
 			double minimumFileSizeKiloBytes,
 			Map< String, double[] > nameToRange,
 			Map< String, Integer > nameToSlice,
-			boolean isSimpleOverlay )
+			String viewingModality )
 	{
 		if ( ! checkFileSize( filePath, minimumFileSizeKiloBytes ) ) return null;
 
 		ImagePlus inputImp = tryOpenImage( filePath );
+
+		if ( viewingModality.equals( FCCF.VIEW_RAW ) ) return inputImp;
 
 		inputImp = processImage( inputImp );
 
@@ -60,7 +65,7 @@ public abstract class FCCF
 
 		convertImagesToRGB( nameToImp );
 
-		ImagePlus outputImp = createOutputImp( nameToImp, isSimpleOverlay );
+		ImagePlus outputImp = createOutputImp( nameToImp, viewingModality );
 
 		outputImp.setTitle( new File( filePath ).getName() );
 
@@ -143,13 +148,13 @@ public abstract class FCCF
 		return new ImagePlus( "", imp.getProcessor().convertToColorProcessor() );
 	}
 
-	public static ImagePlus createOutputImp( final Map< String, ImagePlus > nameToImp, boolean isSimpleOverlay )
+	public static ImagePlus createOutputImp( final Map< String, ImagePlus > nameToImp, String viewingModality )
 	{
-		if ( isSimpleOverlay )
+		if ( viewingModality.equals( FCCF.VIEW_PROCESSED_BF_GF_OVERLAY ) )
 		{
 			return nameToImp.get( BRIGHTFIELD_AND_GFP );
 		}
-		else
+		else if ( viewingModality.equals( FCCF.VIEW_PROCESSED_MONTAGE ) )
 		{
 			// make montage
 			final int width = nameToImp.get( BRIGHTFIELD ).getWidth();
@@ -168,6 +173,10 @@ public abstract class FCCF
 			inserter.insert( nameToImp.get( FOREWARD_SCATTER ), montageImp, width, height );
 
 			return montageImp;
+		}
+		else
+		{
+			throw new UnsupportedOperationException( "Viewing modality not supported: " + viewingModality );
 		}
 	}
 

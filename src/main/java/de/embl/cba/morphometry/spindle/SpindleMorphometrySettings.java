@@ -7,6 +7,9 @@ import net.imglib2.type.numeric.RealType;
 
 import java.io.File;
 
+import static de.embl.cba.morphometry.spindle.SpindleMorphometrySettings.CellCenterDetectionMethod.BlurredDnaImage;
+import static de.embl.cba.morphometry.spindle.SpindleMorphometrySettings.CellCenterDetectionMethod.BlurredTubulinImage;
+
 public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T > >
 {
 	public boolean showIntermediateResults = false;
@@ -26,6 +29,7 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 
 	public double minimalDnaFragmentsVolume = 5; // um^3
 	public double maxCentralObjectRegionsDistance = 7; // um
+	public double cellRadius = 6.0; // um
 	public double erosionOfDnaMaskInCalibratedUnits = 1.0; // um
 	public Calibration imagePlusCalibration;
 	public double maxSpindlePoleRefinementDistance;
@@ -40,6 +44,20 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public boolean showMetaphaseClassification = false;
 	public boolean useCATS = false;
 	public File classifier;
+	public CellCenterDetectionMethod cellCenterDetectionMethod;
+
+	public enum CellCenterDetectionMethod
+	{
+		None,
+		BlurredDnaImage,
+		BlurredTubulinImage
+	}
+
+	// TODO: this could be removed once the Command's can have enums as choices
+	public static final String CCDM_NONE = "None";
+	public static final String CCDM_DNA = "BlurredDnaImage";
+	public static final String CCDM_TUBULIN = "BlurredTubulinImage";
+
 
 	public String toString()
 	{

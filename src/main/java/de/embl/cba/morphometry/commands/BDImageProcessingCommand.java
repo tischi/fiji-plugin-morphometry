@@ -43,8 +43,8 @@ public class BDImageProcessingCommand implements Command
 	@Parameter ( label = "Maximum GFP Intensity" )
 	public double maxGFP = 1.0;
 
-	@Parameter ( label = "Simple Overlay" )
-	public boolean isSimpleOverlay = false;
+	@Parameter ( label = "Viewing Modality", choices = { FCCF.VIEW_RAW, FCCF.VIEW_PROCESSED_MONTAGE, FCCF.VIEW_PROCESSED_BF_GF_OVERLAY } )
+	public String viewingModality = FCCF.VIEW_PROCESSED_MONTAGE;
 
 	@Parameter ( label = "Preview Random Image", callback = "showRandomImage" )
 	private Button showRandomImage;
@@ -78,7 +78,7 @@ public class BDImageProcessingCommand implements Command
 		for ( String fileName : fileNames )
 		{
 			final String filePath = inputDirectory + File.separator + fileName;
-			final ImagePlus processedImage = FCCF.createProcessedImage( filePath, minimumFileSizeKiloBytes, getNameToRange(), FCCF.getNameToSlice(), isSimpleOverlay );
+			final ImagePlus processedImage = FCCF.createProcessedImage( filePath, minimumFileSizeKiloBytes, getNameToRange(), FCCF.getNameToSlice(), viewingModality );
 			if ( processedImage == null ) continue;
 			saveImage( fileName, outputImp );
 		}
@@ -92,7 +92,7 @@ public class BDImageProcessingCommand implements Command
 
 		final String filePath = getRandomFilePath();
 
-		final ImagePlus processedImage = FCCF.createProcessedImage( filePath, minimumFileSizeKiloBytes, getNameToRange(), FCCF.getNameToSlice(), isSimpleOverlay );
+		final ImagePlus processedImage = FCCF.createProcessedImage( filePath, minimumFileSizeKiloBytes, getNameToRange(), FCCF.getNameToSlice(), viewingModality );
 
 		if ( processedImage != null )
 		{

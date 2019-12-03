@@ -21,11 +21,13 @@ import ij.measure.Calibration;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
+import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.converter.Converters;
+import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.ClampingNLinearInterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
@@ -39,6 +41,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
 import net.imglib2.view.IntervalView;
@@ -48,6 +51,8 @@ import java.io.File;
 import java.util.*;
 
 import static de.embl.cba.morphometry.Angles.angleOfSpindleAxisToXAxisInRadians;
+import static de.embl.cba.morphometry.spindle.SpindleMorphometrySettings.CellCenterDetectionMethod.BlurredDnaImage;
+import static de.embl.cba.morphometry.spindle.SpindleMorphometrySettings.CellCenterDetectionMethod.BlurredTubulinImage;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
@@ -55,7 +60,6 @@ import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 
 public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 {
-
 	final SpindleMorphometrySettings< R > settings;
 	final OpService opService;
 
@@ -132,12 +136,24 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 		createIsotropicallyResampledImages();
 
-		if ( settings.useCATS )
+ //		if ( settings.useCATS )
+//		{
+//			createDnaMaskWithCATS();
+//			return "";
+//		}
+
+		if ( settings.cellCenterDetectionMethod.equals( SpindleMorphometrySettings.CellCenterDetectionMethod.None ) )
 		{
-// create instance
-			createDnaMaskWithCATS();
-			return "";
+			// Do nothing
 		}
+		else
+		{
+			final RealPoint cellCentreMicrometer = findCellCentre();
+			cropAroundCellCentre( cellCentreMicrometer );
+		}
+
+
+		if ( true ) return null;
 
 		measurements.dnaInitialThreshold = determineDnaThreshold();
 
@@ -194,6 +210,68 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		measureSpindleAxisToCoverslipPlaneAngle( spindlePoleToPoleVector );
 
 		return SpindleMeasurements.ANALYSIS_FINISHED;
+	}
+
+	private void cropAroundCellCentre( RealPoint cellCentreMicrometer )
+	{
+		final FinalInterval cellBoundingBox = FinalInterval.createMinMax(
+				getVoxelBoundingBoxMin( cellCentreMicrometer, 0 ), getVoxelBoundingBoxMin( cellCentreMicrometer, 1 ), getVoxelBoundingBoxMin( cellCentreMicrometer, 2 ),
+				getVoxelBoundingBoxMax( cellCentreMicrometer, 0 ), getVoxelBoundingBoxMax( cellCentreMicrometer, 1 ), getVoxelBoundingBoxMax( cellCentreMicrometer, 2 )
+		);
+
+		final FinalInterval intersect = Intervals.intersect( cellBoundingBox, tubulin );
+
+		tubulin = Views.zeroMin( Views.interval( tubulin, intersect ) );
+		dna = Views.zeroMin( Views.interval( dna, intersect ) );
+
+		Viewers.showRai3dWithImageJ( dna, "cropped dna" );
+	}
+
+	private int getVoxelBoundingBoxMin( RealPoint cellCentreMicrometer, int d )
+	{
+		return ( int ) ( cellCentreMicrometer.getDoublePosition( d ) / settings.workingVoxelSize - 1.5 * settings.cellRadius / settings.workingVoxelSize );
+	}
+
+	private int getVoxelBoundingBoxMax( RealPoint cellCentreMicrometer, int d )
+	{
+		return ( int ) ( cellCentreMicrometer.getDoublePosition( d ) / settings.workingVoxelSize + 1.5 * settings.cellRadius / settings.workingVoxelSize );
+	}
+
+	private RealPoint findCellCentre()
+	{
+		Logger.log( "Finding cell centre..." );
+
+		RandomAccessibleInterval< R > cellCenterDetectionImage;
+		switch ( settings.cellCenterDetectionMethod )
+		{
+			case BlurredTubulinImage:
+				cellCenterDetectionImage = tubulin;
+				break;
+			case BlurredDnaImage:
+				cellCenterDetectionImage = dna;
+				break;
+			default:
+				cellCenterDetectionImage = dna;
+				break;
+		}
+
+		RandomAccessibleInterval< R> blurred = new ArrayImgFactory( new FloatType( ) ).create( cellCenterDetectionImage );
+		blurred = Transforms.getWithAdjustedOrigin( cellCenterDetectionImage, blurred );
+
+		final double[] sigmas = new double[ 3 ];
+		for ( int d = 0; d < 3; d++ )
+		{
+			sigmas[ d ] = settings.cellRadius / settings.workingVoxelSize;
+		}
+
+		// blur input image and write into output image
+		Gauss3.gauss( sigmas, Views.extendBorder( cellCenterDetectionImage ), blurred ) ;
+
+		final RealPoint cellCentre = Algorithms.getMaximumLocation( blurred, Utils.as3dDoubleArray( settings.workingVoxelSize ) );
+
+		Viewers.showRai3dWithImageJ( blurred, "blurred cell centre detection image" );
+
+		return cellCentre;
 	}
 
 	private void createDnaMaskWithCATS()
@@ -727,8 +805,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 										settings.workingVoxelSize },
 								settings.dnaThresholdResolution ) );
 
-		final double maximumValue =
-				Algorithms.getMaximumValue( dnaDownscaledToMetaphasePlateWidth );
+		final double maximumValue = Algorithms.getMaximumValue( dnaDownscaledToMetaphasePlateWidth );
 
 //		Viewers.showRai3dWithImageJ( dnaDownscaledToMetaphasePlateWidth, "DNA Threshold" );
 
@@ -744,8 +821,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 			RandomAccessibleInterval< R > dna,
 			double dnaThreshold )
 	{
-		final RandomAccessibleInterval< BitType > dnaMask =
-				createCentralObjectsMask( dna, dnaThreshold );
+		final RandomAccessibleInterval< BitType > dnaMask = createCentralObjectsMask( dna, dnaThreshold );
 
 		if ( settings.showIntermediateResults )
 			show( dnaMask, "dna mask", null,

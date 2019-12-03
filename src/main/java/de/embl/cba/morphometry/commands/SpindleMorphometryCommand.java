@@ -11,7 +11,6 @@ import de.embl.cba.tables.Tables;
 import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
-import mcib3d.image3d.ImageInt;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
@@ -27,6 +26,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+
+import static de.embl.cba.morphometry.spindle.SpindleMorphometrySettings.*;
 
 
 @Plugin(type = Command.class, menuPath = "Plugins>Measure>Spindle Morphometry" )
@@ -63,10 +64,13 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter ( label = "Spindle Channel [one-based index]" )
 	public long spindleChannelIndexOneBased = 1;
 
-	@Parameter ( label = "Use CATS for Metaphase Detection" )
-	public boolean useCATS = true;
+	@Parameter ( label = "Initial Cell Center Detection Method", choices = { CCDM_NONE, CCDM_DNA, CCDM_TUBULIN } )
+	public String cellCenterDetectionMethodChoice = CCDM_NONE;
 
-	@Parameter ( label = "CATS Classifier" )
+	//	@Parameter ( label = "Use CATS for Metaphase Detection" )
+	public boolean useCATS = false;
+
+//	@Parameter ( label = "CATS Classifier" )
 	public File classifier;
 
 	@Parameter ( label = "Show Intermediate Results" )
@@ -109,6 +113,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.version = version;
 		settings.useCATS = useCATS;
 		settings.classifier  = classifier;
+		settings.cellCenterDetectionMethod = SpindleMorphometrySettings.CellCenterDetectionMethod.valueOf( cellCenterDetectionMethodChoice );
 
 		Logger.log( settings.toString() );
 	}

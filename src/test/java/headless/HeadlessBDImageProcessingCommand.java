@@ -1,6 +1,7 @@
 package headless;
 
 import de.embl.cba.morphometry.commands.BDImageProcessingCommand;
+import de.embl.cba.morphometry.fccf.FCCF;
 import net.imagej.ImageJ;
 
 import java.io.File;
@@ -14,7 +15,7 @@ public class HeadlessBDImageProcessingCommand
 
 		final BDImageProcessingCommand command = new BDImageProcessingCommand();
 		command.logService = ij.log();
-		command.isSimpleOverlay = true;
+		command.viewingModality = FCCF.VIEW_PROCESSED_MONTAGE;
 		command.inputDirectory = new File("/Users/tischer/Documents/BD-image-processing/sample_data/five_images");
 		command.outputImageDirectory = new File( command.inputDirectory + File.separator + "output" );
 		command.minBF = 0.0;

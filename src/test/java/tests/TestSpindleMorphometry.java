@@ -2,10 +2,10 @@ package tests;
 
 import de.embl.cba.morphometry.commands.SpindleMorphometryCommand;
 import de.embl.cba.morphometry.spindle.SpindleMeasurements;
+import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import loci.common.DebugTools;
 import net.imagej.ImageJ;
 import net.imglib2.type.numeric.RealType;
-import org.junit.Test;
 
 import java.io.File;
 import java.util.HashMap;
@@ -16,8 +16,10 @@ import static org.junit.Assert.assertEquals;
 public class TestSpindleMorphometry
 {
 	private static boolean showOutput = false;
+	private static boolean showIntermediateResults = false;
 
-//	@Test
+
+	//	@Test
 	public < R extends RealType< R > > void testSmallSpindle( )
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
@@ -291,8 +293,10 @@ public class TestSpindleMorphometry
 
 		command.spindleChannelIndexOneBased = 2;
 		command.dnaChannelIndexOneBased = 1;
-		command.showIntermediateResults = false;
+		command.cellCenterDetectionMethodChoice = SpindleMorphometrySettings.CCDM_NONE;
+		command.showIntermediateResults = showIntermediateResults;
 		command.saveResults = false;
+		command.settings.showOutputImage = showOutput;
 		command.outputDirectory = new File("/Users/tischer/" +
 				"Documents/fiji-plugin-morphometry/src" +
 				"/test/resources/test-data/spindle/output" );
@@ -445,16 +449,18 @@ public class TestSpindleMorphometry
 	public static void main( String[] args )
 	{
 		showOutput = true;
+		showIntermediateResults = true;
 
 		final ImageJ imageJ = new ImageJ();
 		imageJ.ui().showUI();
 
+//		new TestSpindleMorphometry().testLargeSpindle();
 //		new TestSpindleMorphometry().testDimDNA();
-//		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
+		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
 //		showImageJUI = true; new TestSpindleMorphometry().testSmallSpindle();
 //		showImageJUI = true; new TestSpindleMorphometry().weirdDNA3Channels();
 //		new TestSpindleMorphometry().testSmallCoV();
-		new TestSpindleMorphometry().testSpindleLength();
+//		new TestSpindleMorphometry().testSpindleLength();
 	}
 
 }

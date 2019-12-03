@@ -1,10 +1,7 @@
 package de.embl.cba.morphometry.commands;
 
-import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.fccf.FCCF;
-import ij.IJ;
 import ij.ImagePlus;
-import ij.io.FileSaver;
 import loci.common.DebugTools;
 import org.scijava.Initializable;
 import org.scijava.command.Command;
@@ -17,9 +14,7 @@ import org.scijava.widget.Button;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Random;
 
 @Plugin(type = Command.class, menuPath = "Plugins>EMBL>FCCF>BD Processing" )
 public class BDImageViewingCommand extends DynamicCommand implements Initializable
@@ -45,8 +40,8 @@ public class BDImageViewingCommand extends DynamicCommand implements Initializab
 	@Parameter ( label = "Maximum GFP Intensity" )
 	public double maxGFP = 1.0;
 
-	@Parameter ( label = "Simple Overlay" )
-	public boolean isSimpleOverlay = false;
+	@Parameter ( label = "Viewing Modality", choices = { FCCF.VIEW_RAW, FCCF.VIEW_PROCESSED_MONTAGE, FCCF.VIEW_PROCESSED_BF_GF_OVERLAY } )
+	public String viewingModality = FCCF.VIEW_PROCESSED_MONTAGE;
 
 	public static ArrayList< String > classChoices;
 
