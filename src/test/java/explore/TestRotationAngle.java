@@ -1,4 +1,4 @@
-package playground;
+package explore;
 
 import net.imglib2.util.LinAlgHelpers;
 

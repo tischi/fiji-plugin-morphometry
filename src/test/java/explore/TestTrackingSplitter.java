@@ -1,4 +1,4 @@
-package playground;
+package explore;
 
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.microglia.MicrogliaSettings;

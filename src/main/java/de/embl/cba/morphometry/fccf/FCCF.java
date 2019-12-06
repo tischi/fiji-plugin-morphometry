@@ -49,13 +49,10 @@ public abstract class FCCF
 
 	public static ImagePlus createProcessedImage(
 			String filePath,
-			double minimumFileSizeKiloBytes,
 			Map< String, double[] > nameToRange,
 			Map< String, Integer > nameToSlice,
 			String viewingModality )
 	{
-		if ( ! checkFileSize( filePath, minimumFileSizeKiloBytes ) ) return null;
-
 		ImagePlus inputImp = tryOpenImage( filePath );
 
 		if ( viewingModality.equals( FCCF.VIEW_RAW ) ) return inputImp;
@@ -204,14 +201,20 @@ public abstract class FCCF
 		double maxGFP;
 	}
 
-	public static boolean checkFileSize( String filePath, double minimumFileSizeKiloBytes )
+	public static boolean checkFile( String filePath, double minimumFileSizeKiloBytes )
 	{
 		final File file = new File( filePath );
+
+		if ( ! file.exists() )
+		{
+			throw new UnsupportedOperationException( "File does not exist: " + file );
+		}
+
 		final double fileSizeKiloBytes = getFileSizeKiloBytes( file );
 
 		if ( fileSizeKiloBytes < minimumFileSizeKiloBytes )
 		{
-			IJ.log( "Skipped too small file: " + file.getName() );
+			IJ.log( "Skipped too small file: " + file.getName() + "; size [kB]: " + fileSizeKiloBytes);
 			return false;
 		}
 		else

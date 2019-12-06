@@ -13,7 +13,7 @@ import javax.swing.*;
 import java.io.File;
 import java.util.List;
 
-@Plugin(type = Command.class, menuPath = "Plugins>EMBL>FCCF>BD View Images From Table" )
+@Plugin(type = Command.class, menuPath = "Plugins>EMBL>FCCF>BD View Images from Table" )
 public class BDOpenTableCommand implements Command
 {
 	@Parameter
@@ -23,7 +23,7 @@ public class BDOpenTableCommand implements Command
 	public CommandService commandService;
 
 	@Parameter ( label = "Image Table" )
-	public File imageTablePath;
+	public File imageTableFile;
 
 	@Parameter ( label = "Load Table and Print Column Names", callback = "printColumnNames" )
 	public Button printColumnNames;
@@ -31,42 +31,52 @@ public class BDOpenTableCommand implements Command
 	@Parameter ( label = "Image Path Column Name" )
 	public String imagePathColumnName = "path";
 
-	@Parameter ( label = "Object Class Column Name" )
-	public String objectClassColumnName = "Gate";
+	@Parameter ( label = "Gate Column Name" )
+	public String gateColumnName = "Gate";
 
 	private JTable jTable;
 
+	private String recentImageTablePath = "";
+
 	public void run()
 	{
-		jTable = loadTable();
+		loadTable();
 
 		BDImageViewingCommand.jTable = jTable;
-		BDImageViewingCommand.imagesRootDir = imageTablePath.getParent();
+		BDImageViewingCommand.imagesRootDir = imageTableFile.getParent();
 		BDImageViewingCommand.imagePathColumnName = imagePathColumnName;
-		BDImageViewingCommand.gateColumnName = objectClassColumnName;
+		BDImageViewingCommand.gateColumnName = gateColumnName;
 
 		commandService.run( BDImageViewingCommand.class, true );
 	}
 
-	private JTable loadTable()
+	private void loadTable()
 	{
-		if ( jTable != null ) return jTable;
+		if ( ! imageTableFile.exists() )
+		{
+			logService.error( "Table file does not exist: " + imageTableFile );
+			throw new UnsupportedOperationException( "Could not open file: " + imageTableFile);
+		}
+
+		if ( recentImageTablePath.equals( imageTableFile.getAbsolutePath() ) ) return;
 
 		final long currentTimeMillis = System.currentTimeMillis();
 		IJ.log("Loading table; please wait...");
-		final JTable jTable = Tables.loadTable( imageTablePath.getAbsolutePath() );
+		jTable = Tables.loadTable( imageTableFile.getAbsolutePath() );
 		IJ.log( "Loaded table in " + ( System.currentTimeMillis() - currentTimeMillis ) + " ms." );
-		return jTable;
+
+		recentImageTablePath = imageTableFile.getAbsolutePath();
 	}
 
 	public void printColumnNames()
 	{
-		jTable = loadTable();
+
+		loadTable();
 		final List< String > columnNames = Tables.getColumnNames( jTable );
+		IJ.log( "Column names: " );
+
 		for ( String name : columnNames )
-		{
-			IJ.log(name );
-		}
+			IJ.log( name );
 	}
 
 

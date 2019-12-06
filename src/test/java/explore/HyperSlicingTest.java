@@ -1,4 +1,4 @@
-package playground;
+package explore;
 
 import bdv.util.BdvFunctions;
 import bdv.util.BdvOptions;

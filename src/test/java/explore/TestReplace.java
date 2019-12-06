@@ -1,4 +1,4 @@
-package playground;
+package explore;
 
 public class TestReplace
 {

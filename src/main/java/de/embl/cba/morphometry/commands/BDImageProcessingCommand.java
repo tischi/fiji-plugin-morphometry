@@ -16,7 +16,9 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Random;
 
-@Plugin(type = Command.class, menuPath = "Plugins>EMBL>FCCF>BD Processing" )
+import static de.embl.cba.morphometry.fccf.FCCF.checkFile;
+
+@Plugin(type = Command.class, menuPath = "Plugins>EMBL>FCCF>BD View and Process Images from Folder" )
 public class BDImageProcessingCommand implements Command
 {
 	@Parameter
@@ -78,7 +80,8 @@ public class BDImageProcessingCommand implements Command
 		for ( String fileName : fileNames )
 		{
 			final String filePath = inputDirectory + File.separator + fileName;
-			final ImagePlus processedImage = FCCF.createProcessedImage( filePath, minimumFileSizeKiloBytes, getNameToRange(), FCCF.getNameToSlice(), viewingModality );
+			if ( ! checkFile( filePath, minimumFileSizeKiloBytes ) ) continue;
+			final ImagePlus processedImage = FCCF.createProcessedImage( filePath, getNameToRange(), FCCF.getNameToSlice(), viewingModality );
 			if ( processedImage == null ) continue;
 			saveImage( fileName, outputImp );
 		}
@@ -92,7 +95,9 @@ public class BDImageProcessingCommand implements Command
 
 		final String filePath = getRandomFilePath();
 
-		final ImagePlus processedImage = FCCF.createProcessedImage( filePath, minimumFileSizeKiloBytes, getNameToRange(), FCCF.getNameToSlice(), viewingModality );
+		if ( ! checkFile( filePath, minimumFileSizeKiloBytes ) ) return;
+
+		final ImagePlus processedImage = FCCF.createProcessedImage( filePath, getNameToRange(), FCCF.getNameToSlice(), viewingModality );
 
 		if ( processedImage != null )
 		{

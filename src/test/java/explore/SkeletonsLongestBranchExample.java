@@ -1,4 +1,4 @@
-package playground;
+package explore;
 
 import de.embl.cba.morphometry.skeleton.Skeletons;
 import net.imagej.ImageJ;

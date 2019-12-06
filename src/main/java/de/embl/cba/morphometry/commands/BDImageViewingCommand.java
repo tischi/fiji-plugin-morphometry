@@ -7,6 +7,7 @@ import loci.common.DebugTools;
 import org.scijava.Initializable;
 import org.scijava.command.Command;
 import org.scijava.command.DynamicCommand;
+import org.scijava.command.Interactive;
 import org.scijava.log.LogService;
 import org.scijava.module.MutableModuleItem;
 import org.scijava.plugin.Parameter;
@@ -17,8 +18,10 @@ import javax.swing.*;
 import java.io.File;
 import java.util.*;
 
-@Plugin(type = Command.class, menuPath = "Plugins>EMBL>FCCF>BD Processing" )
-public class BDImageViewingCommand extends DynamicCommand implements Initializable
+import static de.embl.cba.morphometry.fccf.FCCF.checkFile;
+
+@Plugin( type = Command.class )
+public class BDImageViewingCommand extends DynamicCommand implements Initializable, Interactive
 {
 	@Parameter
 	public LogService logService;
@@ -55,7 +58,6 @@ public class BDImageViewingCommand extends DynamicCommand implements Initializab
 	public static String imagePathColumnName;
 	public static String gateColumnName;
 	public static String imagesRootDir;
-
 
 	private HashMap< String, ArrayList< Integer > > gateToRows;
 	private ImagePlus rawImp;
@@ -99,7 +101,9 @@ public class BDImageViewingCommand extends DynamicCommand implements Initializab
 
 		final String filePath = getRandomFilePath();
 
-		processedImp = FCCF.createProcessedImage( filePath, minimumFileSizeKiloBytes, getNameToRange(), FCCF.getNameToSlice(), viewingModality );
+		if ( ! checkFile( filePath, minimumFileSizeKiloBytes ) ) return;
+
+		processedImp = FCCF.createProcessedImage( filePath, getNameToRange(), FCCF.getNameToSlice(), viewingModality );
 
 		processedImp.show();
 	}
