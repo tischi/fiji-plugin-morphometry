@@ -57,7 +57,6 @@ import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 
-
 public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 {
 	final SpindleMorphometrySettings< R > settings;

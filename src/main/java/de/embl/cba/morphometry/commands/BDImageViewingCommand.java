@@ -1,6 +1,7 @@
 package de.embl.cba.morphometry.commands;
 
 import de.embl.cba.morphometry.fccf.FCCF;
+import de.embl.cba.tables.Tables;
 import ij.ImagePlus;
 import loci.common.DebugTools;
 import org.scijava.Initializable;
@@ -12,9 +13,9 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.widget.Button;
 
+import javax.swing.*;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
 @Plugin(type = Command.class, menuPath = "Plugins>EMBL>FCCF>BD Processing" )
 public class BDImageViewingCommand extends DynamicCommand implements Initializable
@@ -43,29 +44,20 @@ public class BDImageViewingCommand extends DynamicCommand implements Initializab
 	@Parameter ( label = "Viewing Modality", choices = { FCCF.VIEW_RAW, FCCF.VIEW_PROCESSED_MONTAGE, FCCF.VIEW_PROCESSED_BF_GF_OVERLAY } )
 	public String viewingModality = FCCF.VIEW_PROCESSED_MONTAGE;
 
-	public static ArrayList< String > classChoices;
-
-	@Parameter ( label = "Only Show Images from Class", choices = {} )
-	public String classChoice = "";
+	@Parameter ( label = "Only Show Images from Gate", choices = {} )
+	public String gateChoice = "";
 
 	@Parameter ( label = "Preview Random Image", callback = "showRandomImage" )
 	private Button showRandomImage;
 
-	private String[] fileNames;
-	private int numFiles;
-	private ImagePlus inputImp;
-	private ImagePlus outputImp;
-
-	private ImagePlus brightFieldImp;
-	private ImagePlus sideScatterImp;
-	private ImagePlus forwardScatterImp;
-	private ImagePlus gfpImp;
-	private ImagePlus brightFieldGfpImp;
+	// TODO: Could this also be (resolved) parameters?
+	public static JTable jTable;
+	public static String imagePathColumnName;
+	public static String objectClassColumnName;
+	private Map< String, Set< Integer > > gateToRows;
 
 	public void run()
 	{
-		final long startMillis = System.currentTimeMillis();
-
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
 //
 //		fetchFiles();
@@ -76,13 +68,20 @@ public class BDImageViewingCommand extends DynamicCommand implements Initializab
 	}
 
 	@Override
-	public void initialize() {
+	public void initialize()
+	{
 		getInfo(); // HACK: Workaround for bug in SJC.
+		setGates();
+	}
 
-		final MutableModuleItem<String> classChoiceItem = //
-				getInfo().getMutableInput("classChoice", String.class);
+	public void setGates()
+	{
+		gateToRows = Tables.uniqueColumnEntries( jTable, jTable.getColumnModel().getColumnIndex( objectClassColumnName ) );
 
-		classChoiceItem.setChoices( classChoices );
+		final MutableModuleItem<String> gateChoiceItem = //
+				getInfo().getMutableInput("gateChoice", String.class);
+
+		gateChoiceItem.setChoices( new ArrayList<>( gateToRows.keySet() ) );
 	}
 
 

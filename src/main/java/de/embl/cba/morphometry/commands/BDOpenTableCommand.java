@@ -19,6 +19,7 @@ import javax.swing.table.TableColumn;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 @Plugin(type = Command.class, menuPath = "Plugins>EMBL>FCCF>BD View Images From Table" )
@@ -33,29 +34,47 @@ public class BDOpenTableCommand implements Command
 	@Parameter ( label = "Image Table" )
 	public File imageTablePath;
 
+	@Parameter ( label = "Load Table and Print Column Names", callback = "printColumnNames" )
+	public Button printColumnNames;
+
+	@Parameter ( label = "Image Path Column Name" )
+	public String imagePathColumnName = "path";
+
+	@Parameter ( label = "Object Class Column Name" )
+	public String objectClassColumnName = "Gate";
+
+	private JTable jTable;
+
 	public void run()
 	{
-		final JTable jTable = loadTable();
+		jTable = loadTable();
 
-		jTable.getColumnModel().getColumnIndex( "class" );
-//		Tables.columnMin(  )
-//		final TableColumn column = jTable.getColumn();
+		BDImageViewingCommand.jTable = jTable;
+		BDImageViewingCommand.imagePathColumnName = imagePathColumnName;
+		BDImageViewingCommand.objectClassColumnName = objectClassColumnName;
 
-		final ArrayList< String > classes = new ArrayList<>();
-		classes.add( "Hello" );
-		classes.add( "World" );
-		BDImageViewingCommand.classChoices = classes;
 		commandService.run( BDImageViewingCommand.class, true );
 	}
 
-	public JTable loadTable()
+	private JTable loadTable()
 	{
-		// TODO: load table
+		if ( jTable != null ) return jTable;
+
 		final long currentTimeMillis = System.currentTimeMillis();
 		IJ.log("Loading table; please wait...");
-		final JTable jTable = Tables.loadTable( " " );
+		final JTable jTable = Tables.loadTable( imageTablePath.getAbsolutePath() );
 		IJ.log( "Loaded table in " + ( System.currentTimeMillis() - currentTimeMillis ) + " ms." );
 		return jTable;
+	}
+
+	public void printColumnNames()
+	{
+		jTable = loadTable();
+		final List< String > columnNames = Tables.getColumnNames( jTable );
+		for ( String name : columnNames )
+		{
+			IJ.log(name );
+		}
 	}
 
 
