@@ -1,12 +1,7 @@
 package de.embl.cba.morphometry.commands;
 
-import de.embl.cba.morphometry.Logger;
-import de.embl.cba.morphometry.fccf.FCCF;
 import de.embl.cba.tables.Tables;
 import ij.IJ;
-import ij.ImagePlus;
-import ij.io.FileSaver;
-import loci.common.DebugTools;
 import org.scijava.command.Command;
 import org.scijava.command.CommandService;
 import org.scijava.log.LogService;
@@ -15,12 +10,8 @@ import org.scijava.plugin.Plugin;
 import org.scijava.widget.Button;
 
 import javax.swing.*;
-import javax.swing.table.TableColumn;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
 
 @Plugin(type = Command.class, menuPath = "Plugins>EMBL>FCCF>BD View Images From Table" )
 public class BDOpenTableCommand implements Command
@@ -50,8 +41,9 @@ public class BDOpenTableCommand implements Command
 		jTable = loadTable();
 
 		BDImageViewingCommand.jTable = jTable;
+		BDImageViewingCommand.imagesRootDir = imageTablePath.getParent();
 		BDImageViewingCommand.imagePathColumnName = imagePathColumnName;
-		BDImageViewingCommand.objectClassColumnName = objectClassColumnName;
+		BDImageViewingCommand.gateColumnName = objectClassColumnName;
 
 		commandService.run( BDImageViewingCommand.class, true );
 	}

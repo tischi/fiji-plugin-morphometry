@@ -33,6 +33,7 @@ public abstract class FCCF
 	public static final String VIEW_RAW = "Raw";
 	public static final String VIEW_PROCESSED_MONTAGE = "Processed Montage";
 	public static final String VIEW_PROCESSED_BF_GF_OVERLAY = "Processed BrightField GreenFluo Overlay";
+	public static final String VIEW_RAW_AND_MONTAGE = "Raw and Processed Montage";
 
 	public static HashMap< String, Integer > getNameToSlice()
 	{

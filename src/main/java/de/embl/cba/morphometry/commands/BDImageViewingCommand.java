@@ -53,8 +53,15 @@ public class BDImageViewingCommand extends DynamicCommand implements Initializab
 	// TODO: Could this also be (resolved) parameters?
 	public static JTable jTable;
 	public static String imagePathColumnName;
-	public static String objectClassColumnName;
-	private Map< String, Set< Integer > > gateToRows;
+	public static String gateColumnName;
+	public static String imagesRootDir;
+
+
+	private HashMap< String, ArrayList< Integer > > gateToRows;
+	private ImagePlus rawImp;
+	private ImagePlus processedImp;
+	private int gateColumnIndex;
+	private int pathColumnIndex;
 
 	public void run()
 	{
@@ -72,11 +79,13 @@ public class BDImageViewingCommand extends DynamicCommand implements Initializab
 	{
 		getInfo(); // HACK: Workaround for bug in SJC.
 		setGates();
+		pathColumnIndex = jTable.getColumnModel().getColumnIndex( imagePathColumnName );
 	}
 
 	public void setGates()
 	{
-		gateToRows = Tables.uniqueColumnEntries( jTable, jTable.getColumnModel().getColumnIndex( objectClassColumnName ) );
+		gateColumnIndex = jTable.getColumnModel().getColumnIndex( gateColumnName );
+		gateToRows = Tables.uniqueColumnEntries( jTable, gateColumnIndex );
 
 		final MutableModuleItem<String> gateChoiceItem = //
 				getInfo().getMutableInput("gateChoice", String.class);
@@ -84,24 +93,16 @@ public class BDImageViewingCommand extends DynamicCommand implements Initializab
 		gateChoiceItem.setChoices( new ArrayList<>( gateToRows.keySet() ) );
 	}
 
+	private void showRandomImage()
+	{
+		if ( processedImp != null ) processedImp.close();
 
-//	private void showRandomImage()
-//	{
-//		if ( outputImp != null ) outputImp.close();
-//
-//		fetchFiles();
-//
-//		final String filePath = getRandomFilePath();
-//
-//		final ImagePlus processedImage = FCCF.createProcessedImage( filePath, minimumFileSizeKiloBytes, getNameToRange(), FCCF.getNameToSlice(), isSimpleOverlay );
-//
-//		if ( processedImage != null )
-//		{
-//			outputImp = processedImage;
-//			outputImp.show();
-//		}
-//
-//	}
+		final String filePath = getRandomFilePath();
+
+		processedImp = FCCF.createProcessedImage( filePath, minimumFileSizeKiloBytes, getNameToRange(), FCCF.getNameToSlice(), viewingModality );
+
+		processedImp.show();
+	}
 
 	private HashMap< String, double[] > getNameToRange()
 	{
@@ -113,44 +114,14 @@ public class BDImageViewingCommand extends DynamicCommand implements Initializab
 		return nameToRange;
 	}
 
-//	private String getRandomFilePath()
-//	{
-//		final Random random = new Random();
-//		return inputDirectory + File.separator + fileNames[ random.nextInt( numFiles ) ];
-//	}
-//
-//	private void fetchFiles()
-//	{
-//		if ( fileNames != null ) return;
-//
-//		final long startMillis = System.currentTimeMillis();
-//		IJ.log( "Fetching file list. Please wait..." );
-//		fileNames = FCCF.getValidFileNames( inputDirectory );
-//		IJ.log( "Fetched file list in " + ( System.currentTimeMillis() - startMillis) + " ms; number of files: " + numFiles );
-//
-//		numFiles = fileNames.length;
-//	}
-
-	private void showImages( String filePath, ImagePlus inputImp, ImagePlus outputImp )
+	private String getRandomFilePath()
 	{
-		final String fileName = new File( filePath ).getName();
-		inputImp.setTitle( fileName );
-		inputImp.show();
-		outputImp.setTitle( fileName + "-output" );
-		outputImp.show();
-	}
+		final Random random = new Random();
+		final ArrayList< Integer > rowIndices = gateToRows.get( gateChoice );
+		final Integer rowIndex = rowIndices.get( random.nextInt( rowIndices.size() ) );
 
-//	private void saveImage( String fileName, ImagePlus outputImp )
-//	{
-//		final String outputFileName = fileName.replace( ".tiff", "" );
-//		final String outputFilePath = outputImageDirectory + File.separator + outputFileName + ".jpg";
-//		new File( outputImageDirectory.toString() ).mkdirs();
-//		new FileSaver( outputImp ).saveAsJpeg( outputFilePath  );
-//	}
-//
-//	private void logFinished( double startMillis )
-//	{
-//		IJ.log( "Processed " + numFiles + " in " + ( System.currentTimeMillis() - startMillis ) + " ms." );
-//		Logger.log( "Done!" );
-//	}
+		final String relativeImagePath = ( String ) jTable.getValueAt( rowIndex, pathColumnIndex );
+
+		return imagesRootDir + File.separator + relativeImagePath;
+	}
 }
