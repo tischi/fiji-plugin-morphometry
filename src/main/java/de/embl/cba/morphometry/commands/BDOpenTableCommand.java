@@ -25,8 +25,8 @@ public class BDOpenTableCommand implements Command
 	@Parameter ( label = "Image Table" )
 	public File imageTableFile;
 
-	@Parameter ( label = "Load Table and Print Column Names", callback = "printColumnNames" )
-	public Button printColumnNames;
+	@Parameter ( label = "Glimpse Table", callback = "logTableInfo" )
+	public Button logTableInfo;
 
 	@Parameter ( label = "Image Path Column Name" )
 	public String imagePathColumnName = "path";
@@ -68,15 +68,27 @@ public class BDOpenTableCommand implements Command
 		recentImageTablePath = imageTableFile.getAbsolutePath();
 	}
 
-	public void printColumnNames()
+	public void logTableInfo()
 	{
-
 		loadTable();
-		final List< String > columnNames = Tables.getColumnNames( jTable );
-		IJ.log( "Column names: " );
 
-		for ( String name : columnNames )
-			IJ.log( name );
+		IJ.log( "# Table Info"  );
+		IJ.log( "Number of rows: " + jTable.getRowCount() );
+		final List< String > columnNames = Tables.getColumnNames( jTable );
+		for ( String columnName : columnNames )
+		{
+			final int columnIndex = jTable.getColumnModel().getColumnIndex( columnName );
+
+			String firstRows = "";
+			for ( int i = 0; i < 5; i++ )
+			{
+				firstRows += jTable.getValueAt( 0, columnIndex );
+				firstRows += ", ";
+			}
+			firstRows += "...";
+
+			IJ.log( columnName + ": " + firstRows );
+		}
 	}
 
 

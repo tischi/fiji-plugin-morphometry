@@ -33,10 +33,10 @@ public class BDImageViewingCommand extends DynamicCommand implements Initializab
 	public double minimumFileSizeKiloBytes = 10;
 
 	@Parameter ( label = "Minimum Brightfield Intensity" )
-	public double minBF = 0.08;
+	public double minBF = 0.0;
 
 	@Parameter ( label = "Maximum Brightfield Intensity" )
-	public double maxBF = 0.5;
+	public double maxBF = 1.0;
 
 	@Parameter ( label = "Minimum GFP Intensity" )
 	public double minGFP = 0.08;
