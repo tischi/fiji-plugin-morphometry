@@ -42,12 +42,13 @@ public class BDOpenTableCommand implements Command
 	{
 		loadTable();
 
-		BDImageViewingCommand.jTable = jTable;
-		BDImageViewingCommand.imagesRootDir = imageTableFile.getParent();
-		BDImageViewingCommand.imagePathColumnName = imagePathColumnName;
-		BDImageViewingCommand.gateColumnName = gateColumnName;
+		BDImageViewingAndSavingCommand.jTable = jTable;
+		BDImageViewingAndSavingCommand.tableFile = imageTableFile;
 
-		commandService.run( BDImageViewingCommand.class, true );
+		BDImageViewingAndSavingCommand.imagePathColumnName = imagePathColumnName;
+		BDImageViewingAndSavingCommand.gateColumnName = gateColumnName;
+
+		commandService.run( BDImageViewingAndSavingCommand.class, true );
 	}
 
 	private void loadTable()
@@ -68,10 +69,15 @@ public class BDOpenTableCommand implements Command
 		recentImageTablePath = imageTableFile.getAbsolutePath();
 	}
 
-	public void logTableInfo()
+	public void logTableInfo( )
 	{
 		loadTable();
 
+		glimpseTable( jTable );
+	}
+
+	public static void glimpseTable( JTable jTable )
+	{
 		IJ.log( "# Table Info"  );
 		IJ.log( "Number of rows: " + jTable.getRowCount() );
 		final List< String > columnNames = Tables.getColumnNames( jTable );
