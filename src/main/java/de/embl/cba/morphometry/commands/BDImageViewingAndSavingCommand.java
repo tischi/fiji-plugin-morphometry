@@ -27,6 +27,7 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 {
 	public static final String QC = "QC";
 	public static final String PATH_PROCESSED_JPEG = "path_processed_jpeg";
+	public static final String IMAGES_PROCESSED_JPEG = "images_processed_jpeg";
 	@Parameter
 	public LogService logService;
 
@@ -66,11 +67,14 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 	public static String imagePathColumnName;
 	public static String gateColumnName;
 
+
 	private HashMap< String, ArrayList< Integer > > gateToRows;
 	private ImagePlus rawImp;
 	private ImagePlus processedImp;
 	private int gateColumnIndex;
 	private int pathColumnIndex;
+	private static String experimentDirectory;
+	private static String relativeProcessedImageDirectory;
 
 	public void run()
 	{
@@ -80,7 +84,6 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 
 	public void saveProcessedImagesAndTableWithQC()
 	{
-
 		IJ.log( "\nSaving processed images: " );
 		Tables.addColumn( jTable, QC, "Passed" );
 		final int columnIndexQC = jTable.getColumnModel().getColumnIndex( QC );
@@ -104,7 +107,8 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 			processedImp = createProcessedImagePlus( inputImagePath );
 
 			final File path = saveImageAsJpeg( new File( inputImagePath ).getName(), processedImp );
-			jTable.setValueAt( path.getAbsolutePath(), rowIndex, columnIndexPath );
+
+			jTable.setValueAt( relativeProcessedImageDirectory + File.separator + path.getName(), rowIndex, columnIndexPath );
 
 			Logger.progress( rowCount, rowIndex + 1, currentTimeMillis, "Files saved" );
 		}
@@ -136,8 +140,10 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 		final MutableModuleItem<File> mutableInput = //
 				getInfo().getMutableInput("outputDirectory", File.class);
 
-		final String experimentDirectory = new File( tableFile.getParent() ).getParent();
-		final File defaultValue = new File( experimentDirectory + File.separator + "images_processed_jpeg" );
+		experimentDirectory = new File( tableFile.getParent() ).getParent();
+		relativeProcessedImageDirectory = "../" + IMAGES_PROCESSED_JPEG;
+		final File defaultValue = new File( experimentDirectory + File.separator +
+				IMAGES_PROCESSED_JPEG );
 		mutableInput.setValue( this, defaultValue );
 		mutableInput.setDefaultValue( defaultValue );
 	}

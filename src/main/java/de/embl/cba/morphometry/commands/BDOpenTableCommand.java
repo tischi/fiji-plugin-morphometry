@@ -44,7 +44,6 @@ public class BDOpenTableCommand implements Command
 
 		BDImageViewingAndSavingCommand.jTable = jTable;
 		BDImageViewingAndSavingCommand.tableFile = imageTableFile;
-
 		BDImageViewingAndSavingCommand.imagePathColumnName = imagePathColumnName;
 		BDImageViewingAndSavingCommand.gateColumnName = gateColumnName;
 
