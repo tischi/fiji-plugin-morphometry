@@ -16,9 +16,11 @@ public class TableBasedBDViewing
 		imageJ.ui().showUI();
 		final BDOpenTableCommand command = new BDOpenTableCommand();
 
-//		command.imageTableFile = new File("/Users/tischer/Documents/BD-image-processing/sample_data/minimalgated/countpath.csv");
-		command.imageTableFile = new File("/Volumes/fccfaurora/Daniel Malte Imaging Sorter/09_23_2019/Cell_cycle_1/output/tiffpaths_gated.csv");
+		command.imageTableFile = new File("/Users/tischer/Documents/BD-image-processing/sample_data/minimalgated/output/countpath.csv");
+//		command.imageTableFile = new File("/Volumes/fccfaurora/Daniel Malte Imaging Sorter/09_23_2019/Cell_cycle_1/output/tiffpaths_gated.csv");
 
+		command.gateColumnName = "gate";
+		command.imagePathColumnName = "path";
 		command.commandService = imageJ.command();
 		command.run();
 	}

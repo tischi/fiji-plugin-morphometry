@@ -32,7 +32,7 @@ public class BDOpenTableCommand implements Command
 	public String imagePathColumnName = "path";
 
 	@Parameter ( label = "Gate Column Name" )
-	public String gateColumnName = "Gate";
+	public String gateColumnName = "gate";
 
 	private JTable jTable;
 
@@ -76,6 +76,7 @@ public class BDOpenTableCommand implements Command
 		glimpseTable( jTable );
 	}
 
+	// TODO: move this to the Tables class
 	public static void glimpseTable( JTable jTable )
 	{
 		IJ.log( "# Table Info"  );
@@ -86,9 +87,9 @@ public class BDOpenTableCommand implements Command
 			final int columnIndex = jTable.getColumnModel().getColumnIndex( columnName );
 
 			String firstRows = "";
-			for ( int i = 0; i < 5; i++ )
+			for ( int rowIndex = 0; rowIndex < 5; rowIndex++ )
 			{
-				firstRows += jTable.getValueAt( 0, columnIndex );
+				firstRows += jTable.getValueAt( rowIndex, columnIndex );
 				firstRows += ", ";
 			}
 			firstRows += "...";

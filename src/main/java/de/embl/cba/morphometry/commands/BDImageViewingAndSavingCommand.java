@@ -19,7 +19,6 @@ import org.scijava.widget.Button;
 import javax.swing.*;
 import java.io.File;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static de.embl.cba.morphometry.fccf.FCCF.checkFile;
 
@@ -27,6 +26,7 @@ import static de.embl.cba.morphometry.fccf.FCCF.checkFile;
 public class BDImageViewingAndSavingCommand extends DynamicCommand implements Initializable
 {
 	public static final String QC = "QC";
+	public static final String PATH_PROCESSED_JPEG = "path_processed_jpeg";
 	@Parameter
 	public LogService logService;
 
@@ -57,7 +57,7 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 	@Parameter ( label = "Preview Random Image", callback = "showRandomImage" )
 	private Button showRandomImage;
 
-	@Parameter ( label = "Output Directory" , style = "directory" )
+	@Parameter ( label = "Output Directory" , style = "directory", persist = false)
 	public File outputDirectory;
 
 	// TODO: Could this also be (resolved) parameters?
@@ -80,31 +80,45 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 
 	public void saveProcessedImagesAndTableWithQC()
 	{
+
+		IJ.log( "\nSaving processed images: " );
 		Tables.addColumn( jTable, QC, "Passed" );
 		final int columnIndexQC = jTable.getColumnModel().getColumnIndex( QC );
 
-		int rowCount = jTable.getRowCount();
+		Tables.addColumn( jTable, PATH_PROCESSED_JPEG, "None" );
+		final int columnIndexPath = jTable.getColumnModel().getColumnIndex( PATH_PROCESSED_JPEG );
 
-		final AtomicInteger atomicInteger = new AtomicInteger( 0 );
 		final long currentTimeMillis = System.currentTimeMillis();
-		rowCount = 5;
+
+		int rowCount = jTable.getRowCount();
 		for ( int rowIndex = 0; rowIndex < rowCount; rowIndex++ )
 		{
 			final String inputImagePath = getInputImagePath( jTable, rowIndex );
+
 			if ( ! checkFile( inputImagePath, minimumFileSizeKiloBytes ) )
 			{
 				jTable.setValueAt( "Failed_FileSizeTooSmall", rowIndex, columnIndexQC );
 				continue;
 			}
+
 			processedImp = createProcessedImagePlus( inputImagePath );
-			saveImageAsJpeg( new File( inputImagePath ).getName(), processedImp );
+
+			final File path = saveImageAsJpeg( new File( inputImagePath ).getName(), processedImp );
+			jTable.setValueAt( path.getAbsolutePath(), rowIndex, columnIndexPath );
 
 			Logger.progress( rowCount, rowIndex + 1, currentTimeMillis, "Files saved" );
 		}
 
-		final File tableOutputFile = new File( tableFile.getAbsolutePath().replace( ".csv", "-withQC.csv" ) );
+		saveTableWithAdditionalColumns();
+	}
+
+	public void saveTableWithAdditionalColumns()
+	{
+		IJ.log( "\nSaving table with additional columns..." );
+		final File tableOutputFile = new File( tableFile.getAbsolutePath().replace( ".csv", "-processed-images.csv" ) );
 		Tables.saveTable( jTable, tableOutputFile );
-		IJ.log( "Saved table with QC column: " + tableOutputFile );
+		IJ.log( "...done: " + tableOutputFile );
+		IJ.log( " " );
 		BDOpenTableCommand.glimpseTable( jTable );
 	}
 
@@ -113,7 +127,19 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 	{
 		getInfo(); // HACK: Workaround for bug in SJC.
 		setGates();
+		setProcessedJpegImagesOutputDirectory();
 		pathColumnIndex = jTable.getColumnModel().getColumnIndex( imagePathColumnName );
+	}
+
+	public void setProcessedJpegImagesOutputDirectory()
+	{
+		final MutableModuleItem<File> mutableInput = //
+				getInfo().getMutableInput("outputDirectory", File.class);
+
+		final String experimentDirectory = new File( tableFile.getParent() ).getParent();
+		final File defaultValue = new File( experimentDirectory + File.separator + "images_processed_jpeg" );
+		mutableInput.setValue( this, defaultValue );
+		mutableInput.setDefaultValue( defaultValue );
 	}
 
 	public void setGates()
@@ -129,6 +155,8 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 
 	private void showRandomImage()
 	{
+		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
 		if ( processedImp != null ) processedImp.close();
 
 		final String filePath = getRandomFilePath();
@@ -173,12 +201,13 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 		return tableFile.getParent() + File.separator + relativeImagePath;
 	}
 
-	private void saveImageAsJpeg( String fileName, ImagePlus outputImp )
+	private File saveImageAsJpeg( String fileName, ImagePlus outputImp )
 	{
 		final String outputFileName = fileName.replace( ".tiff", "" );
 		final String outputFilePath = outputDirectory + File.separator + outputFileName + ".jpg";
 		new File( outputDirectory.toString() ).mkdirs();
 		new FileSaver( outputImp ).saveAsJpeg( outputFilePath  );
+		return new File( outputFilePath );
 	}
 
 
