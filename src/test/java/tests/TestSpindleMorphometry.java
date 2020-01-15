@@ -110,13 +110,14 @@ public class TestSpindleMorphometry
 		command.dnaChannelIndexOneBased = 2;
 		command.showIntermediateResults = false;
 		command.saveResults = false;
+		command.cellCenterDetectionMethodChoice = SpindleMorphometrySettings.CellCenterDetectionMethod.None.toString();
 		command.settings.showOutputImage = showOutput;
 		command.run();
 
 		final HashMap< Integer, Map< String, Object > > measurements =
 				command.getObjectMeasurements();
 
-		final Double spindleWidth = ( Double) measurements.get( 0 ).get(
+		final Double spindleWidthMax = ( Double) measurements.get( 0 ).get(
 				SpindleMeasurements.getSpindleWidthMaxKey() );
 
 		final Double dnaLateralExtend = ( Double ) measurements.get( 0 ).get(
@@ -125,7 +126,7 @@ public class TestSpindleMorphometry
 		final Double spindleVolume = ( Double ) measurements.get( 0 ).get( SpindleMeasurements.getSpindleVolumeKey() );
 
 		assertEquals( 12.0, dnaLateralExtend, 1.0 );
-		assertEquals( 11.0, spindleWidth, 1.0 );
+		assertEquals( 11.0, spindleWidthMax, 1.0 );
 		assertEquals( 460, spindleVolume, 50 );
 	}
 
@@ -448,15 +449,15 @@ public class TestSpindleMorphometry
 
 	public static void main( String[] args )
 	{
-		showOutput = true;
-		showIntermediateResults = true;
+		showOutput = false;
+		showIntermediateResults = false;
 
 		final ImageJ imageJ = new ImageJ();
 		imageJ.ui().showUI();
 
-//		new TestSpindleMorphometry().testLargeSpindle();
+		new TestSpindleMorphometry().testLargeSpindle();
 //		new TestSpindleMorphometry().testDimDNA();
-		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
+//		new TestSpindleMorphometry().testSpindleWithBrightOtherDNA();
 //		showImageJUI = true; new TestSpindleMorphometry().testSmallSpindle();
 //		showImageJUI = true; new TestSpindleMorphometry().weirdDNA3Channels();
 //		new TestSpindleMorphometry().testSmallCoV();

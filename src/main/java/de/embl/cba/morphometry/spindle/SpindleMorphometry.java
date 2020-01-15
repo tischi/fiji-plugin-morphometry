@@ -109,7 +109,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		}
 		catch ( Exception e )
 		{
-			 e.printStackTrace();
+			e.printStackTrace();
 			measurements.log = "Exception during computation: \n" + e.toString();
 		}
 
@@ -147,12 +147,10 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		}
 		else
 		{
-			final RealPoint cellCentreMicrometer = findCellCentre();
-			cropAroundCellCentre( cellCentreMicrometer );
+			// TODO
+//			final RealPoint cellCentreMicrometer = findCellCentre();
+//			cropAroundCellCentre( cellCentreMicrometer );
 		}
-
-
-		if ( true ) return null;
 
 		measurements.dnaInitialThreshold = determineDnaThreshold();
 
