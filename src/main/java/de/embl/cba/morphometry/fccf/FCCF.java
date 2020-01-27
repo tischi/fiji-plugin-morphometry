@@ -201,7 +201,7 @@ public abstract class FCCF
 		double maxGFP;
 	}
 
-	public static boolean checkFile( String filePath, double minimumFileSizeKiloBytes )
+	public static boolean checkFile( String filePath, double minimumFileSizeKiloBytes, double maximumFileSizeKiloBytes )
 	{
 		final File file = new File( filePath );
 
@@ -215,6 +215,11 @@ public abstract class FCCF
 		if ( fileSizeKiloBytes < minimumFileSizeKiloBytes )
 		{
 			IJ.log( "Skipped too small file: " + file.getName() + "; size [kB]: " + fileSizeKiloBytes);
+			return false;
+		}
+		else if ( fileSizeKiloBytes > maximumFileSizeKiloBytes )
+		{
+			IJ.log( "Skipped too large file: " + file.getName() + "; size [kB]: " + fileSizeKiloBytes);
 			return false;
 		}
 		else

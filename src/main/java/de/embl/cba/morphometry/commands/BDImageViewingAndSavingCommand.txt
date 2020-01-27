@@ -98,7 +98,7 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 		{
 			final String inputImagePath = getInputImagePath( jTable, rowIndex );
 
-			if ( ! checkFile( inputImagePath, minimumFileSizeKiloBytes ) )
+			if ( ! checkFile( inputImagePath, minimumFileSizeKiloBytes, maximumFileSizeKiloBytes ) )
 			{
 				jTable.setValueAt( "Failed_FileSizeTooSmall", rowIndex, columnIndexQC );
 				continue;
@@ -167,7 +167,7 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 
 		final String filePath = getRandomFilePath();
 
-		if ( ! checkFile( filePath, minimumFileSizeKiloBytes ) ) return;
+		if ( ! checkFile( filePath, minimumFileSizeKiloBytes, maximumFileSizeKiloBytes ) ) return;
 
 		processedImp = createProcessedImagePlus( filePath );
 

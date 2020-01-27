@@ -33,6 +33,9 @@ public class BDImageProcessingCommand implements Command
 	@Parameter ( label = "Minimum File Size [kb]")
 	public double minimumFileSizeKiloBytes = 10;
 
+	@Parameter ( label = "Maximum File Size [kb]")
+	public double maximumFileSizeKiloBytes = 100000;
+
 	@Parameter ( label = "Minimum Brightfield Intensity" )
 	public double minBF = 0.08;
 
@@ -50,6 +53,10 @@ public class BDImageProcessingCommand implements Command
 
 	@Parameter ( label = "Preview Random Image", callback = "showRandomImage" )
 	private Button showRandomImage;
+
+	@Parameter ( label = "Maximum Number of Files to Process (-1 = all)" )
+	private int maxNumFiles;
+
 
 	private String[] fileNames;
 	private int numFiles;
@@ -80,7 +87,7 @@ public class BDImageProcessingCommand implements Command
 		for ( String fileName : fileNames )
 		{
 			final String filePath = inputDirectory + File.separator + fileName;
-			if ( ! checkFile( filePath, minimumFileSizeKiloBytes ) ) continue;
+			if ( ! checkFile( filePath, minimumFileSizeKiloBytes, maximumFileSizeKiloBytes ) ) continue;
 			final ImagePlus processedImage = FCCF.createProcessedImage( filePath, getNameToRange(), FCCF.getNameToSlice(), viewingModality );
 			if ( processedImage == null ) continue;
 			saveImage( fileName, outputImp );
@@ -95,7 +102,7 @@ public class BDImageProcessingCommand implements Command
 
 		final String filePath = getRandomFilePath();
 
-		if ( ! checkFile( filePath, minimumFileSizeKiloBytes ) ) return;
+		if ( ! checkFile( filePath, minimumFileSizeKiloBytes, maximumFileSizeKiloBytes ) ) return;
 
 		final ImagePlus processedImage = FCCF.createProcessedImage( filePath, getNameToRange(), FCCF.getNameToSlice(), viewingModality );
 
@@ -126,13 +133,36 @@ public class BDImageProcessingCommand implements Command
 	private void fetchFiles()
 	{
 		if ( fileNames != null ) return;
+		readFileNamesFromDirectory();
+		subsetFiles();
+	}
 
+	private void readFileNamesFromDirectory()
+	{
 		final long startMillis = System.currentTimeMillis();
 		IJ.log( "Fetching file list. Please wait..." );
 		fileNames = FCCF.getValidFileNames( inputDirectory );
 		IJ.log( "Fetched file list in " + ( System.currentTimeMillis() - startMillis) + " ms; number of files: " + numFiles );
+	}
 
-		numFiles = fileNames.length;
+	private void subsetFiles()
+	{
+		if ( maxNumFiles != -1 )
+		{
+			if ( fileNames.length > maxNumFiles )
+			{
+				String[] lessFiles = new String[ maxNumFiles ];
+				for(int i = 0; i < maxNumFiles; i++) {
+					lessFiles[i] = fileNames[i];
+				}
+				fileNames = lessFiles;
+				numFiles = maxNumFiles;
+			}
+		}
+		else
+		{
+			numFiles = fileNames.length;
+		}
 	}
 
 	private void showImages( String filePath, ImagePlus inputImp, ImagePlus outputImp )
