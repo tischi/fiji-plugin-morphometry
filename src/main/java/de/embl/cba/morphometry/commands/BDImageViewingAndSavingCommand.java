@@ -28,14 +28,23 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 	public static final String QC = "QC";
 	public static final String PATH_PROCESSED_JPEG = "path_processed_jpeg";
 	public static final String IMAGES_PROCESSED_JPEG = "images_processed_jpeg";
+	public static File inputImagesDirectory;
+	public static JTable jTable;
+	public static File tableFile;
+	public static String imagePathColumnName;
+	public static String gateColumnName;
+
+	private String[] fileNames;
+	private int numFiles;
+
 	@Parameter
 	public LogService logService;
 
-//	@Parameter ( style = "directory", label = "Output Directory" )
-//	public File outputImageDirectory;
-
 	@Parameter ( label = "Minimum File Size [kb]")
 	public double minimumFileSizeKiloBytes = 10;
+
+	@Parameter ( label = "Maximum File Size [kb]")
+	public double maximumFileSizeKiloBytes = 100000;
 
 	@Parameter ( label = "Minimum Brightfield Intensity" )
 	public double minBF = 0.0;
@@ -61,12 +70,8 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 	@Parameter ( label = "Output Directory" , style = "directory", persist = false)
 	public File outputDirectory;
 
-	// TODO: Could this also be (resolved) parameters?
-	public static JTable jTable;
-	public static File tableFile;
-	public static String imagePathColumnName;
-	public static String gateColumnName;
-
+	@Parameter ( label = "Maximum Number of Files to Process" )
+	private int maxNumFiles;
 
 	private HashMap< String, ArrayList< Integer > > gateToRows;
 	private ImagePlus rawImp;
@@ -79,12 +84,37 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 	public void run()
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
-		saveProcessedImagesAndTableWithQC();
+
+		IJ.log( "\nSaving processed images: " );
+
+		if ( jTable != null )
+		{
+			saveProcessedImagesAndTableWithQC();
+		}
+		else if ( inputImagesDirectory != null )
+		{
+			saveProcessedImages();
+		}
+	}
+
+	public void saveProcessedImages()
+	{
+		final long currentTimeMillis = System.currentTimeMillis();
+
+		for ( int i = 0; i < maxNumFiles; i++ )
+		{
+			final String inputImagePath = getInputImagePath( i );
+			if ( checkFile( inputImagePath, minimumFileSizeKiloBytes, maximumFileSizeKiloBytes ) )
+			{
+				processedImp = createProcessedImagePlus( inputImagePath );
+				saveImageAsJpeg( new File( inputImagePath ).getName(), processedImp );
+			}
+			Logger.progress( maxNumFiles, i + 1, currentTimeMillis, "Files saved" );
+		}
 	}
 
 	public void saveProcessedImagesAndTableWithQC()
 	{
-		IJ.log( "\nSaving processed images: " );
 		Tables.addColumn( jTable, QC, "Passed" );
 		final int columnIndexQC = jTable.getColumnModel().getColumnIndex( QC );
 
@@ -130,9 +160,19 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 	public void initialize()
 	{
 		getInfo(); // HACK: Workaround for bug in SJC.
-		setGates();
-		setProcessedJpegImagesOutputDirectory();
-		pathColumnIndex = jTable.getColumnModel().getColumnIndex( imagePathColumnName );
+
+		if ( jTable != null )
+		{
+			setGates();
+			setProcessedJpegImagesOutputDirectory();
+			pathColumnIndex = jTable.getColumnModel().getColumnIndex( imagePathColumnName );
+		}
+		else
+		{
+			setNoGateChoice();
+			fetchFiles();
+			maxNumFiles = fileNames.length;
+		}
 	}
 
 	public void setProcessedJpegImagesOutputDirectory()
@@ -157,6 +197,23 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 				getInfo().getMutableInput("gateChoice", String.class);
 
 		gateChoiceItem.setChoices( new ArrayList<>( gateToRows.keySet() ) );
+	}
+
+	public void setNoGateChoice()
+	{
+		final MutableModuleItem<String> gateChoiceItem = //
+				getInfo().getMutableInput("gateChoice", String.class);
+
+		final ArrayList< String> choices = new ArrayList<>( );
+		choices.add( "Option not available" );
+		gateChoiceItem.setChoices( choices );
+	}
+
+	public void setMaxNumFiles()
+	{
+		final MutableModuleItem<Integer> item = //
+				getInfo().getMutableInput("maxNumFiles", Integer.class);
+		item.setDefaultValue( fileNames.length );
 	}
 
 	private void showRandomImage()
@@ -192,13 +249,38 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 
 	private String getRandomFilePath()
 	{
-		final Random random = new Random();
-		final ArrayList< Integer > rowIndices = gateToRows.get( gateChoice );
-		final Integer rowIndex = rowIndices.get( random.nextInt( rowIndices.size() ) );
+		if ( jTable != null )
+		{
+			final Random random = new Random();
+			final ArrayList< Integer > rowIndices = gateToRows.get( gateChoice );
+			final Integer rowIndex = rowIndices.get( random.nextInt( rowIndices.size() ) );
+			final String absoluteImagePath = getInputImagePath( jTable, rowIndex );
+			return absoluteImagePath;
+		}
+		else if ( inputImagesDirectory != null )
+		{
+			fetchFiles();
+			final Random random = new Random();
+			final int randomInteger = random.nextInt( fileNames.length );
+			final String absoluteImagePath = getInputImagePath( randomInteger );
+			return absoluteImagePath;
+		}
+		else
+		{
+			return null;
+		}
+	}
 
-		final String absoluteImagePath = getInputImagePath( jTable, rowIndex );
+	private String getInputImagePath( int randomInteger )
+	{
+		return inputImagesDirectory + File.separator + fileNames[ randomInteger ] ;
+	}
 
-		return absoluteImagePath;
+
+	private void fetchFiles()
+	{
+		if ( fileNames != null ) return;
+		fileNames = FCCF.readFileNamesFromDirectoryWithLogging( inputImagesDirectory );
 	}
 
 	private String getInputImagePath( JTable jTable, Integer rowIndex )
@@ -206,6 +288,8 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 		final String relativeImagePath = ( String ) jTable.getValueAt( rowIndex, pathColumnIndex );
 		return tableFile.getParent() + File.separator + relativeImagePath;
 	}
+
+
 
 	private File saveImageAsJpeg( String fileName, ImagePlus outputImp )
 	{

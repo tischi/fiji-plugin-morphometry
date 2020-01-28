@@ -13,7 +13,7 @@ import javax.swing.*;
 import java.io.File;
 import java.util.List;
 
-@Plugin(type = Command.class, menuPath = "Plugins>EMBL>FCCF>BD View Images from Table" )
+@Plugin(type = Command.class, menuPath = "Plugins>EMBL>FCCF>BD>Process Images from Table" )
 public class BDOpenTableCommand implements Command
 {
 	@Parameter

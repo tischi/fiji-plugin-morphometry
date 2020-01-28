@@ -18,7 +18,7 @@ import java.util.Random;
 
 import static de.embl.cba.morphometry.fccf.FCCF.checkFile;
 
-@Plugin(type = Command.class, menuPath = "Plugins>EMBL>FCCF>BD View and Process Images from Folder" )
+@Plugin(type = Command.class )
 public class BDImageProcessingCommand implements Command
 {
 	@Parameter

@@ -1,9 +1,10 @@
 package command;
 
+import de.embl.cba.morphometry.commands.BDOpenFolderCommand;
 import de.embl.cba.morphometry.commands.BDOpenTableCommand;
 import net.imagej.ImageJ;
 
-public class RunBDOpenTableCommand
+public class RunBDOpenFolderCommand
 {
 	public static void main(final String... args)
 	{
@@ -11,6 +12,6 @@ public class RunBDOpenTableCommand
 		ij.ui().showUI();
 
 		// invoke the plugin
-		ij.command().run( BDOpenTableCommand.class, true );
+		ij.command().run( BDOpenFolderCommand.class, true );
 	}
 }

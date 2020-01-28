@@ -193,6 +193,16 @@ public abstract class FCCF
 		return bfGfpImp;
 	}
 
+	public static String[] readFileNamesFromDirectoryWithLogging( File inputImagesDirectory )
+	{
+		final long startMillis = System.currentTimeMillis();
+		IJ.log( "Fetching file list. Please wait..." );
+		final String[] fileNames = getValidFileNames( inputImagesDirectory );
+		IJ.log( "Fetched file list in " + ( System.currentTimeMillis() - startMillis) + " ms; number of files: " + fileNames.length );
+
+		return fileNames;
+	}
+
 	public class IntensityRanges
 	{
 		double minBF;
