@@ -21,7 +21,7 @@ public class BDOpenFolderCommand implements Command
 	@Parameter
 	public CommandService commandService;
 
-	@Parameter ( label = "Input images directory" )
+	@Parameter ( label = "Input images directory", style = "directory" )
 	public File inputImagesDirectory;
 
 	public void run()
