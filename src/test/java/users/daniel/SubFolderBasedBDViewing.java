@@ -1,12 +1,11 @@
 package users.daniel;
 
 import de.embl.cba.morphometry.commands.BDOpenFolderCommand;
-import de.embl.cba.morphometry.commands.BDOpenTableCommand;
 import net.imagej.ImageJ;
 
 import java.io.File;
 
-public class FolderBasedBDViewing
+public class SubFolderBasedBDViewing
 {
 	public static void main( String[] args )
 	{
@@ -19,7 +18,7 @@ public class FolderBasedBDViewing
 
 		final BDOpenFolderCommand command = new BDOpenFolderCommand();
 
-		command.inputImagesDirectory = new File("/Users/tischer/Documents/BD-image-processing/sample_data/minimalgated/images");
+		command.inputImagesDirectory = new File("/Users/tischer/Documents/fiji-plugin-morphometry/src/test/resources/test-data/bd.images.subfolder");
 		command.commandService = imageJ.command();
 
 		command.run();

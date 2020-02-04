@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry.fccf;
 
+import de.embl.cba.tables.FileUtils;
 import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
@@ -17,34 +18,38 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class FCCF
 {
-	public static final String BRIGHTFIELD_AND_GFP = "BrightfieldAndGFP";
-	public static final String GREEN_FLUORESCENCE = "GreenFluorescence";
+	public static final String OVERLAY = "Overlay";
 	public static final String FOREWARD_SCATTER = "ForewardScatter";
 	public static final String SIDE_SCATTER = "SideScatter";
-	public static final String BRIGHTFIELD = "BrightField";
+	public static final String WHITE = "White";
+	public static final String GREEN = "Green";
+	public static final String MAGENTA = "Magenta";
+	public static final String[] MONTAGE_SEQUENCE = { OVERLAY, WHITE, GREEN, MAGENTA };
 
-	public static final String[] imageNames = new String[]{
-			BRIGHTFIELD, SIDE_SCATTER, FOREWARD_SCATTER, GREEN_FLUORESCENCE
-	};
 	public static final String VIEW_RAW = "Raw";
 	public static final String VIEW_PROCESSED_MONTAGE = "Processed Montage";
 	public static final String VIEW_PROCESSED_BF_GF_OVERLAY = "Processed BrightField GreenFluo Overlay";
+	public static final String VIEW_PROCESSED_OVERLAY = "Processed Overlay";
+	public static final String VIEW_PROCESSED_OVERLAY_AND_INDIVIDUAL_CHANNELS = "Processed Overlay And Individual Channels";
+
+
 	public static final String VIEW_RAW_AND_MONTAGE = "Raw and Processed Montage";
+	private static HashMap< String, Integer > colorToSlice = new HashMap<>(  );
+	private static HashMap< String, double[] > colorToRange = new HashMap<>(  );
 
-	public static HashMap< String, Integer > getNameToSlice()
+	public static HashMap< String, Integer > getColorToSlice()
 	{
-		final HashMap< String, Integer > nameToSlice = new HashMap<>();
+		return colorToSlice;
+	}
 
-		nameToSlice.put( BRIGHTFIELD, 1 );
-		nameToSlice.put( GREEN_FLUORESCENCE, 5 );
-		nameToSlice.put( FOREWARD_SCATTER, 4 );
-		nameToSlice.put( SIDE_SCATTER, 2 );
-
-		return nameToSlice;
+	public static HashMap< String, double[] > getColorToRange()
+	{
+		return colorToRange;
 	}
 
 	public static ImagePlus createProcessedImage(
@@ -59,11 +64,11 @@ public abstract class FCCF
 
 		inputImp = processImage( inputImp );
 
-		final Map< String, ImagePlus > nameToImp = extractChannels( inputImp, nameToRange, nameToSlice );
+		final Map< String, ImagePlus > colorToImp = extractChannels( inputImp, nameToRange, nameToSlice );
 
-		convertImagesToRGB( nameToImp );
+		addOverlayAndConvertImagesToRGB( colorToImp );
 
-		ImagePlus outputImp = createOutputImp( nameToImp, viewingModality );
+		ImagePlus outputImp = createOutputImp( colorToImp, viewingModality );
 
 		outputImp.setTitle( new File( filePath ).getName() );
 
@@ -88,13 +93,23 @@ public abstract class FCCF
 
 	public static HashMap< String, ImagePlus > extractChannels(
 			ImagePlus inputImp,
-			Map< String, double[] > nameToRange,
-			Map< String, Integer > nameToSlice )
+			Map< String, double[] > colorToRange,
+			Map< String, Integer > colorToSlice )
 	{
 		final HashMap< String, ImagePlus > nameToImagePlus = new HashMap<>();
 
-		for( String name : imageNames )
-			putImagePlus( inputImp, nameToImagePlus, name, nameToRange, nameToSlice );
+		for( String color : colorToSlice.keySet() )
+		{
+			final ImagePlus channel =
+					extractChannelFromImagePlus(
+							inputImp,
+							colorToSlice.get( color ),
+							color,
+							colorToRange.get( color )[ 0 ],
+							colorToRange.get( color )[ 1 ] );
+
+			nameToImagePlus.put( color, channel );
+		}
 
 		return nameToImagePlus;
 	}
@@ -106,15 +121,15 @@ public abstract class FCCF
 			Map< String, double[] > nameToRange,
 			Map< String, Integer > nameToSlice )
 	{
-		final ImagePlus byteImagePlus =
-				getByteImagePlus(
+		final ImagePlus channel =
+				extractChannelFromImagePlus(
+						inputImp,
+						nameToSlice.get( name ),
 						name,
 						nameToRange.get( name )[ 0 ],
-						nameToRange.get( name )[ 1 ],
-						nameToSlice.get( name ),
-						inputImp );
+						nameToRange.get( name )[ 1 ] );
 
-		nameToImp.put( name, byteImagePlus );
+		nameToImp.put( name, channel );
 	}
 
 	public static ImagePlus openImage( String filePath ) throws FormatException, IOException
@@ -131,14 +146,13 @@ public abstract class FCCF
 		return inputImp;
 	}
 
-	public static void convertImagesToRGB( Map< String, ImagePlus > nameToImp )
+	public static void addOverlayAndConvertImagesToRGB( Map< String, ImagePlus > colorToImp )
 	{
-		final CompositeImage brightfieldGfpRGB = createBrightfieldGfpRGB( nameToImp.get( BRIGHTFIELD ), nameToImp.get( GREEN_FLUORESCENCE ) );
-		nameToImp.put( BRIGHTFIELD_AND_GFP, brightfieldGfpRGB );
+		final CompositeImage overlay = createOverlay( colorToImp );
+		colorToImp.put( OVERLAY, overlay );
 
-		for ( String name : imageNames )
-			nameToImp.put( name, toRGB( nameToImp.get( name ) ) );
-
+		for ( String color : colorToImp.keySet() )
+			colorToImp.put( color, toRGB( colorToImp.get( color ) ) );
 	}
 
 	public static ImagePlus toRGB( ImagePlus imp )
@@ -146,17 +160,40 @@ public abstract class FCCF
 		return new ImagePlus( "", imp.getProcessor().convertToColorProcessor() );
 	}
 
-	public static ImagePlus createOutputImp( final Map< String, ImagePlus > nameToImp, String viewingModality )
+	public static ImagePlus createOutputImp( final Map< String, ImagePlus > colorToImp, String viewingModality )
 	{
-		if ( viewingModality.equals( FCCF.VIEW_PROCESSED_BF_GF_OVERLAY ) )
+		if ( viewingModality.equals( VIEW_PROCESSED_OVERLAY ) )
 		{
-			return nameToImp.get( BRIGHTFIELD_AND_GFP );
+			return colorToImp.get( OVERLAY );
+		}
+		else if ( viewingModality.equals( VIEW_PROCESSED_OVERLAY_AND_INDIVIDUAL_CHANNELS ))
+		{
+			// make montage
+			final ImagePlus firstImp = colorToImp.values().iterator().next();
+			final int width = firstImp.getWidth();
+			final int height = firstImp.getHeight();
+
+			int montageWidth = colorToImp.size() * width;
+			int montageHeight = height;
+
+			final ImagePlus montageImp = new ImagePlus( "montage", new ColorProcessor( montageWidth, montageHeight ) );
+
+			final StackInserter inserter = new StackInserter();
+
+			int i = 0;
+			for ( String color : MONTAGE_SEQUENCE )
+			{
+				if ( colorToImp.keySet().contains( color ) )
+					inserter.insert( colorToImp.get( color ), montageImp, (i++) * width, 0 );
+			}
+
+			return montageImp;
 		}
 		else if ( viewingModality.equals( FCCF.VIEW_PROCESSED_MONTAGE ) )
 		{
 			// make montage
-			final int width = nameToImp.get( BRIGHTFIELD ).getWidth();
-			final int height = nameToImp.get( BRIGHTFIELD ).getHeight();
+			final int width = colorToImp.get( WHITE ).getWidth();
+			final int height = colorToImp.get( WHITE ).getHeight();
 
 			int montageWidth = 3 * width;
 			int montageHeight = 2 * height;
@@ -164,11 +201,11 @@ public abstract class FCCF
 			final ImagePlus montageImp = new ImagePlus( "montage", new ColorProcessor( montageWidth, montageHeight ) );
 
 			final StackInserter inserter = new StackInserter();
-			inserter.insert( nameToImp.get( BRIGHTFIELD ), montageImp, 0, 0 );
-			inserter.insert( nameToImp.get( GREEN_FLUORESCENCE ), montageImp, width, 0 );
-			inserter.insert( nameToImp.get( BRIGHTFIELD_AND_GFP ), montageImp, 2 * width, 0 );
-			inserter.insert( nameToImp.get( SIDE_SCATTER ), montageImp, 0, height );
-			inserter.insert( nameToImp.get( FOREWARD_SCATTER ), montageImp, width, height );
+			inserter.insert( colorToImp.get( WHITE ), montageImp, 0, 0 );
+			inserter.insert( colorToImp.get( GREEN ), montageImp, width, 0 );
+			inserter.insert( colorToImp.get( OVERLAY ), montageImp, 2 * width, 0 );
+			inserter.insert( colorToImp.get( SIDE_SCATTER ), montageImp, 0, height );
+			inserter.insert( colorToImp.get( FOREWARD_SCATTER ), montageImp, width, height );
 
 			return montageImp;
 		}
@@ -178,29 +215,57 @@ public abstract class FCCF
 		}
 	}
 
-	public static CompositeImage createBrightfieldGfpRGB( ImagePlus bfImp, ImagePlus gfpImp )
+	public static CompositeImage createOverlay( ImagePlus gray, ImagePlus green )
 	{
-		final CompositeImage bfGfpImp = ( CompositeImage ) RGBStackMerge.mergeChannels( new ImagePlus[]{ bfImp, gfpImp }, true );
-		bfGfpImp.setC( 1 );
-		bfGfpImp.setChannelLut( LUT.createLutFromColor( Color.WHITE ) );
-		bfGfpImp.setDisplayRange( 0, 255 );
-		bfGfpImp.setC( 2 );
-		bfGfpImp.setChannelLut( LUT.createLutFromColor( Color.GREEN ) );
-		bfGfpImp.setDisplayRange( 0, 255 );
+		final CompositeImage overlay = ( CompositeImage ) RGBStackMerge.mergeChannels( new ImagePlus[]{ gray, green }, true );
 
-		RGBStackConverter.convertToRGB( bfGfpImp );
+		overlay.setC( 1 );
+		overlay.setChannelLut( LUT.createLutFromColor( Color.WHITE ) );
+		overlay.setDisplayRange( 0, 255 );
+		overlay.setC( 2 );
+		overlay.setChannelLut( LUT.createLutFromColor( Color.GREEN ) );
+		overlay.setDisplayRange( 0, 255 );
 
-		return bfGfpImp;
+		RGBStackConverter.convertToRGB( overlay );
+
+		return overlay;
 	}
 
-	public static String[] readFileNamesFromDirectoryWithLogging( File inputImagesDirectory )
+	public static CompositeImage createOverlay( Map< String, ImagePlus > colorToImp )
+	{
+		final CompositeImage overlay = ( CompositeImage ) RGBStackMerge.mergeChannels( colorToImp.values().toArray( new ImagePlus[ colorToImp.size() ] ), true );
+
+		int channelIndex = 1;
+		for ( String color : colorToImp.keySet() )
+		{
+			overlay.setC( channelIndex++ );
+			overlay.setChannelLut( LUT.createLutFromColor( getColor( color ) ) );
+		}
+
+		RGBStackConverter.convertToRGB( overlay );
+
+		return overlay;
+	}
+
+	public static Color getColor(String name) {
+		try {
+			return (Color)Color.class.getField(name.toUpperCase()).get(null);
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public static List< File > readFileNamesFromDirectoryWithLogging( File inputImagesDirectory )
 	{
 		final long startMillis = System.currentTimeMillis();
 		IJ.log( "Fetching file list. Please wait..." );
-		final String[] fileNames = getValidFileNames( inputImagesDirectory );
-		IJ.log( "Fetched file list in " + ( System.currentTimeMillis() - startMillis) + " ms; number of files: " + fileNames.length );
+		final List< File > fileList = FileUtils.getFileList( inputImagesDirectory, ".*.tiff", true );
 
-		return fileNames;
+//		final String[] fileNames = getValidFileNames( inputImagesDirectory );
+		IJ.log( "Fetched file list in " + ( System.currentTimeMillis() - startMillis) + " ms; number of files: " + fileList.size() );
+
+		return fileList;
 	}
 
 	public class IntensityRanges
@@ -243,25 +308,24 @@ public abstract class FCCF
 		return file.length() / 1024.0 ;
 	}
 
-	public static ImagePlus getByteImagePlus( String title, double minBF, double maxBF, int slice, ImagePlus imp )
+	public static ImagePlus extractChannelFromImagePlus( ImagePlus imp, int slice, String title, double min, double max )
 	{
 		Duplicator duplicator = new Duplicator();
 		final ImagePlus impBf = duplicator.run( imp, slice, slice );
-		impBf.getProcessor().setMinAndMax( minBF, maxBF );
+		impBf.getProcessor().setMinAndMax( min, max );
 		return new ImagePlus( title, impBf.getProcessor().convertToByteProcessor() );
 	}
 
 	public static String[] getValidFileNames( File inputDirectory )
 	{
 		return inputDirectory.list( new FilenameFilter()
+		{
+			@Override
+			public boolean accept( File dir, String name )
 			{
-				@Override
-				public boolean accept( File dir, String name )
-				{
-					if (  ! name.contains( ".tif" ) ) return false;
-
+				if ( ! name.contains( ".tif" ) ) return false;
 					return true;
-				}
-			} );
+			}
+		} );
 	}
 }

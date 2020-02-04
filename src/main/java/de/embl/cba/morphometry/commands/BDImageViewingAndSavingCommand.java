@@ -28,13 +28,14 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 	public static final String QC = "QC";
 	public static final String PATH_PROCESSED_JPEG = "path_processed_jpeg";
 	public static final String IMAGES_PROCESSED_JPEG = "images_processed_jpeg";
+	public static final String NONE = "None";
 	public static File inputImagesDirectory;
 	public static JTable jTable;
 	public static File tableFile;
 	public static String imagePathColumnName;
 	public static String gateColumnName;
 
-	private String[] fileNames;
+	private List< File > files;
 	private int numFiles;
 
 	@Parameter
@@ -46,20 +47,35 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 	@Parameter ( label = "Maximum File Size [kb]")
 	public double maximumFileSizeKiloBytes = 100000;
 
-	@Parameter ( label = "Minimum Brightfield Intensity" )
-	public double minBF = 0.0;
+	@Parameter ( label = "Gray Channel Index", choices = { NONE, "1", "2", "3", "4", "5", "6", "7", "8", "9"} )
+	public String whiteIndexString;
 
-	@Parameter ( label = "Maximum Brightfield Intensity" )
-	public double maxBF = 1.0;
+	@Parameter ( label = "Minimum Gray Intensity" )
+	public double minWhite = 0.0;
 
-	@Parameter ( label = "Minimum GFP Intensity" )
-	public double minGFP = 0.08;
+	@Parameter ( label = "Maximum Gray Intensity" )
+	public double maxWhite = 1.0;
 
-	@Parameter ( label = "Maximum GFP Intensity" )
-	public double maxGFP = 1.0;
+	@Parameter ( label = "Green Channel Index", choices = { NONE, "1", "2", "3", "4", "5", "6", "7", "8", "9"} )
+	public String greenIndexString;
 
-	@Parameter ( label = "Processing Modality", choices = { FCCF.VIEW_RAW, FCCF.VIEW_PROCESSED_MONTAGE, FCCF.VIEW_PROCESSED_BF_GF_OVERLAY } )
-	public String viewingModality = FCCF.VIEW_PROCESSED_MONTAGE;
+	@Parameter ( label = "Minimum Green Intensity" )
+	public double minGreen = 0.08;
+
+	@Parameter ( label = "Maximum Green Intensity" )
+	public double maxGreen = 1.0;
+
+	@Parameter ( label = "Magenta Channel Index", choices = { NONE, "1", "2", "3", "4", "5", "6", "7", "8", "9"} )
+	public String magentaIndexString;
+
+	@Parameter ( label = "Minimum Magenta Intensity" )
+	public double minMagenta = 0.08;
+
+	@Parameter ( label = "Maximum Magenta Intensity" )
+	public double maxMagenta = 1.0;
+
+	@Parameter ( label = "Processing Modality", choices = { FCCF.VIEW_RAW, FCCF.VIEW_PROCESSED_OVERLAY, FCCF.VIEW_PROCESSED_OVERLAY_AND_INDIVIDUAL_CHANNELS } )
+	public String viewingModality = FCCF.VIEW_PROCESSED_OVERLAY_AND_INDIVIDUAL_CHANNELS;
 
 	@Parameter ( label = "Preview Images from Gate", choices = {} )
 	public String gateChoice = "";
@@ -85,6 +101,10 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
 
+		setColorToSliceAndColorToRange();
+
+		final HashMap< String, Integer > colorToSlice = FCCF.getColorToSlice();
+
 		IJ.log( "\nSaving processed images: " );
 
 		if ( jTable != null )
@@ -97,22 +117,59 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 		}
 	}
 
+	public void setColorToSliceAndColorToRange()
+	{
+		final HashMap< String, Integer > colorToSlice = FCCF.getColorToSlice();
+		colorToSlice.clear();
+		final HashMap< String, double[] > colorToRange = FCCF.getColorToRange();
+		colorToRange.clear();
+
+		if ( ! whiteIndexString.equals( NONE ) )
+		{
+			colorToSlice.put( FCCF.WHITE, Integer.parseInt( whiteIndexString ) );
+			colorToRange.put( FCCF.WHITE, new double[]{ minWhite, maxWhite} );
+		}
+
+		if ( ! greenIndexString.equals( NONE ) )
+		{
+			colorToSlice.put( FCCF.GREEN, Integer.parseInt( greenIndexString ) );
+			colorToRange.put( FCCF.GREEN, new double[]{ minGreen, maxGreen} );
+		}
+
+		if ( ! magentaIndexString.equals( NONE ) )
+		{
+			colorToSlice.put( FCCF.MAGENTA, Integer.parseInt( magentaIndexString ) );
+			colorToRange.put( FCCF.MAGENTA, new double[]{ minMagenta, maxMagenta} );
+		}
+	}
+
+	/**
+	 * This is for the folder-based parsing.
+	 *
+	 */
 	public void saveProcessedImages()
 	{
 		final long currentTimeMillis = System.currentTimeMillis();
 
 		for ( int i = 0; i < maxNumFiles; i++ )
 		{
-			final String inputImagePath = getInputImagePath( i );
+			String inputImagePath = getInputImagePath( i );
 			if ( checkFile( inputImagePath, minimumFileSizeKiloBytes, maximumFileSizeKiloBytes ) )
 			{
 				processedImp = createProcessedImagePlus( inputImagePath );
-				saveImageAsJpeg( new File( inputImagePath ).getName(), processedImp );
+				String outputImagePath = inputImagePath.replace(
+						inputImagesDirectory.getAbsolutePath(),
+						outputDirectory.getAbsolutePath() );
+				saveImageAsJpeg( outputImagePath, processedImp );
 			}
 			Logger.progress( maxNumFiles, i + 1, currentTimeMillis, "Files saved" );
 		}
 	}
 
+	/**
+	 * This is for the table-based parsing.
+	 *
+	 */
 	public void saveProcessedImagesAndTableWithQC()
 	{
 		Tables.addColumn( jTable, QC, "Passed" );
@@ -171,7 +228,7 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 		{
 			setNoGateChoice();
 			fetchFiles();
-			maxNumFiles = fileNames.length;
+			maxNumFiles = files.size();
 		}
 	}
 
@@ -205,7 +262,7 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 				getInfo().getMutableInput("gateChoice", String.class);
 
 		final ArrayList< String> choices = new ArrayList<>( );
-		choices.add( "Option not available" );
+		choices.add( "Option not available for folder based browsing" );
 		gateChoiceItem.setChoices( choices );
 	}
 
@@ -213,12 +270,14 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 	{
 		final MutableModuleItem<Integer> item = //
 				getInfo().getMutableInput("maxNumFiles", Integer.class);
-		item.setDefaultValue( fileNames.length );
+		item.setDefaultValue( files.size() );
 	}
 
 	private void showRandomImage()
 	{
 		DebugTools.setRootLevel("OFF"); // Bio-Formats
+
+		setColorToSliceAndColorToRange();
 
 		if ( processedImp != null ) processedImp.close();
 
@@ -233,19 +292,11 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 
 	private ImagePlus createProcessedImagePlus( String filePath )
 	{
-		ImagePlus processedImp = FCCF.createProcessedImage( filePath, getNameToRange(), FCCF.getNameToSlice(), viewingModality );
+		ImagePlus processedImp = FCCF.createProcessedImage(
+				filePath, FCCF.getColorToRange(), FCCF.getColorToSlice(), viewingModality );
 		return processedImp;
 	}
 
-	private HashMap< String, double[] > getNameToRange()
-	{
-		final HashMap< String, double[] > nameToRange = new HashMap<>();
-		nameToRange.put( FCCF.BRIGHTFIELD, new double[]{ minBF, maxBF } );
-		nameToRange.put( FCCF.GREEN_FLUORESCENCE, new double[]{ minGFP, maxGFP } );
-		nameToRange.put( FCCF.FOREWARD_SCATTER, new double[]{ 0.0, 1.0 } );
-		nameToRange.put( FCCF.SIDE_SCATTER, new double[]{ 0.0, 1.0 } );
-		return nameToRange;
-	}
 
 	private String getRandomFilePath()
 	{
@@ -261,7 +312,7 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 		{
 			fetchFiles();
 			final Random random = new Random();
-			final int randomInteger = random.nextInt( fileNames.length );
+			final int randomInteger = random.nextInt( files.size() );
 			final String absoluteImagePath = getInputImagePath( randomInteger );
 			return absoluteImagePath;
 		}
@@ -273,14 +324,14 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 
 	private String getInputImagePath( int randomInteger )
 	{
-		return inputImagesDirectory + File.separator + fileNames[ randomInteger ] ;
+		return files.get( randomInteger ).getAbsolutePath();
 	}
 
 
 	private void fetchFiles()
 	{
-		if ( fileNames != null ) return;
-		fileNames = FCCF.readFileNamesFromDirectoryWithLogging( inputImagesDirectory );
+		if ( files != null ) return;
+		files = FCCF.readFileNamesFromDirectoryWithLogging( inputImagesDirectory );
 	}
 
 	private String getInputImagePath( JTable jTable, Integer rowIndex )
@@ -289,16 +340,12 @@ public class BDImageViewingAndSavingCommand extends DynamicCommand implements In
 		return tableFile.getParent() + File.separator + relativeImagePath;
 	}
 
-
-
-	private File saveImageAsJpeg( String fileName, ImagePlus outputImp )
+	private File saveImageAsJpeg( String outputPath, ImagePlus outputImp )
 	{
-		final String outputFileName = fileName.replace( ".tiff", "" );
-		final String outputFilePath = outputDirectory + File.separator + outputFileName + ".jpg";
-		new File( outputDirectory.toString() ).mkdirs();
-		new FileSaver( outputImp ).saveAsJpeg( outputFilePath  );
-		return new File( outputFilePath );
+		outputPath = outputPath.replace( ".tiff", ".jpg" );
+		new File( outputPath ).mkdirs();
+		new FileSaver( outputImp ).saveAsJpeg( outputPath  );
+		return new File( outputPath );
 	}
-
 
 }
