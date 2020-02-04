@@ -240,6 +240,15 @@ public abstract class FCCF
 		{
 			overlay.setC( channelIndex++ );
 			overlay.setChannelLut( LUT.createLutFromColor( getColor( color ) ) );
+			if ( ! color.equals( WHITE ) )
+			{
+
+				final double min = colorToImp.get( color ).getDisplayRangeMin();
+				final double max = colorToImp.get( color ).getDisplayRangeMax();
+				overlay.setDisplayRange(
+						min,
+						min + ( colorToImp.size() - 0 ) * ( max - min ) );
+			}
 		}
 
 		RGBStackConverter.convertToRGB( overlay );
