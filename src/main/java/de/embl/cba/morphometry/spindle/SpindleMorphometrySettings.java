@@ -1,6 +1,7 @@
 package de.embl.cba.morphometry.spindle;
 
 import ij.measure.Calibration;
+import net.imagej.DatasetService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -48,9 +49,11 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public String classifier;
 	public File classifierFile;
 	public CellCenterDetectionMethod cellCenterDetectionMethod;
+	// SciJava
 	public IlastikOptions ilastikOptions;
 	public LogService logService;
 	public StatusService statusService;
+	public DatasetService datasetService;
 
 	public enum CellCenterDetectionMethod
 	{

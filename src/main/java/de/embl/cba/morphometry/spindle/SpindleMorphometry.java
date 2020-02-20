@@ -18,7 +18,10 @@ import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.measure.Calibration;
+import net.imagej.DatasetService;
 import net.imagej.ImgPlus;
+import net.imagej.axis.Axes;
+import net.imagej.axis.AxisType;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
@@ -52,6 +55,7 @@ import org.ilastik.ilastik4ij.executors.PixelClassification;
 import org.ilastik.ilastik4ij.ui.IlastikOptions;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 import static de.embl.cba.morphometry.Angles.angleOfSpindleAxisToXAxisInRadians;
@@ -153,7 +157,13 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 				initialDnaMask = segmentDna( dna, measurements.dnaInitialThreshold );
 				break;
 			case ILASTIK:
-				initialDnaMask = segmentDnaUsingIlastik( dna, tubulin );
+				try
+				{
+					initialDnaMask = segmentDnaUsingIlastik( dna, tubulin );
+				} catch ( IOException e )
+				{
+					throw new RuntimeException( e.toString() );
+				}
 		}
 
 
@@ -214,33 +224,45 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 	private RandomAccessibleInterval< BitType > segmentDnaUsingIlastik(
 			RandomAccessibleInterval< R > dna,
-			RandomAccessibleInterval< R > tubulin )
+			RandomAccessibleInterval< R > tubulin ) throws IOException
 	{
-		PixelClassification pixelClassification;
-		if ( settings.ilastikOptions != null)
-			pixelClassification =
+		PixelClassification pixelClassification =
 					new PixelClassification(
 							settings.ilastikOptions.getExecutableFile(),
-							projectFileName,
+							settings.classifierFile,
 							settings.logService,
 							settings.statusService,
 							settings.ilastikOptions.getNumThreads(),
 							settings.ilastikOptions.getMaxRamMb());
-		else
-			new PixelClassification(
-				new File(ilastikPath),
-				tmpIlastikProjectFile.toFile(),
-				null,
-				null,
-				4,
-				1024
-		);
 
+		final RandomAccessibleInterval< R > raiXYZC = Views.stack( tubulin, dna );
 
-		final ImgPlus<T> classifiedPixels = prediction.classifyPixels(inputDataset.getImgPlus(), AbstractIlastikExecutor.PixelPredictionType.Probabilities);
+		AxisType[] axisTypes = new AxisType[]{ Axes.X, Axes.Y, Axes.Z, Axes.CHANNEL };
+		final ImgPlus< R > imgPlus = new ImgPlus( settings.datasetService.create( raiXYZC ), "image", axisTypes );
+
+		ImageJFunctions.show(imgPlus);
+
+		final ImgPlus classifiedPixels =
+				pixelClassification.classifyPixels(
+						imgPlus,
+						AbstractIlastikExecutor.PixelPredictionType.Probabilities);
 
 		ImageJFunctions.show(classifiedPixels, "Probability maps");
-		return null;
+
+		// TODO
+		final int numDimensions = classifiedPixels.numDimensions();
+		final IntervalView dnaProbability = Views.hyperSlice( Views.hyperSlice( classifiedPixels, 3, 0 ), 3, 0 );
+
+		RandomAccessibleInterval< BitType > mask = createMask( dnaProbability, 0.5 );
+
+		Regions.removeSmallRegionsInMask(
+				mask,
+				settings.minimalDnaFragmentsVolume,
+				settings.workingVoxelSize );
+
+		ImageJFunctions.show(mask);
+
+		return mask;
 	}
 
 	private void cropAroundCellCentre( RealPoint cellCentreMicrometer )

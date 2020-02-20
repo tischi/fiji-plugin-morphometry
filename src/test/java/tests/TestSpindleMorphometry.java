@@ -110,7 +110,6 @@ public class TestSpindleMorphometry
 		command.dnaChannelIndexOneBased = 2;
 		command.showIntermediateResults = false;
 		command.saveResults = false;
-		command.cellCenterDetectionMethodChoice = SpindleMorphometrySettings.CellCenterDetectionMethod.None.toString();
 		command.settings.showOutputImage = showOutput;
 		command.run();
 
@@ -294,7 +293,6 @@ public class TestSpindleMorphometry
 
 		command.spindleChannelIndexOneBased = 2;
 		command.dnaChannelIndexOneBased = 1;
-		command.cellCenterDetectionMethodChoice = SpindleMorphometrySettings.CCDM_NONE;
 		command.showIntermediateResults = showIntermediateResults;
 		command.saveResults = false;
 		command.settings.showOutputImage = showOutput;

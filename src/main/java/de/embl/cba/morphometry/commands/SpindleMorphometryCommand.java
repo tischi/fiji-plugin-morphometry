@@ -11,6 +11,7 @@ import de.embl.cba.tables.Tables;
 import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
+import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
@@ -49,6 +50,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	public LogService logService;
 
 	@Parameter
+	public DatasetService datasetService;
+
+	@Parameter
 	public StatusService statusService;
 
 	@Parameter ( label = "Input Image File" )
@@ -76,10 +80,6 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	@Parameter ( label = "Spindle Channel [one-based index]" )
 	public long spindleChannelIndexOneBased = 1;
-
-	// TODO
-//	@Parameter ( label = "Initial Cell Center Detection Method", choices = { CCDM_NONE, CCDM_DNA, CCDM_TUBULIN } )
-	public String cellCenterDetectionMethodChoice = CCDM_NONE;
 
 	@Parameter ( label = "Classifier for Metaphase Detection", choices = { SpindleMorphometry.NONE, SpindleMorphometry.ILASTIK } )
 	public String classifier = "None";
@@ -112,7 +112,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	{
 
 		if (ilastikOptions == null)
-			ilastikOptions = optionsService.getOptions( IlastikOptions.class);
+			ilastikOptions = optionsService.getOptions( IlastikOptions.class );
 
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.workingVoxelSize = voxelSpacingDuringAnalysis;
@@ -133,6 +133,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.ilastikOptions = ilastikOptions;
 		settings.logService = logService;
 		settings.statusService = statusService;
+		settings.datasetService = datasetService;
 		//settings.cellCenterDetectionMethod = SpindleMorphometrySettings.CellCenterDetectionMethod.valueOf( cellCenterDetectionMethodChoice );
 
 		Logger.log( settings.toString() );
