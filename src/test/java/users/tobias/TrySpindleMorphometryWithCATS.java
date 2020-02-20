@@ -3,7 +3,6 @@ package users.tobias;
 import de.embl.cba.morphometry.commands.SpindleMorphometryCommand;
 import net.imagej.ImageJ;
 import net.imglib2.type.numeric.RealType;
-import tests.TestSpindleMorphometry;
 
 import java.io.File;
 
@@ -24,7 +23,7 @@ public class TrySpindleMorphometryWithCATS
 		command.dnaChannelIndexOneBased = 2;
 		command.voxelSpacingDuringAnalysis = 0.25;
 		command.settings.showMetaphaseClassification = true;
-		command.useCATS = true;
+		command.useClassifier = true;
 		command.classifier = new File("/Users/tischer/Documents/spindle-feedback-kletter-knime/CATS/3D_iso0.25um_ch1Tub_ch2DNA_8Bit.classifier" );
 		command.showIntermediateResults = false;
 		command.saveResults = false;

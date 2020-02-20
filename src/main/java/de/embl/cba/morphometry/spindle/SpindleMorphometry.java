@@ -18,6 +18,7 @@ import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.measure.Calibration;
+import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
@@ -46,6 +47,9 @@ import net.imglib2.util.Intervals;
 import net.imglib2.util.LinAlgHelpers;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
+import org.ilastik.ilastik4ij.executors.AbstractIlastikExecutor;
+import org.ilastik.ilastik4ij.executors.PixelClassification;
+import org.ilastik.ilastik4ij.ui.IlastikOptions;
 
 import java.io.File;
 import java.util.*;
@@ -59,6 +63,9 @@ import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 
 public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 {
+	public static final String NONE = "None";
+	public static final String ILASTIK = "Ilastik";
+
 	final SpindleMorphometrySettings< R > settings;
 	final OpService opService;
 
@@ -135,29 +142,25 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 		createIsotropicallyResampledImages();
 
- //		if ( settings.useCATS )
-//		{
-//			createDnaMaskWithCATS();
-//			return "";
-//		}
-
-		if ( settings.cellCenterDetectionMethod.equals( SpindleMorphometrySettings.CellCenterDetectionMethod.None ) )
-		{
-			// Do nothing
-		}
-		else
-		{
-			// TODO
-//			final RealPoint cellCentreMicrometer = findCellCentre();
-//			cropAroundCellCentre( cellCentreMicrometer );
-		}
-
 		measurements.dnaInitialThreshold = determineDnaThreshold();
 
 		if ( measurements.dnaInitialThreshold < settings.minimalDynamicRange )
 			return SpindleMeasurements.ANALYSIS_INTERRUPTED_LOW_DYNAMIC_DNA;
 
-		initialDnaMask = segmentDna( dna, measurements.dnaInitialThreshold );
+		switch( settings.classifier )
+		{
+			case NONE:
+				initialDnaMask = segmentDna( dna, measurements.dnaInitialThreshold );
+				break;
+			case ILASTIK:
+				initialDnaMask = segmentDnaUsingIlastik( dna, tubulin );
+		}
+
+
+		// TODO
+//		final RealPoint cellCentreMicrometer = findCellCentre();
+//		cropAroundCellCentre( cellCentreMicrometer );
+
 
 		dnaEllipsoidVectors = determineDnaAxes( initialDnaMask );
 
@@ -207,6 +210,37 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		measureSpindleAxisToCoverslipPlaneAngle( spindlePoleToPoleVector );
 
 		return SpindleMeasurements.ANALYSIS_FINISHED;
+	}
+
+	private RandomAccessibleInterval< BitType > segmentDnaUsingIlastik(
+			RandomAccessibleInterval< R > dna,
+			RandomAccessibleInterval< R > tubulin )
+	{
+		PixelClassification pixelClassification;
+		if ( settings.ilastikOptions != null)
+			pixelClassification =
+					new PixelClassification(
+							settings.ilastikOptions.getExecutableFile(),
+							projectFileName,
+							settings.logService,
+							settings.statusService,
+							settings.ilastikOptions.getNumThreads(),
+							settings.ilastikOptions.getMaxRamMb());
+		else
+			new PixelClassification(
+				new File(ilastikPath),
+				tmpIlastikProjectFile.toFile(),
+				null,
+				null,
+				4,
+				1024
+		);
+
+
+		final ImgPlus<T> classifiedPixels = prediction.classifyPixels(inputDataset.getImgPlus(), AbstractIlastikExecutor.PixelPredictionType.Probabilities);
+
+		ImageJFunctions.show(classifiedPixels, "Probability maps");
+		return null;
 	}
 
 	private void cropAroundCellCentre( RealPoint cellCentreMicrometer )

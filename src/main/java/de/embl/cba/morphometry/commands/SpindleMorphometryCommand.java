@@ -15,9 +15,13 @@ import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
+import org.ilastik.ilastik4ij.ui.IlastikOptions;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
+import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.log.LogService;
+import org.scijava.options.OptionsService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
@@ -37,6 +41,15 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	@Parameter
 	public OpService opService;
+
+	@Parameter
+	public OptionsService optionsService;
+
+	@Parameter
+	public LogService logService;
+
+	@Parameter
+	public StatusService statusService;
 
 	@Parameter ( label = "Input Image File" )
 	public File inputImageFile;
@@ -68,25 +81,25 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 //	@Parameter ( label = "Initial Cell Center Detection Method", choices = { CCDM_NONE, CCDM_DNA, CCDM_TUBULIN } )
 	public String cellCenterDetectionMethodChoice = CCDM_NONE;
 
-	//	@Parameter ( label = "Use CATS for Metaphase Detection" )
-	public boolean useCATS = false;
+	@Parameter ( label = "Classifier for Metaphase Detection", choices = { SpindleMorphometry.NONE, SpindleMorphometry.ILASTIK } )
+	public String classifier = "None";
 
-//	@Parameter ( label = "CATS Classifier" )
-	public File classifier;
+	@Parameter ( label = "Classifier File" )
+	public File classifierFile;
 
 	@Parameter ( label = "Show Intermediate Results" )
 	public boolean showIntermediateResults = false;
 
 	@Parameter( visibility = ItemVisibility.MESSAGE )
-	private String version = "Spindle Morphometry Version: 0.5.8";
+	private String version = "Spindle Morphometry Version: 0.6.0";
 
 	@Parameter( type = ItemIO.OUTPUT )
 	private double spindleVolume;
 
 	public boolean saveResults = true;
-
 	private String imageName;
 	private HashMap< Integer, Map< String, Object > > objectMeasurements;
+	public IlastikOptions ilastikOptions;
 
 	public void run()
 	{
@@ -95,9 +108,12 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		processFile( inputImageFile );
 	}
 
-
 	private void setSettingsFromUI()
 	{
+
+		if (ilastikOptions == null)
+			ilastikOptions = optionsService.getOptions( IlastikOptions.class);
+
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.workingVoxelSize = voxelSpacingDuringAnalysis;
 		settings.maxDnaAxisDist = 6;
@@ -112,9 +128,12 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.dnaThresholdFactor = dnaThresholdFactor;
 		settings.minimalDynamicRange = minimalDynamicRange;
 		settings.version = version;
-		settings.useCATS = useCATS;
+		settings.classifierFile = classifierFile;
 		settings.classifier  = classifier;
-		settings.cellCenterDetectionMethod = SpindleMorphometrySettings.CellCenterDetectionMethod.valueOf( cellCenterDetectionMethodChoice );
+		settings.ilastikOptions = ilastikOptions;
+		settings.logService = logService;
+		settings.statusService = statusService;
+		//settings.cellCenterDetectionMethod = SpindleMorphometrySettings.CellCenterDetectionMethod.valueOf( cellCenterDetectionMethodChoice );
 
 		Logger.log( settings.toString() );
 	}
@@ -142,8 +161,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		final String log = morphometry.run( raiXYCZ );
 		Logger.log( log );
 
-		final SpindleMeasurements measurements =
-				morphometry.getMeasurements();
+		final SpindleMeasurements measurements = morphometry.getMeasurements();
 
 		spindleVolume = measurements.spindleVolume;
 

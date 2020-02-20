@@ -4,6 +4,9 @@ import ij.measure.Calibration;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
+import org.ilastik.ilastik4ij.ui.IlastikOptions;
+import org.scijava.app.StatusService;
+import org.scijava.log.LogService;
 
 import java.io.File;
 
@@ -42,9 +45,12 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public long tubulinChannelIndex;
 	public boolean showOutputImage = false;
 	public boolean showMetaphaseClassification = false;
-	public boolean useCATS = false;
-	public File classifier;
+	public String classifier;
+	public File classifierFile;
 	public CellCenterDetectionMethod cellCenterDetectionMethod;
+	public IlastikOptions ilastikOptions;
+	public LogService logService;
+	public StatusService statusService;
 
 	public enum CellCenterDetectionMethod
 	{
