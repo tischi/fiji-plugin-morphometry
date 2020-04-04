@@ -21,10 +21,12 @@ import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.display.DisplayService;
 import org.scijava.log.LogService;
 import org.scijava.options.OptionsService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.ui.UIService;
 
 import javax.swing.*;
 import java.io.File;
@@ -55,6 +57,12 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter
 	public StatusService statusService;
 
+	@Parameter
+	public DisplayService displayService;
+
+	@Parameter
+	public UIService uiService;
+
 	@Parameter ( label = "Input Image File" )
 	public File inputImageFile;
 
@@ -83,6 +91,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	@Parameter ( label = "Classifier for Metaphase Detection", choices = { SpindleMorphometry.NONE, SpindleMorphometry.ILASTIK } )
 	public String classifier = "None";
+
+	@Parameter ( label = "Classifier Execution File" )
+	public File classifierExecutionFile;
 
 	@Parameter ( label = "Classifier File" )
 	public File classifierFile;
@@ -129,11 +140,14 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.minimalDynamicRange = minimalDynamicRange;
 		settings.version = version;
 		settings.classifierFile = classifierFile;
+		settings.classifierExecutionFile = classifierExecutionFile;
 		settings.classifier  = classifier;
 		settings.ilastikOptions = ilastikOptions;
 		settings.logService = logService;
 		settings.statusService = statusService;
 		settings.datasetService = datasetService;
+		settings.displayService = displayService;
+		settings.uiService = uiService;
 		//settings.cellCenterDetectionMethod = SpindleMorphometrySettings.CellCenterDetectionMethod.valueOf( cellCenterDetectionMethodChoice );
 
 		Logger.log( settings.toString() );
@@ -150,8 +164,10 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 		logStart();
 
-		final ImagePlus imagePlus = IJ.openImage( file.toString() );
+		final ImagePlus imagePlus = IJ.openImage( file.getAbsolutePath() );
 		setSettingsFromImagePlus( imagePlus );
+
+		settings.imagePlus = imagePlus;
 
 		final RandomAccessibleInterval< R > raiXYCZ = ImageJFunctions.wrapReal( imagePlus );
 

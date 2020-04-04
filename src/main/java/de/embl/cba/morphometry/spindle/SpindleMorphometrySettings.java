@@ -1,5 +1,6 @@
 package de.embl.cba.morphometry.spindle;
 
+import ij.ImagePlus;
 import ij.measure.Calibration;
 import net.imagej.DatasetService;
 import net.imglib2.RandomAccessibleInterval;
@@ -7,7 +8,9 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import org.ilastik.ilastik4ij.ui.IlastikOptions;
 import org.scijava.app.StatusService;
+import org.scijava.display.DisplayService;
 import org.scijava.log.LogService;
+import org.scijava.ui.UIService;
 
 import java.io.File;
 
@@ -48,12 +51,17 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 	public boolean showMetaphaseClassification = false;
 	public String classifier;
 	public File classifierFile;
+	public File classifierExecutionFile;
 	public CellCenterDetectionMethod cellCenterDetectionMethod;
 	// SciJava
 	public IlastikOptions ilastikOptions;
 	public LogService logService;
 	public StatusService statusService;
 	public DatasetService datasetService;
+	public ImagePlus imagePlus;
+	public DisplayService displayService;
+	public UIService uiService;
+
 
 	public enum CellCenterDetectionMethod
 	{

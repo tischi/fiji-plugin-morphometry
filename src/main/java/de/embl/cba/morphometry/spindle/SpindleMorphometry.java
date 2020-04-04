@@ -17,6 +17,7 @@ import de.embl.cba.transforms.utils.Transforms;
 import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.Prefs;
 import ij.measure.Calibration;
 import net.imagej.DatasetService;
 import net.imagej.ImgPlus;
@@ -226,34 +227,30 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 			RandomAccessibleInterval< R > dna,
 			RandomAccessibleInterval< R > tubulin ) throws IOException
 	{
+		final int memoryMB = (int) ( Runtime.getRuntime().maxMemory() / 1000000L );
+		final int numThreads = Runtime.getRuntime().availableProcessors();
 		PixelClassification pixelClassification =
 					new PixelClassification(
-							settings.ilastikOptions.getExecutableFile(),
+							settings.classifierExecutionFile,
 							settings.classifierFile,
 							settings.logService,
 							settings.statusService,
-							settings.ilastikOptions.getNumThreads(),
-							settings.ilastikOptions.getMaxRamMb());
+							numThreads,
+							memoryMB );
 
 		final RandomAccessibleInterval< R > raiXYZC = Views.stack( tubulin, dna );
-
 		AxisType[] axisTypes = new AxisType[]{ Axes.X, Axes.Y, Axes.Z, Axes.CHANNEL };
 		final ImgPlus< R > imgPlus = new ImgPlus( settings.datasetService.create( raiXYZC ), "image", axisTypes );
-
-		ImageJFunctions.show(imgPlus);
-
-		final ImgPlus classifiedPixels =
+		final ImgPlus classifiedXYCZT =
 				pixelClassification.classifyPixels(
 						imgPlus,
 						AbstractIlastikExecutor.PixelPredictionType.Probabilities);
 
-		ImageJFunctions.show(classifiedPixels, "Probability maps");
+		ImageJFunctions.show(classifiedXYCZT, "Probability maps");
 
-		// TODO
-		final int numDimensions = classifiedPixels.numDimensions();
-		final IntervalView dnaProbability = Views.hyperSlice( Views.hyperSlice( classifiedPixels, 3, 0 ), 3, 0 );
+		final IntervalView dnaProbability = Views.hyperSlice( Views.hyperSlice( classifiedXYCZT, 4, 0 ), 2, 0 );
 
-		RandomAccessibleInterval< BitType > mask = createMask( dnaProbability, 0.5 );
+		RandomAccessibleInterval< BitType > mask = createMask( dnaProbability, 0.75 );
 
 		Regions.removeSmallRegionsInMask(
 				mask,

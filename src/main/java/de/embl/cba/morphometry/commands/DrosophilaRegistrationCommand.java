@@ -331,7 +331,7 @@ public class DrosophilaRegistrationCommand < T extends RealType< T > & NativeTyp
 		return Views.stack( registeredImages );
 	}
 
-	public RandomAccessibleInterval< T > createIntensityCorrectedImages( RandomAccessibleInterval< T > images,
+	public RandomAccessibleInterval< T >  createIntensityCorrectedImages( RandomAccessibleInterval< T > images,
 																		 double axialCalibration,
 																		 double coverslipPosition )
 	{

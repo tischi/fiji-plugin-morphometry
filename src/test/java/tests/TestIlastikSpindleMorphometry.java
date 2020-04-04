@@ -28,7 +28,8 @@ public class TestIlastikSpindleMorphometry
 		final ImageJ ij = new ImageJ();
 
 		final IlastikOptions ilastikOptions = new IlastikOptions();
-		ilastikOptions.setExecutableFile(new File("/Applications/ilastik-1.3.3-OSX.app/Contents/MacOS/ilastik"));
+		ilastikOptions.setExecutableFile( new File("") );
+		final File executableFile = ilastikOptions.getExecutableFile();
 
 		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
 		command.opService = ij.op();
@@ -36,16 +37,19 @@ public class TestIlastikSpindleMorphometry
 		command.statusService = ij.status();
 		command.logService = ij.log();
 		command.optionsService = ij.options();
+		command.uiService = ij.ui();
 
-		command.inputImageFile = new File(
-				TestIlastikSpindleMorphometry.class.getResource(
-						"../test-data/spindle/SpindleWidthSmall.zip" ).getFile() );
+		command.inputImageFile =  new File("/Users/tischer/Documents/tobias-kletter/2020-02-ilastik-test/Isotropic_input_for_Ilastik_DNA/Scaled_HighZoom--W0000--P0001-T0041--0001.tif");
+
+//		command.inputImageFile = new File(
+//				TestIlastikSpindleMorphometry.class.getResource(
+//						"../test-data/spindle/SpindleWidthSmall.zip" ).getFile() );
 
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
 		command.voxelSpacingDuringAnalysis = 0.25;
 		command.showIntermediateResults = false;
-		command.ilastikOptions = ilastikOptions;
+		command.classifierExecutionFile = new File("/Applications/ilastik-1.3.3post2-OSX.app/Contents/MacOS/ilastik");
 		command.classifier = SpindleMorphometry.ILASTIK;
 		command.classifierFile = new File("/Users/tischer/Documents/tobias-kletter/2020-02-ilastik-test/20191206_DNA_Segmentation_2Ch.ilp");
 		command.saveResults = true;
@@ -70,8 +74,8 @@ public class TestIlastikSpindleMorphometry
 
 	public static void main( String[] args )
 	{
-		showOutput = false;
-		showIntermediateResults = false;
+		showOutput = true;
+		showIntermediateResults = true;
 
 		final ImageJ imageJ = new ImageJ();
 		imageJ.ui().showUI();
