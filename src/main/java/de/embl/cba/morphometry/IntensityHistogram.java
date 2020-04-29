@@ -39,7 +39,7 @@ public class IntensityHistogram <T extends RealType<T> & NativeType< T > >
 
 	public CoordinateAndValue getMode( )
 	{
-		final CoordinateAndValue coordinateAndValue = new CoordinateAndValue( 0, 0);
+		final CoordinateAndValue coordinateAndValue = new CoordinateAndValue( 0.0, 0.0);
 
 		for ( int i = 0; i < numBins - 1; ++i ) // numBins - 1 avoids the last bin containing saturated pixels
 		{

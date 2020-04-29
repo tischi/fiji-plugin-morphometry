@@ -337,7 +337,7 @@ public class  DrosophilaSingleChannelRegistration< T extends RealType< T > & Nat
 
 		CoordinateAndValue histogramMode = histogram.getMode();
 
-		Logger.log( "Intensity offset: " + (int) histogramMode.coordinate );
+		Logger.log( "Intensity offset: " + histogramMode.coordinate.intValue() );
 
 
 		/**

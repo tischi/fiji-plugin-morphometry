@@ -292,7 +292,7 @@ public class MembraneTranslocationComputer< R extends RealType< R > & NativeType
 		result.brighterIntensities.add( computeMeanIntensityWithinDistanceRange(
 				image,
 				distances,
-				(int) membraneDistanceAndIntensity.coordinate + resolutionBlurWidthInPixel,
+				membraneDistanceAndIntensity.coordinate.intValue() + resolutionBlurWidthInPixel,
 				Integer.MAX_VALUE ) );
 	}
 

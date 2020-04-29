@@ -7,10 +7,8 @@ import net.imglib2.realtransform.AffineTransform3D;
 import java.awt.*;
 import java.util.List;
 
-
 public class BdvPointListOverlay extends BdvOverlay
 {
-
 	final List< RealPoint > points;
 	private final double depthOfField;
 

@@ -375,7 +375,7 @@ public class TestSpindleMorphometry
 				command.getObjectMeasurements();
 
 		final double spindleCoV = ( Double) measurements.get( 0 ).get(
-				SpindleMeasurements.SPINDLE_COV );
+				SpindleMeasurements.SPINDLE_TUBULIN_COV );
 
 		assertEquals( 1.22, spindleCoV, 0.2 );
 	}
@@ -406,7 +406,7 @@ public class TestSpindleMorphometry
 				command.getObjectMeasurements();
 
 		final double spindleCoV = ( Double) measurements.get( 0 ).get(
-				SpindleMeasurements.SPINDLE_COV );
+				SpindleMeasurements.SPINDLE_TUBULIN_COV );
 
 		final double spindleLength = ( Double) measurements.get( 0 ).get(
 				SpindleMeasurements.getSpindleLengthKey() );

@@ -2,10 +2,10 @@ package de.embl.cba.morphometry;
 
 public class CoordinateAndValue
 {
-	public double coordinate;
-	public double value;
+	public Double coordinate;
+	public Double value;
 
-	public CoordinateAndValue( double coordinate, double value )
+	public CoordinateAndValue( Double coordinate, Double value )
 	{
 		this.coordinate = coordinate;
 		this.value = value;

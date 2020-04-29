@@ -16,7 +16,7 @@ public class RunSpindleMorphometry
 		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
 		command.opService = ij.op();
 
-		command.inputImageFile = new File("/Users/tischer/Desktop/kletter/HighZoom--W0000--P0001-T0004--0001.tif");
+		command.inputImageFile = new File("/Users/tischer/Downloads/Composite_calibrated.tif");
 
 		command.outputDirectory = new File( "/Users/tischer/Desktop/kletter" );
 		command.inputImageFilesParentDirectory = new File( "/Users/tischer/Desktop/kletter" );
@@ -24,11 +24,10 @@ public class RunSpindleMorphometry
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
 
-		command.voxelSpacingDuringAnalysis = 0.25;
+		command.voxelSpacingDuringAnalysis = 0.24; // normally 0.25
 
 		command.showIntermediateResults = false;
 
 		command.run();
-
 	}
 }

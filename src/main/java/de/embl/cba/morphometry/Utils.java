@@ -1445,13 +1445,32 @@ public class Utils
 			RandomAccessibleInterval< BitType > mask,
 			Double meanOffset )
 	{
+		final ArrayList< Double > intensitiesWithMask =
+				getValuesWithinMaskAsList( intensities, mask );
+
+		final double mean = Utils.mean( intensitiesWithMask );
+		final double sdev = Utils.sdev( intensitiesWithMask, mean );
+
+		double cov = sdev / ( mean - meanOffset );
+
+		return cov;
+	}
+
+	public static < R extends RealType< R > & NativeType< R > >
+	double measureSum(
+			RandomAccessibleInterval< R > intensities,
+			RandomAccessibleInterval< BitType > mask,
+			Double meanOffset )
+	{
 		final ArrayList< Double > doubles =
 				getValuesWithinMaskAsList( intensities, mask );
 
-		final double mean = Utils.mean( doubles );
-		final double sdev = Utils.sdev( doubles, mean );
+		final double sum = Utils.sum( doubles );
+		final double sumOffset = meanOffset * doubles.size();
+		final double offsetCorrectedSum = sum - sumOffset;
 
-		double cov = sdev / ( mean - meanOffset );
-		return cov;
+		return offsetCorrectedSum;
 	}
+
+
 }

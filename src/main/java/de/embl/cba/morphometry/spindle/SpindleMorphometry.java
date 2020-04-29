@@ -199,6 +199,11 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 						measurements.spindleThreshold
 				);
 
+		measurements.spindleSum = Utils.measureSum(
+				spindleAlignedTublin,
+				spindleAlignedSpindleMask,
+				measurements.spindleThreshold );
+
 		measureSpindleLateralExtends( spindleAlignedSpindleMask );
 
 		measureDnaCenterToSpindleCenterDistance(
@@ -909,8 +914,6 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 				dnaAxialBoundaries.get( 1 ).coordinate -
 						dnaAxialBoundaries.get( 0 ).coordinate;
 
-		logDnaAxialThreshold( dnaProfileAlongDnaAxis, dnaAxialBoundaries );
-
 		if ( settings.showIntermediateResults )
 			Plots.plot( dnaProfileAlongDnaAxis,
 					"distance to center", "DNA intensity along DNA axis" );
@@ -919,6 +922,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 			Plots.plot( dnaProfileAlongDnaAxisDerivative,
 					"distance to center", "d/dx DNA intensity along DNA axis" );
 
+		logDnaAxialThreshold( dnaProfileAlongDnaAxis, dnaAxialBoundaries );
 	}
 
 	public void logDnaAxialThreshold(

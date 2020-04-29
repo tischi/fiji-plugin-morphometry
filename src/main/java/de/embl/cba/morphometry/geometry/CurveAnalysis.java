@@ -8,7 +8,6 @@ import static java.lang.Math.abs;
 
 public abstract class CurveAnalysis
 {
-
 	// TODO: instead of CoordinatesAndValues one should use a 1D RealRandomAccessible (or, in fact, a PhysicalImg...)
 	public static CoordinatesAndValues derivative( CoordinatesAndValues coordinatesAndValues, int di )
 	{
@@ -16,6 +15,8 @@ public abstract class CurveAnalysis
 
 		for ( int i = di / 2 + 1; i < coordinatesAndValues.values.size() - ( di / 2 + 1 ); ++i )
 		{
+
+			final int center = i;
 			final int right = i + di / 2;
 			final int left = i - di / 2;
 
@@ -23,9 +24,7 @@ public abstract class CurveAnalysis
 					coordinatesAndValues.values.get( right )
 							- coordinatesAndValues.values.get( left ) );
 
-			derivative.coordinates.add(
-					0.5 * ( coordinatesAndValues.coordinates.get( right )
-							+ coordinatesAndValues.coordinates.get( left ) ));
+			derivative.coordinates.add( coordinatesAndValues.coordinates.get( center ) );
 		}
 
 		return derivative;
@@ -136,7 +135,7 @@ public abstract class CurveAnalysis
 	}
 
 	public static CoordinateAndValue minimum(
-			CoordinatesAndValues coordinatesAndValues, double[] coordinateRangeMinMax )
+			CoordinatesAndValues coordinatesAndValues, Double[] coordinateRangeMinMax )
 	{
 		final int n = coordinatesAndValues.coordinates.size();
 		final ArrayList< Double > coordinates = coordinatesAndValues.coordinates;
@@ -176,14 +175,14 @@ public abstract class CurveAnalysis
 
 	public static CoordinateAndValue maximum(
 			CoordinatesAndValues coordinatesAndValues,
-			double[] coordinateRangeMinMax )
+			Double[] coordinateRangeMinMax )
 	{
 		final ArrayList< Double > coordinates = coordinatesAndValues.coordinates;
 		final ArrayList< Double > values = coordinatesAndValues.values;
 		final int n = values.size();
 
-		double max = - Double.MAX_VALUE;
-		double maxLoc = coordinates.get( 0 );
+		Double max = - Double.MAX_VALUE;
+		Double maxLoc = coordinates.get( 0 );
 
 		for ( int i = 0; i < n; ++i )
 		{
@@ -210,17 +209,17 @@ public abstract class CurveAnalysis
 	public static ArrayList< CoordinateAndValue >
 	leftMaxAndRightMinLoc( CoordinatesAndValues coordinatesAndValues )
 	{
-		double[] rangeMinMax = new double[ 2 ];
+		Double[] rangeMinMax = new Double[ 2 ];
 
 		final ArrayList< CoordinateAndValue > extrema = new ArrayList<>();
 
 		// left
 		rangeMinMax[ 0 ] = - Double.MAX_VALUE;
-		rangeMinMax[ 1 ] = 0;
+		rangeMinMax[ 1 ] = 0.0;
 		extrema.add( maximum( coordinatesAndValues, rangeMinMax ) );
 
 		// right
-		rangeMinMax[ 0 ] = 0;
+		rangeMinMax[ 0 ] = 0.0;
 		rangeMinMax[ 1 ] = Double.MAX_VALUE;
 		extrema.add( minimum( coordinatesAndValues, rangeMinMax ) );
 
@@ -229,7 +228,7 @@ public abstract class CurveAnalysis
 
 	public static Double getValueAtCoordinate(
 			CoordinatesAndValues coordinatesAndValues,
-			double coordinate )
+			Double coordinate )
 	{
 
 		final int coordinateIndex =
