@@ -1,6 +1,5 @@
 package command;
 
-import de.embl.cba.morphometry.commands.SpindleMorphometryCommand;
 import de.embl.cba.morphometry.commands.TranslocationCommand;
 import ij.IJ;
 import ij.plugin.frame.RoiManager;

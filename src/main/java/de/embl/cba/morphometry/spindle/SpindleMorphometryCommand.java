@@ -1,12 +1,9 @@
-package de.embl.cba.morphometry.commands;
+package de.embl.cba.morphometry.spindle;
 
 import de.embl.cba.morphometry.ImageScience;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
-import de.embl.cba.morphometry.spindle.SpindleMeasurements;
-import de.embl.cba.morphometry.spindle.SpindleMorphometry;
-import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import de.embl.cba.tables.Tables;
 import ij.CompositeImage;
 import ij.IJ;
@@ -126,11 +123,11 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 
 	private void processFile( File file )
 	{
-		removeImageNameSuffix();
+		setImageName();
 
 		logStart();
 
-		final ImagePlus imagePlus = IJ.openImage( file.toString() );
+		final ImagePlus imagePlus = Utils.openWithBioFormats( file.toString() );
 		setSettingsFromImagePlus( imagePlus );
 
 		final RandomAccessibleInterval< R > raiXYCZ = ImageJFunctions.wrapReal( imagePlus );
@@ -176,7 +173,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		logEnd();
 	}
 
-	private void removeImageNameSuffix()
+	private void setImageName()
 	{
 		imageName = inputImageFile.getName().replace( ".tif", "" );
 		imageName = inputImageFile.getName().replace( ".ome", "" );
@@ -224,8 +221,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	{
 		final Path parentPath = inputImageFilesParentDirectory.toPath();
 
-		final File outputImageFile =
-				new File( getOutputDirectory() + imageName + "-out.zip" );
+		final File outputImageFile = new File( getOutputDirectory() + imageName + "-out.zip" );
 
 		addImagePathToMeasurements( parentPath, outputImageFile, objectMeasurements, "Path_OutputImage" );
 

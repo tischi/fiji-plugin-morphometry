@@ -66,6 +66,11 @@ public class Utils
 
 	public static String logFilePath = null;
 
+	public static ImagePlus openWithBioFormats( File file )
+	{
+		return openWithBioFormats( file.getAbsolutePath() );
+	}
+
 
 	public static void setNewLogFilePath( String aLogFilePath )
 	{

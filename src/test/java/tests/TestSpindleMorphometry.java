@@ -1,6 +1,6 @@
 package tests;
 
-import de.embl.cba.morphometry.commands.SpindleMorphometryCommand;
+import de.embl.cba.morphometry.spindle.SpindleMorphometryCommand;
 import de.embl.cba.morphometry.spindle.SpindleMeasurements;
 import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import loci.common.DebugTools;

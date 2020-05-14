@@ -1,6 +1,6 @@
 package users.tobias;
 
-import de.embl.cba.morphometry.commands.SpindleMorphometryCommand;
+import de.embl.cba.morphometry.spindle.SpindleMorphometryCommand;
 import net.imagej.ImageJ;
 import net.imglib2.type.numeric.RealType;
 
