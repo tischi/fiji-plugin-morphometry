@@ -27,7 +27,11 @@ import net.imglib2.histogram.Real1dBinMapper;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
+import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.loops.LoopBuilder;
+import net.imglib2.realtransform.RealViews;
+import net.imglib2.realtransform.Scale;
 import net.imglib2.roi.labeling.*;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -45,6 +49,8 @@ import net.imglib2.view.Views;
 
 import java.util.*;
 
+import static de.embl.cba.transforms.utils.ImageCreators.copyAsArrayImg;
+import static de.embl.cba.transforms.utils.Transforms.createTransformedInterval;
 import static java.lang.Math.abs;
 
 public class Algorithms
@@ -1054,6 +1060,44 @@ public class Algorithms
 	}
 
 
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > createNearestNeighborResampledArrayImg(
+			RandomAccessibleInterval< T > input,
+			double[] scalingFactors )
+	{
+		// Convert to RealRandomAccessible such that we can obtain values at (infinite) non-integer coordinates
+		RealRandomAccessible< T > rra =
+				Views.interpolate( Views.extendBorder( input ),
+						new NearestNeighborInterpolatorFactory<>() );
+
+		// Change scale such that we can sample from integer coordinates (for raster function below)
+		Scale scale = new Scale( scalingFactors );
+		RealRandomAccessible< T > rescaledRRA  = RealViews.transform( rra, scale );
+
+		// Create view sampled at integer coordinates
+		final RandomAccessible< T > rastered = Views.raster( rescaledRRA );
+
+		// Put an interval to make it a finite "normal" image again
+		final RandomAccessibleInterval< T > finiteRastered =
+				Views.interval( rastered, createTransformedInterval( input, scale ) );
+
+		// Convert from View to a "conventional" image in RAM
+		// - Above code would also run on, e.g. 8 TB image, within ms
+		// - Now, we really force it to create the image
+		// (we actually might now have to, depends...)
+		final RandomAccessibleInterval< T > output = copyAsArrayImg( finiteRastered );
+
+		return output;
+	}
+
+	/**
+	 *
+	 * very slow...
+	 *
+	 * @param mask
+	 * @param radius
+	 * @return
+	 */
 	public static RandomAccessibleInterval< BitType > open(
 			RandomAccessibleInterval< BitType > mask,
 			int radius )
@@ -1079,8 +1123,7 @@ public class Algorithms
 				Views.extendZero( enlargedMask ),
 				Views.iterable( enlargedMorphed ),
 				shape,
-				1 );
-
+				4 );
 
 		return Views.interval( enlargedMorphed, mask );
 	}

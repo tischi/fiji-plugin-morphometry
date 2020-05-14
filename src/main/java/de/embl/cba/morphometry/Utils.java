@@ -168,8 +168,6 @@ public class Utils
 		return coordinatesAndValues;
 	}
 
-
-
 	public static double sum( List<Double> a ){
 		if (a.size() > 0) {
 			double sum = 0;

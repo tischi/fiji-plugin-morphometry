@@ -29,12 +29,12 @@ public class BdvPointListOverlay extends BdvOverlay
 		final double[] gPos = new double[ 3 ];
 		for ( final RealPoint p : points )
 		{
-			p.localize( lPos );
-			t.apply( lPos, gPos );
-			final int size = getSize( gPos[ 2 ] );
-			final int x = ( int ) ( gPos[ 0 ] - 0.5 * size );
-			final int y = ( int ) ( gPos[ 1 ] - 0.5 * size );
-			g.setColor( getColor( gPos[ 2 ] ) );
+			p.localize( gPos );
+			t.apply( gPos, lPos );
+			final int size = getSize( lPos[ 2 ] );
+			final int x = ( int ) ( lPos[ 0 ] - 0.5 * size );
+			final int y = ( int ) ( lPos[ 1 ] - 0.5 * size );
+			g.setColor( getColor( lPos[ 2 ] ) );
 			g.fillOval( x, y, size, size );
 		}
 	}
