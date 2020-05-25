@@ -29,9 +29,9 @@ public class TestSpindleAxialExtendUnderestimation
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
 
-		command.showIntermediateResults = true;
+		command.showIntermediateResults = false;
 		command.saveResults = false;
-		command.settings.showOutputImage = false;
+		command.settings.showOutputImage = true;
 		command.outputDirectory = new File("/Users/tischer/Downloads" );
 		command.run();
 

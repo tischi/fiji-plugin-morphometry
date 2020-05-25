@@ -553,18 +553,15 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 			spindleAlignedSpindlePoles.add( transformed );
 		}
 
-
 		if ( settings.showIntermediateResults )
 		{
-			final double[] spindleAlignedSpindleCenter = transformed( spindleCenter, dnaAlignedToSpindleAlignedTransform );
-
 			final ArrayList< RealPoint > interestPoints = new ArrayList<>();
 
 			for ( int i = 0; i < 2; i++ )
 			{
 				interestPoints.add( new RealPoint( spindleAlignedSpindlePoles.get( i ) ) );
 			}
-			interestPoints.add( new RealPoint( spindleAlignedSpindleCenter ) );
+			interestPoints.add( new RealPoint( 0,0,0 ) );
 
 			show( spindleAlignedTublin,
 					"spindle aligned pole to pole",
@@ -1395,7 +1392,8 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 			RandomAccessibleInterval< BitType > spindleAlignedDnaMask,
 			RandomAccessibleInterval< BitType > spindleAlignedSpindleMask,
 			AffineTransform3D rescaledInputToSpindleAlignedTransform,
-			RandomAccessibleInterval< R > spindleAlignedInterestPointsImage )
+			RandomAccessibleInterval< R > spindleAlignedInterestPointsImage,
+			FinalInterval crop )
 	{
 		final ArrayList< RandomAccessibleInterval< R > > alignedVolumes = new ArrayList<>();
 
@@ -1404,19 +1402,18 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 			final RandomAccessible transformedRA = Transforms.createTransformedRaView( rescaledVolumes.get( c ),
 					rescaledInputToSpindleAlignedTransform, new ClampingNLinearInterpolatorFactory() );
 
-			// Crop to the size of the spindleAlignedDnaMask interval
-			alignedVolumes.add( Views.interval( transformedRA, spindleAlignedDnaMask ) );
+			alignedVolumes.add( Views.interval( transformedRA, crop ) );
 		}
 
-		alignedVolumes.add( (RandomAccessibleInterval) spindleAlignedDnaMask );
+		alignedVolumes.add( (RandomAccessibleInterval) Views.interval( Views.extendValue( spindleAlignedDnaMask, new BitType( false ) ), crop ) );
 
-		alignedVolumes.add( (RandomAccessibleInterval) spindleAlignedSpindleMask );
+		alignedVolumes.add( (RandomAccessibleInterval) Views.interval( Views.extendValue( spindleAlignedSpindleMask, new BitType( false ) ), crop )  );
 
-		alignedVolumes.add( (RandomAccessibleInterval) spindleAlignedInterestPointsImage );
+		alignedVolumes.add( (RandomAccessibleInterval) Views.interval( Views.extendZero( spindleAlignedInterestPointsImage ), crop ) );
+
 
 		// The volumes are now aligned such that the spindle is along the z-axis
 		// We rotate it now to be along the x-axis to make it easier to view in ImageJ
-
 		final ArrayList< RandomAccessibleInterval< R > > alignedAndRotatedVolumes = new ArrayList<>();
 		for ( RandomAccessibleInterval< R > rai : alignedVolumes )
 			alignedAndRotatedVolumes.add( Views.rotate( rai, 0, 2 ) );
@@ -1529,11 +1526,24 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		final AffineTransform3D rescaledInputToSpindleAlignedTransform =
 				rescaledToDnaAlignmentTransform.preConcatenate( dnaAlignedToSpindleAlignedTransform );
 
+		final int size = (int) ( settings.maxDnaAxisDist / settings.workingVoxelSize );
+
+		final int[] center = { 0, 0, 0 };
+		final FinalInterval crop = FinalInterval.createMinMax(
+				center[ 0 ] - 3 * size,
+				center[ 1 ] - 3 * size,
+				center[ 2 ] - 3 * size, // spindle axis
+				center[ 0 ] + 3 * size,
+				center[ 1 ] + 3 * size,
+				center[ 2 ] + 3 * size // spindle axis
+		);
+
 		RandomAccessibleInterval< R > raiXYZC = createTransformedMultiChannelOutputImage(
 				spindleAlignedDnaMask,
 				spindleAlignedSpindleMask,
 				rescaledInputToSpindleAlignedTransform,
-				createInterestPointImage( spindleAlignedSpindlePoles, spindleAlignedDna ) );
+				createInterestPointImage( spindleAlignedSpindlePoles, spindleAlignedDna ),
+				crop );
 
 		if ( settings.showIntermediateResults )
 		{
