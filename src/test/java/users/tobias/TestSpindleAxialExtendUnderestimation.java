@@ -25,13 +25,13 @@ public class TestSpindleAxialExtendUnderestimation
 //		command.spindleChannelIndexOneBased = 1;
 //		command.dnaChannelIndexOneBased = 2;
 
-		command.inputImageFile = new File( "/Users/tischer/Downloads/R1EWT_Undiffd0_aTub_568_CDK5RAP2_647_001-1.tif" );
-		command.spindleChannelIndexOneBased = 2;
-		command.dnaChannelIndexOneBased = 3;
+		command.inputImageFile = new File( "/Users/tischer/Downloads/191003-cow44th-8003-M4MTBD488-H2B568-Gauss-Scene-01-t92-1.tif" );
+		command.spindleChannelIndexOneBased = 1;
+		command.dnaChannelIndexOneBased = 2;
 
-		command.showIntermediateResults = true;
+		command.showIntermediateResults = false;
 		command.saveResults = false;
-		command.settings.showOutputImage = true;
+		command.settings.showOutputImage = false;
 		command.outputDirectory = new File("/Users/tischer/Downloads" );
 		command.run();
 
