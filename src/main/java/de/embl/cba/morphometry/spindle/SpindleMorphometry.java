@@ -77,7 +77,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 	private EllipsoidVectors dnaEllipsoidVectors;
 	private ProfileAndRadius dnaLateralProfileAndRadius;
 	private double[] spindlePoleToPoleVector;
-	private double[] spindleCenter;
+	private double[] dnaAlignedSpindleCenter;
 	private RandomAccessibleInterval< R > spindleAlignedTublin;
 
 	private SpindleMeasurements measurements;
@@ -191,11 +191,11 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 		spindlePoleToPoleVector = getSpindleAxisVector( dnaAlignedSpindlePoles );
 
-		spindleCenter = getMiddle( dnaAlignedSpindlePoles );
+		dnaAlignedSpindleCenter = getMiddle( dnaAlignedSpindlePoles );
 
-		measureDnaCenterToSpindleCenterDistance( workingCalibration, dnaAlignedSpindlePoles, spindleCenter );
+		measureDnaCenterToSpindleCenterDistance( dnaAlignedSpindleCenter );
 
-		dnaAlignedToSpindleAlignedTransform = createSpindlePolesAlignedImages( dnaAlignedSpindlePoles, spindleCenter );
+		dnaAlignedToSpindleAlignedTransform = createSpindlePolesAlignedImages( dnaAlignedSpindlePoles, dnaAlignedSpindleCenter );
 
 		if ( measurements.spindleThreshold < settings.minimalDynamicRange )
 			return SpindleMeasurements.ANALYSIS_INTERRUPTED_LOW_DYNAMIC_TUBULIN;
@@ -540,37 +540,24 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 	 */
 	private AffineTransform3D createSpindlePolesAlignedImages( ArrayList< double[] > spindlePoles, double[] spindleCenter )
 	{
-		final double[] poleToPoleAxis = new double[ 3 ];
-		LinAlgHelpers.subtract( spindlePoles.get( 0 ), spindlePoles.get( 1 ), poleToPoleAxis );
-		LinAlgHelpers.normalize( poleToPoleAxis );
-
-		// put spindle in the center
-		dnaAlignedToSpindleAlignedTransform = new AffineTransform3D();
-		dnaAlignedToSpindleAlignedTransform.translate( spindleCenter );
-		dnaAlignedToSpindleAlignedTransform = dnaAlignedToSpindleAlignedTransform.inverse();
-
-		// rotate spindle along z-axis
-		AffineTransform3D poleToPoleAxisRotation =
-				Transforms.getRotationTransform3D( new double[]{ 0, 0, 1 }, poleToPoleAxis );
-		dnaAlignedToSpindleAlignedTransform.preConcatenate( poleToPoleAxisRotation );
+		dnaAlignedToSpindleAlignedTransform = computeTransform( spindlePoles, spindleCenter );
 
 		spindleAlignedTublin = Transforms.createTransformedView( dnaAlignedTubulin, dnaAlignedToSpindleAlignedTransform );
 		spindleAlignedDna = Transforms.createTransformedView( dnaAlignedDna, dnaAlignedToSpindleAlignedTransform );
-		spindleAlignedDnaMask = Transforms.createTransformedView( dnaAlignedInitialDnaMask, dnaAlignedToSpindleAlignedTransform,
-				new NearestNeighborInterpolatorFactory() );
+		spindleAlignedDnaMask = Transforms.createTransformedView( dnaAlignedInitialDnaMask, dnaAlignedToSpindleAlignedTransform, new NearestNeighborInterpolatorFactory() );
 
 		spindleAlignedSpindlePoles = new ArrayList<>();
 		for ( int i = 0; i < 2; i++ )
 		{
-			final double[] transformed = new double[ 3 ];
-			dnaAlignedToSpindleAlignedTransform.apply( spindlePoles.get( i ), transformed );
+			final double[] transformed = transformed( spindlePoles.get( i ), dnaAlignedToSpindleAlignedTransform );
 			spindleAlignedSpindlePoles.add( transformed );
 		}
-		final double[] spindleAlignedSpindleCenter = new double[ 3 ];
-		dnaAlignedToSpindleAlignedTransform.apply( spindleCenter, spindleAlignedSpindleCenter );
+
 
 		if ( settings.showIntermediateResults )
 		{
+			final double[] spindleAlignedSpindleCenter = transformed( spindleCenter, dnaAlignedToSpindleAlignedTransform );
+
 			final ArrayList< RealPoint > interestPoints = new ArrayList<>();
 
 			for ( int i = 0; i < 2; i++ )
@@ -587,7 +574,50 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		}
 
 		return dnaAlignedToSpindleAlignedTransform;
+	}
 
+	private double[] transformed( double[] location, AffineTransform3D affineTransform3D )
+	{
+		final double[] transformed = new double[ 3 ];
+		// transformation is in voxel units
+		final double[] voxels = toVoxels( location );
+		affineTransform3D.apply( voxels, transformed );
+		final double[] calibrated = toCalibrated( transformed );
+		return calibrated;
+	}
+
+	private AffineTransform3D computeTransform( ArrayList< double[] > spindlePoles, double[] spindleCenter )
+	{
+		final double[] poleToPoleAxis = new double[ 3 ];
+		LinAlgHelpers.subtract( spindlePoles.get( 0 ), spindlePoles.get( 1 ), poleToPoleAxis );
+		LinAlgHelpers.normalize( poleToPoleAxis );
+
+		// put spindle center in the center
+		final double[] spindleCenterVoxelUnits = toVoxels( spindleCenter );
+		AffineTransform3D dnaAlignedToSpindleAlignedTransform = new AffineTransform3D();
+		dnaAlignedToSpindleAlignedTransform.translate( spindleCenterVoxelUnits );
+		dnaAlignedToSpindleAlignedTransform = dnaAlignedToSpindleAlignedTransform.inverse();
+
+		// rotate spindle along z-axis
+		AffineTransform3D poleToPoleAxisRotation =
+				Transforms.getRotationTransform3D( new double[]{ 0, 0, 1 }, poleToPoleAxis );
+		dnaAlignedToSpindleAlignedTransform.preConcatenate( poleToPoleAxisRotation );
+
+		return dnaAlignedToSpindleAlignedTransform;
+	}
+
+	private double[] toVoxels( double[] location )
+	{
+		final double[] spindleCenterVoxelUnits = location.clone();
+		Utils.divide( spindleCenterVoxelUnits, settings.workingVoxelSize );
+		return spindleCenterVoxelUnits;
+	}
+
+	private double[] toCalibrated( double[] location )
+	{
+		final double[] spindleCenterVoxelUnits = location.clone();
+		Utils.divide( spindleCenterVoxelUnits, 1.0 / settings.workingVoxelSize );
+		return spindleCenterVoxelUnits;
 	}
 
 	@Deprecated
@@ -752,26 +782,10 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 						Transforms.getAngle( new double[]{ 0, 0, 1 }, poleToPoleVectorInCSCS ) );
 	}
 
-	public void measureDnaCenterToSpindleCenterDistance(
-			double[] workingCalibration,
-			ArrayList< double[] > spindlePoles,
-			double[] spindleCenter )
+	public void measureDnaCenterToSpindleCenterDistance( double[] spindleCenter )
 	{
-		measurements.dnaCenterToSpindleCenterDistance =
-				LinAlgHelpers.distance( new double[]{ 0, 0, 0}, spindleCenter) * settings.workingVoxelSize;
-
-//		if ( settings.showIntermediateResults )
-//		{
-//			final ArrayList< RealPoint > realPoints = new ArrayList<>();
-//			realPoints.add( new RealPoint( spindlePoles.get( 0 ) ) );
-//			realPoints.add( new RealPoint( spindlePoles.get( 1 ) ) );
-//			realPoints.add( new RealPoint( spindleCenter ) );
-//			show(
-//					dnaAlignedTubulin, "spindle aligned along DNA axis",
-//					realPoints,
-//					workingCalibration,
-//					false );
-//		}
+		final double[] dnaCentre = { 0, 0, 0 };
+		measurements.dnaCenterToSpindleCenterDistance = LinAlgHelpers.distance( dnaCentre, spindleCenter);
 	}
 
 
@@ -1030,7 +1044,40 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 		measurements.spindleAxialExtend = LinAlgHelpers.distance( spindlePoles.get( 0 ), spindlePoles.get( 1 ) );
 
-		return spindlePoles;
+		if ( settings.showIntermediateResults )
+		{
+			final ArrayList< RealPoint > interestPoints = new ArrayList<>();
+
+			for ( int i = 0; i < 2; i++ )
+			{
+				interestPoints.add( new RealPoint( spindlePoles.get( i ) ) );
+			}
+
+			show( dnaAlignedTubulin,
+					"dna aligned tubulin with spindle poles",
+					interestPoints,
+					workingCalibration,
+					false );
+		}
+
+		if ( settings.showIntermediateResults )
+		{
+			final ArrayList< RealPoint > interestPoints = new ArrayList<>();
+
+			for ( int i = 0; i < 2; i++ )
+			{
+				interestPoints.add( new RealPoint( refinedSpindlePoles.get( i ) ) );
+			}
+
+			show( dnaAlignedTubulin,
+					"dna aligned tubulin with refined spindle poles",
+					interestPoints,
+					workingCalibration,
+					false );
+		}
+
+
+		return refinedSpindlePoles;
 	}
 
 	public RandomAccessibleInterval< BitType > measureDnaVolume(
@@ -1213,11 +1260,9 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 				( long ) ( searchHalfWidthAlongSpindleAxis / settings.workingVoxelSize )
 		}, false );
 
-		final RandomAccessible< Neighborhood < R > > neighborhoodsAccessible
-				= rectangleShape2.neighborhoodsRandomAccessible( blurred );
+		final RandomAccessible< Neighborhood < R > > neighborhoodsAccessible = rectangleShape2.neighborhoodsRandomAccessible( blurred );
 
-		final RandomAccess< Neighborhood< R > > access =
-				neighborhoodsAccessible.randomAccess();
+		final RandomAccess< Neighborhood< R > > access = neighborhoodsAccessible.randomAccess();
 
 		final ArrayList< double[] > spindlePoles = new ArrayList<>();
 
@@ -1242,8 +1287,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 	private long[] getPixelUnitsPolePosition( ArrayList< double[] > dnaAlignedSpindlePoles, int pole )
 	{
-		final double[] polePosition = dnaAlignedSpindlePoles.get( pole ).clone();
-		Utils.divide( polePosition, settings.workingVoxelSize );
+		final double[] polePosition = toVoxels( dnaAlignedSpindlePoles.get( pole ) );
 		return Utils.asLongs( polePosition );
 	}
 
