@@ -2,7 +2,6 @@ package de.embl.cba.morphometry;
 
 import de.embl.cba.morphometry.geometry.CentroidsParameters;
 import de.embl.cba.morphometry.geometry.CoordinatesAndValues;
-import de.embl.cba.morphometry.measurements.Measurements;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.transforms.utils.Transforms;
 import ij.ImagePlus;
@@ -15,7 +14,6 @@ import loci.plugins.in.ImportProcess;
 import loci.plugins.in.ImporterOptions;
 import net.imglib2.*;
 import net.imglib2.Cursor;
-import net.imglib2.Point;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
@@ -426,8 +424,7 @@ public class Utils
 	{
 		ImgFactory< T > imgFactory = new ArrayImgFactory( rai.randomAccess().get()  );
 
-		RandomAccessibleInterval< T > blurred = imgFactory.create(
-				Intervals.dimensionsAsLongArray( rai ) );
+		RandomAccessibleInterval< T > blurred = imgFactory.create( Intervals.dimensionsAsLongArray( rai ) );
 
 		blurred = Views.translate( blurred, Intervals.minAsLongArray( rai ) );
 
@@ -803,7 +800,6 @@ public class Utils
 		return inverted;
 	}
 
-
 	public static long[] asLongs( double[] doubles )
 	{
 		final long[] longs = new long[ doubles.length ];
@@ -811,6 +807,18 @@ public class Utils
 		for ( int i = 0; i < doubles.length; ++i )
 		{
 			longs[ i ] = (long) doubles[ i ];
+		}
+
+		return longs;
+	}
+
+	public static long[] asRoundedLongs( double[] doubles )
+	{
+		final long[] longs = new long[ doubles.length ];
+
+		for ( int i = 0; i < doubles.length; ++i )
+		{
+			longs[ i ] = Math.round( doubles[ i ] );
 		}
 
 		return longs;

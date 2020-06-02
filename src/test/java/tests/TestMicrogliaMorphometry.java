@@ -8,7 +8,7 @@ import java.io.File;
 
 public class TestMicrogliaMorphometry
 {
-	@Test
+	//@Test
 	public void test()
 	{
 		final ImageJ imageJ = new ImageJ();

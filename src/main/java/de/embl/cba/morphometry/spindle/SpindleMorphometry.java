@@ -50,6 +50,7 @@ import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import java.io.File;
+import java.sql.SQLOutput;
 import java.util.*;
 
 import static de.embl.cba.morphometry.Angles.angleOfSpindleAxisToXAxisInRadians;
@@ -1035,11 +1036,17 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 	{
 		final ArrayList< double[] > spindlePoles = determineSpindlePolesAlongDnaAxisFromSpindleMask( dnaAlignedSpindleMask );
 
-		final ArrayList< double[] > refinedSpindlePoles = determineRefinedSpindlePoles( dnaAlignedTubulin, spindlePoles, 1.0 );
+		final double distance = LinAlgHelpers.distance( spindlePoles.get( 0 ), spindlePoles.get( 1 ) );
+		System.out.println("[DEBUG] Spindle_length: " + distance);
+
+		final ArrayList< double[] > refinedSpindlePoles = determineRefinedSpindlePoles( dnaAlignedTubulin, spindlePoles, 2.0 );
+
+		final double distanceRefined = LinAlgHelpers.distance( refinedSpindlePoles.get( 0 ), refinedSpindlePoles.get( 1 ) );
+		System.out.println("[DEBUG] Refined Spindle_length: " + distanceRefined);
 
 		addPoleRefinementDistanceMeasurements( spindlePoles, refinedSpindlePoles );
 
-		measurements.spindleAxialExtend = LinAlgHelpers.distance( spindlePoles.get( 0 ), spindlePoles.get( 1 ) );
+		measurements.spindleAxialExtend = LinAlgHelpers.distance( refinedSpindlePoles.get( 0 ), refinedSpindlePoles.get( 1 ) );
 
 		if ( settings.showIntermediateResults )
 		{
@@ -1231,30 +1238,31 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 	/**
 	 *
-	 * Refine spindle pole positions in the direction perpendicular to the spindle axis
+	 * Refine spindle pole positions
 	 *
 	 * @param dnaAlignedTubulin
 	 * @param dnaAlignedSpindlePoles
-	 * @param searchHalfWidthAlongSpindleAxis
+	 * @param searchFullWidthAlongSpindleAxis
 	 * @return
 	 */
 	private ArrayList< double[] > determineRefinedSpindlePoles(
 			final RandomAccessibleInterval< R > dnaAlignedTubulin,
 			final ArrayList< double[] > dnaAlignedSpindlePoles,
-			double searchHalfWidthAlongSpindleAxis )
+			double searchFullWidthAlongSpindleAxis )
 	{
-		double searchHalfWidthPerpendicularToSpindleAxis = 2.0; // micrometer
+		final double searchFullWidthPerpendicularToSpindleAxis = 4.0; // micrometer
+		final double blurSigma = 0.75; // micrometer
 
 		final RandomAccessibleInterval< R > blurred = Utils.createBlurredRai(
 				dnaAlignedTubulin,
-				0.5,
+				blurSigma,
 				settings.workingVoxelSize );
 
 		// wide perpendicular to spindle axis, narrow along spindle axis
 		final RectangleShape2 rectangleShape2 = new RectangleShape2( new long[]{
-				( long ) ( searchHalfWidthPerpendicularToSpindleAxis / settings.workingVoxelSize ),
-				( long ) ( searchHalfWidthPerpendicularToSpindleAxis / settings.workingVoxelSize ),
-				( long ) ( searchHalfWidthAlongSpindleAxis / settings.workingVoxelSize )
+				( long ) ( searchFullWidthPerpendicularToSpindleAxis / settings.workingVoxelSize ),
+				( long ) ( searchFullWidthPerpendicularToSpindleAxis / settings.workingVoxelSize ),
+				( long ) ( searchFullWidthAlongSpindleAxis / settings.workingVoxelSize )
 		}, false );
 
 		final RandomAccessible< Neighborhood < R > > neighborhoodsAccessible = rectangleShape2.neighborhoodsRandomAccessible( blurred );
@@ -1454,7 +1462,9 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		return rotationTransform;
 	}
 
-	private RandomAccessibleInterval< R > createInterestPointImage( ArrayList< double[] > spindlePoles, RandomAccessibleInterval< R > spindleAlignedDna )
+	private RandomAccessibleInterval< R > createInterestPointImage(
+			ArrayList< double[] > spindlePoles,
+			RandomAccessibleInterval< R > spindleAlignedDna )
 	{
 		RandomAccessibleInterval< R > interestPointsImage = Utils.copyAsArrayImg( spindleAlignedDna );
 		Utils.setValues( interestPointsImage, 0.0 );
@@ -1466,6 +1476,8 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 				settings.interestPointsRadius,
 				settings.workingVoxelSize,
 				1 );
+
+		final double distance = LinAlgHelpers.distance( spindlePoles.get( 0 ), spindlePoles.get( 1 ) );
 
 		for ( double[] spindlePole : spindlePoles )
 			drawPoint(
@@ -1686,16 +1698,19 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		final RandomAccess< Neighborhood< R > > neighborhoodRandomAccess = nra.randomAccess();
 
 		final double[] pixelPositionDoubles = Arrays.stream( position ).map( x -> x / calibration ).toArray();
-		final long[] pixelPositionLongs = Utils.asLongs( pixelPositionDoubles );
+		final long[] pixelPositionLongs = Utils.asRoundedLongs( pixelPositionDoubles );
 		neighborhoodRandomAccess.setPosition( pixelPositionLongs );
 		final Neighborhood< R > neighborhood = neighborhoodRandomAccess.get();
 
+		final long[] pos = new long[ 3 ];
 		final Cursor< R > cursor = neighborhood.cursor();
 		while( cursor.hasNext() )
 		{
 			try
 			{
-				cursor.next().setReal( value );
+				cursor.fwd();
+				cursor.localize( pos );
+				cursor.get().setReal( value );
 			}
 			catch ( ArrayIndexOutOfBoundsException e )
 			{
