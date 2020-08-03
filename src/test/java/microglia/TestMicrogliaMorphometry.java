@@ -1,8 +1,7 @@
-package tests;
+package microglia;
 
-import de.embl.cba.morphometry.commands.MicrogliaMorphometryCommand;
+import de.embl.cba.morphometry.microglia.MicrogliaMorphometryCommand;
 import net.imagej.ImageJ;
-import org.junit.Test;
 
 import java.io.File;
 

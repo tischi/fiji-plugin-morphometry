@@ -51,21 +51,19 @@ public class IntensityHistogram <T extends RealType<T> & NativeType< T > >
 		}
 
 		return coordinateAndValue;
-
 	}
 
-
-	public CoordinateAndValue getRightHandHalfMaximum( )
+	public CoordinateAndValue getRightHandHalfMode( )
 	{
-		final CoordinateAndValue maximum = getMode();
+		final CoordinateAndValue mode = getMode();
 
 		final CoordinateAndValue coordinateAndValue = new CoordinateAndValue();
 
 		for ( int i = 0; i < numBins; ++i )
 		{
-			if ( binCenters[ i ] > maximum.coordinate )
+			if ( binCenters[ i ] > mode.coordinate )
 			{
-				if ( frequencies[ i ] <= maximum.value / 2.0 )
+				if ( frequencies[ i ] <= mode.value / 2.0 )
 				{
 					coordinateAndValue.coordinate = binCenters[ i ];
 					coordinateAndValue.value = frequencies[ i ];
@@ -73,9 +71,7 @@ public class IntensityHistogram <T extends RealType<T> & NativeType< T > >
 				}
 			}
 		}
-
 		return coordinateAndValue;
-
 	}
 
 

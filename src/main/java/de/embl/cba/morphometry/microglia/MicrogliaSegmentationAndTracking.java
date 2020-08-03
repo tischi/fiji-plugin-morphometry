@@ -1,12 +1,11 @@
 package de.embl.cba.morphometry.microglia;
 
 import de.embl.cba.morphometry.Logger;
-import de.embl.cba.morphometry.segmentation.SimpleSegmenterMicroglia;
+import de.embl.cba.morphometry.segmentation.MicrogliaSegmenter;
 import de.embl.cba.morphometry.tracking.SemiAutomatedTrackingSplitter;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.integer.IntType;
 
 import java.util.ArrayList;
 
@@ -21,7 +20,7 @@ public class MicrogliaSegmentationAndTracking< T extends RealType< T > & NativeT
 			MicrogliaSettings settings )
 	{
 		this.intensities = intensities;
-		this.settings = MicrogliaSettings.configureSettings( settings );
+		this.settings = MicrogliaSettings.addMissingSettings( settings );
 	}
 
 	public void run()
@@ -37,10 +36,10 @@ public class MicrogliaSegmentationAndTracking< T extends RealType< T > & NativeT
 		for ( long t = 0; t < intensities.size() ; ++t )
 		{
 			Logger.log("Creating mask for frame " + ( t + 1 ) );
-			final SimpleSegmenterMicroglia simpleSegmenterMicroglia =
-					new SimpleSegmenterMicroglia( intensities.get( ( int ) t ), settings );
-			simpleSegmenterMicroglia.run();
-			masks.add( simpleSegmenterMicroglia.getMask() );
+			final MicrogliaSegmenter microgliaSegmenter =
+					new MicrogliaSegmenter( intensities.get( ( int ) t ), settings );
+			microgliaSegmenter.run();
+			masks.add( microgliaSegmenter.getMask() );
 		}
 		return masks;
 	}

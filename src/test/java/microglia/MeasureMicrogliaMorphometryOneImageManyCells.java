@@ -1,8 +1,7 @@
-package users.valerie;
+package microglia;
 
-import de.embl.cba.morphometry.commands.MicrogliaMorphometryCommand;
+import de.embl.cba.morphometry.microglia.MicrogliaMorphometryCommand;
 import de.embl.cba.tables.FileUtils;
-import de.embl.cba.tables.command.ConcatTablesCommand;
 import de.embl.cba.tables.command.ExploreObjectsTableCommand;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -20,8 +19,7 @@ public class MeasureMicrogliaMorphometryOneImageManyCells
 
 		final List< File > files = FileUtils.getFileList( inputDir, ".*-labelMasks.tif", true );
 
-		final MicrogliaMorphometryCommand< T > measure
-				= new MicrogliaMorphometryCommand<>();
+		final MicrogliaMorphometryCommand< T > measure = new MicrogliaMorphometryCommand<>();
 		measure.labelMaskFile = new File( inputDir + File.separator + "im-labelMasks.tif" );
 		measure.outputDirectory = inputDir;
 		measure.opService = ij.op();

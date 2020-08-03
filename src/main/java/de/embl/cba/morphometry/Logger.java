@@ -7,9 +7,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Logger
 {
+	public static boolean showDebugInformation = false;
+
 	public static void debug( String s )
 	{
-		//IJ.log( s );
+		if ( showDebugInformation )
+			IJ.log( s );
 	}
 
 	public static void log( String message )

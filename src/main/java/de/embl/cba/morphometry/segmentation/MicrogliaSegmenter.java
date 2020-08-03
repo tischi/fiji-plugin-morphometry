@@ -1,9 +1,14 @@
 package de.embl.cba.morphometry.segmentation;
 
+import anisotropic_diffusion.Anisotropic_Diffusion_2D;
 import de.embl.cba.morphometry.*;
 import de.embl.cba.morphometry.microglia.MicrogliaSettings;
 import de.embl.cba.morphometry.regions.Regions;
+import ij.IJ;
+import ij.ImageJ;
+import ij.ImagePlus;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
@@ -12,46 +17,47 @@ import static de.embl.cba.transforms.utils.Scalings.createRescaledArrayImg;
 import static de.embl.cba.transforms.utils.Transforms.getScalingFactors;
 
 
-public class SimpleSegmenterMicroglia< T extends RealType< T > & NativeType< T > >
+public class MicrogliaSegmenter< T extends RealType< T > & NativeType< T > >
 {
-
 	final MicrogliaSettings settings;
 	private RandomAccessibleInterval< BitType > mask;
 	final private RandomAccessibleInterval< T > intensity;
 	final private boolean showIntermediateResults;
 
-	public SimpleSegmenterMicroglia(
+	public MicrogliaSegmenter(
 			RandomAccessibleInterval< T > intensity,
 			MicrogliaSettings settings )
 	{
 		this.intensity = intensity;
 		this.settings = settings;
-		this.showIntermediateResults = false; //settings.showIntermediateResults;
+		this.showIntermediateResults = settings.showIntermediateResults;
 
 	}
 
 	public void run()
 	{
-
 		/**
 		 *  Create working image
 		 */
+		final double[] workingCalibration = Utils.as2dDoubleArray( settings.workingVoxelSize );
 
-		final double[] workingCalibration =
-				Utils.as2dDoubleArray( settings.workingVoxelSize );
+		RandomAccessibleInterval< T > image = createRescaledArrayImg( intensity, getScalingFactors( settings.calibration2D, settings.workingVoxelSize ) );
 
-		final RandomAccessibleInterval< T > image =
-				createRescaledArrayImg( intensity,
-				getScalingFactors( settings.calibration2D, settings.workingVoxelSize ) );
-
-		if ( showIntermediateResults ) show( image, "image isotropic voxel size", null, workingCalibration, false );
+		if ( showIntermediateResults ) show( image, "rescaled image", null, workingCalibration, false );
 
 
 		/**
 		 *  Smooth
 		 */
 
-		// TODO
+		final ImagePlus wrap = ImageJFunctions.wrap( image, "" );
+		final Anisotropic_Diffusion_2D diffusion2D = new Anisotropic_Diffusion_2D();
+		diffusion2D.setup( "", wrap );
+		final ImagePlus imagePlus = diffusion2D.runTD( wrap.getProcessor() );
+		image = ImageJFunctions.wrapReal( imagePlus );
+
+		if ( showIntermediateResults ) ImageJFunctions.show( image, "smoothed image" );
+
 
 
 		/**
@@ -62,17 +68,17 @@ public class SimpleSegmenterMicroglia< T extends RealType< T > & NativeType< T >
 
 		CoordinateAndValue mode = intensityHistogram.getMode();
 
-		final CoordinateAndValue rightHandHalfMaximum = intensityHistogram.getRightHandHalfMaximum();
+		final CoordinateAndValue rightHandHalfMaximum = intensityHistogram.getRightHandHalfMode();
 
-		double threshold = ( rightHandHalfMaximum.coordinate - mode.coordinate ) * settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
 		double offset = mode.coordinate;
+		double threshold = offset + ( rightHandHalfMaximum.coordinate - mode.coordinate ) * settings.thresholdInUnitsOfBackgroundPeakHalfWidth;
+
 		Logger.debug( "Intensity offset: " + offset );
-		Logger.debug( "Threshold: " + ( threshold + offset ) );
+		Logger.debug( "Threshold: " + threshold );
 
 		/**
 		 * Create mask
 		 */
-
 		mask = Algorithms.createMask( image, threshold );
 
 		if ( showIntermediateResults ) show( mask, "mask", null, workingCalibration, false );
@@ -81,11 +87,9 @@ public class SimpleSegmenterMicroglia< T extends RealType< T > & NativeType< T >
 		/**
 		 * Remove small objects from mask
 		 */
-
 		Regions.removeSmallRegionsInMask( mask, settings.minimalObjectSize, settings.workingVoxelSize );
 
 		if ( showIntermediateResults ) show( mask, "size filtered mask", null, workingCalibration, false );
-
 
 	}
 

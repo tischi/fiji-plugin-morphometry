@@ -39,7 +39,7 @@ public class SignalOverBackgroundSegmenter< T extends RealType< T > & NativeType
 
 		CoordinateAndValue mode = intensityHistogram.getMode();
 
-		final CoordinateAndValue rightHandHalfMaximum = intensityHistogram.getRightHandHalfMaximum();
+		final CoordinateAndValue rightHandHalfMaximum = intensityHistogram.getRightHandHalfMode();
 
 		double threshold = mode.coordinate + ( rightHandHalfMaximum.coordinate - mode.coordinate ) * signalToNoise;
 

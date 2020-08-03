@@ -28,7 +28,7 @@ public class MicrogliaSettings<T extends RealType<T> & NativeType< T > >
 	public double watershedSeedsLocalMaximaDistanceThreshold = 3 * workingVoxelSize; // at least 3 pixels
 
 	public String thresholdModality = MANUAL_THRESHOLD;
-	public double thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
+	public double thresholdInUnitsOfBackgroundPeakHalfWidth = 1.5;
 	public double closingRadius = 3.0;
 
 
@@ -60,12 +60,11 @@ public class MicrogliaSettings<T extends RealType<T> & NativeType< T > >
 	 microgliaSettings.calibration = imagePlus.getCalibration();
 	 microgliaSettings.outputDirectory = new File( "" );
 	 */
-	public static MicrogliaSettings configureSettings( MicrogliaSettings settings )
+	public static MicrogliaSettings addMissingSettings( MicrogliaSettings settings )
 	{
 		settings.calibration2D = Utils.get2dCalibration( settings.calibration );
 		settings.workingVoxelSize = settings.calibration2D[ 0 ];
 		settings.maxShortAxisDist = 6;
-		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 		settings.watershedSeedsLocalMaximaDistanceThreshold = Double.MAX_VALUE;
 		settings.watershedSeedsGlobalDistanceThreshold = 2.5;
 		settings.interestPointsRadius = 0.5;

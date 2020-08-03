@@ -1,8 +1,6 @@
-package users.valerie;
+package microglia;
 
-import bdv.util.BdvFunctions;
-import bdv.viewer.SourceAndConverter;
-import de.embl.cba.morphometry.commands.MicrogliaMorphometryCommand;
+import de.embl.cba.morphometry.microglia.MicrogliaMorphometryCommand;
 import de.embl.cba.tables.command.ExploreObjectsTableCommand;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;

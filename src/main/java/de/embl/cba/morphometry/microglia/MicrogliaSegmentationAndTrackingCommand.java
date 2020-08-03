@@ -1,4 +1,4 @@
-package de.embl.cba.morphometry.commands;
+package de.embl.cba.morphometry.microglia;
 
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
@@ -31,6 +31,9 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 
 	@Parameter( label = "Intensity image time series (single channel 2D+t)")
 	public File intensitiesFile;
+
+	@Parameter( label = "Intensity threshold [relative]")
+	public double intensityThreshold = 1.5;
 
 	@Parameter( label = "Proceed from existing segmentation")
 	public boolean proceedFromExisting;
@@ -65,6 +68,7 @@ public class MicrogliaSegmentationAndTrackingCommand< T extends RealType<T> & Na
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.outputDirectory = outputDirectory;
 		settings.opService = opService;
+		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = intensityThreshold;
 	}
 
 	private void processFile( File file )

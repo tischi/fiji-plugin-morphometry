@@ -32,7 +32,7 @@ public class TestTrackingSplitter
 		final ArrayList< RandomAccessibleInterval< T > > intensities = Utils.get2DImagePlusMovieAsFrameList( masksAndIntensities.intensities, 1);
 
 		MicrogliaSettings settings = new MicrogliaSettings();
-		settings = MicrogliaSettings.configureSettings( settings );
+		settings = MicrogliaSettings.addMissingSettings( settings );
 		settings.calibration2D = Utils.getCalibration( masksAndIntensities.intensities );
 		settings.showIntermediateResults = false;
 		settings.opService = ij.op();

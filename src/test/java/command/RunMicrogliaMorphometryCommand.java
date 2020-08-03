@@ -1,6 +1,6 @@
 package command;
 
-import de.embl.cba.morphometry.commands.MicrogliaMorphometryCommand;
+import de.embl.cba.morphometry.microglia.MicrogliaMorphometryCommand;
 import net.imagej.ImageJ;
 
 public class RunMicrogliaMorphometryCommand
