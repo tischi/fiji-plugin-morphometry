@@ -168,6 +168,11 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 
 		dnaLateralProfileAndRadius = measureDnaLateralExtend( dnaAlignedDna );
 
+		// TODO: can we improve this?
+		measurements.dnaVolumeThreshold =
+				dnaLateralProfileAndRadius.profile.values.get(
+						dnaLateralProfileAndRadius.radiusIndex );
+
 		dnaAlignedDnaMask = measureDnaVolume( dnaAlignedDna, dnaLateralProfileAndRadius );
 
 		measureDnaHole( dnaLateralProfileAndRadius );
@@ -933,7 +938,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		final CoordinatesAndValues dnaProfileAlongDnaAxis =
 				Utils.computeAverageIntensitiesAlongAxis(
 						alignedDNA,
-						settings.maxDnaLateralRadius,
+						settings.maxDnaLateralExtend / 2.0,
 						2,
 						settings.workingVoxelSize );
 
@@ -1010,7 +1015,7 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		final double distance = LinAlgHelpers.distance( spindlePoles.get( 0 ), spindlePoles.get( 1 ) );
 		System.out.println("[DEBUG] Spindle_length: " + distance);
 
-		final ArrayList< double[] > refinedSpindlePoles = refineSpindlePoles( dnaAlignedTubulin, spindlePoles, settings.maxSpindlePoleRefinementDistance * 2 );
+		final ArrayList< double[] > refinedSpindlePoles = refineSpindlePoles( dnaAlignedTubulin, spindlePoles, settings.axialPoleRefinementRadius, settings.lateralPoleRefinementRadius );
 
 		final double distanceRefined = LinAlgHelpers.distance( refinedSpindlePoles.get( 0 ), refinedSpindlePoles.get( 1 ) );
 		System.out.println("[DEBUG] Refined Spindle_length: " + distanceRefined);
@@ -1059,10 +1064,6 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 			RandomAccessibleInterval< R > dna,
 			ProfileAndRadius dnaLateralExtendAndProfile )
 	{
-		measurements.dnaVolumeThreshold =
-				dnaLateralExtendAndProfile.profile.values.get(
-						dnaLateralExtendAndProfile.radiusIndex );
-
 		final RandomAccessibleInterval< BitType > dnaVolumeMask =
 				createCentralObjectsMask( dna, measurements.dnaVolumeThreshold );
 
@@ -1079,67 +1080,12 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 		return dnaVolumeMask;
 	}
 
-	public ArrayList< double[] > determineSpindlePolesAlongDnaAxisFromTubulinIntensity(
-			RandomAccessibleInterval tubulinAlignedAlongShortestAxisOfDNA )
-	{
-		/**
-		 * Taking the maximum here can be quite noisy, depending on the microscopy
-		 * TODO: Maybe we should smooth the image before doing this?
-		 */
-		final CoordinatesAndValues tubulinProfile =
-				Utils.computeMaximumIntensitiesAlongAxis(
-						tubulinAlignedAlongShortestAxisOfDNA,
-						settings.maxDnaLateralRadius,
-						SpindleMeasurements.ALIGNED_DNA_AXIS,
-						settings.workingVoxelSize );
-
-		final int derivativeDeltaVoxels = ( int ) Math.ceil( settings.derivativeDelta / settings.workingVoxelSize );
-		final CoordinatesAndValues tubulinProfileDerivative =
-				CurveAnalysis.derivative(
-						tubulinProfile,
-						derivativeDeltaVoxels );
-
-		ArrayList< CoordinateAndValue > tubulinExtrema =
-				CurveAnalysis.leftMaxAndRightMinLoc( tubulinProfileDerivative );
-
-		// the actual spindle poles are some
-		// distance more "inside" from the derivative extrema,
-		// partly due to blur by diffraction limit
-		double offset = 0.5; // micrometer
-
-		final ArrayList< double[] > dnaAxisBasedSpindlePoles = new ArrayList<>();
-		dnaAxisBasedSpindlePoles.add(
-				new double[]{ 0, 0, tubulinExtrema.get( 0 ).coordinate + offset });
-		dnaAxisBasedSpindlePoles.add(
-				new double[]{ 0, 0, tubulinExtrema.get( 1 ).coordinate - offset });
-
-		if ( settings.showIntermediateResults )
-			Plots.plot(
-					tubulinProfile.coordinates,
-					tubulinProfile.values,
-					"center distance [um]",
-					"spindle max along shortest DNA axis" );
-
-		if ( settings.showIntermediateResults )
-		{
-			Plots.plot(
-					tubulinProfileDerivative.coordinates,
-					tubulinProfileDerivative.values,
-					"distance to center",
-					"d/dx spindle max along shortest DNA axis" );
-			Logger.log( "Spindle max derivative plus offset " + ( tubulinExtrema.get( 0 ).coordinate + offset ) );
-			Logger.log( "Spindle max derivative minus offset " + ( tubulinExtrema.get( 1 ).coordinate - offset ) );
-		}
-
-		return dnaAxisBasedSpindlePoles;
-	}
-
 	public ArrayList< double[] > determineSpindlePolesAlongDnaAxisFromSpindleMask( RandomAccessibleInterval< BitType > dnaAlignedSpindleMask )
 	{
 		final CoordinatesAndValues tubulinProfile =
 				Utils.computeMaximumIntensitiesAlongAxis(
 						dnaAlignedSpindleMask,
-						settings.maxDnaLateralRadius, // TODO: replace by measured DNA width?!
+						measurements.dnaLateralExtend / 2.0,
 						SpindleMeasurements.ALIGNED_DNA_AXIS,
 						settings.workingVoxelSize );
 
@@ -1212,14 +1158,15 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 	 * @param dnaAlignedTubulin
 	 * @param dnaAlignedSpindlePoles
 	 * @param searchRadiusAlongSpindleAxis
+	 * @param lateralPoleRefinementRadius
 	 * @return
 	 */
 	private ArrayList< double[] > refineSpindlePoles(
 			final RandomAccessibleInterval< R > dnaAlignedTubulin,
 			final ArrayList< double[] > dnaAlignedSpindlePoles,
-			double searchRadiusAlongSpindleAxis )
+			double axialPoleRefinementRadius,
+			double lateralPoleRefinementRadius )
 	{
-		final double searchFullWidthPerpendicularToSpindleAxis = 4.0; // micrometer
 		final double blurSigma = 0.75; // micrometer
 
 		final RandomAccessibleInterval< R > blurred = Utils.createBlurredRai(
@@ -1227,11 +1174,11 @@ public class SpindleMorphometry  < R extends RealType< R > & NativeType< R > >
 				blurSigma,
 				settings.workingVoxelSize );
 
-		// wide perpendicular to spindle axis, narrow along spindle axis
+		// typically wider perpendicular to spindle axis, narrow along spindle axis
 		final RectangleShape2 rectangleShape2 = new RectangleShape2( new long[]{
-				( long ) ( searchFullWidthPerpendicularToSpindleAxis / settings.workingVoxelSize ),
-				( long ) ( searchFullWidthPerpendicularToSpindleAxis / settings.workingVoxelSize ),
-				( long ) ( searchRadiusAlongSpindleAxis / settings.workingVoxelSize )
+				( long ) ( 2.0 * lateralPoleRefinementRadius / settings.workingVoxelSize ),
+				( long ) ( 2.0 * lateralPoleRefinementRadius / settings.workingVoxelSize ),
+				( long ) ( 2.0 * axialPoleRefinementRadius / settings.workingVoxelSize )
 		}, false );
 
 		final RandomAccessible< Neighborhood < R > > neighborhoodsAccessible = rectangleShape2.neighborhoodsRandomAccessible( blurred );

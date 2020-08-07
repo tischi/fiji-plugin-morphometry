@@ -64,8 +64,14 @@ public class Spindle3DAdvancedCommand< R extends RealType< R > > implements Comm
 	@Parameter ( label = "Minimum Dynamic Range [segmentation threshold gray value]" )
 	public int minimalDynamicRange = settings.minimalDynamicRange;
 
-	@Parameter ( label = "Spindle Poles Refinement Search Radius [um]" )
-	public double maxSpindlePoleRefinementDistance = settings.maxSpindlePoleRefinementDistance;
+	@Parameter ( label = "Maximal DNA lateral extend [um]" )
+	public double maxDnaLateralExtend = settings.maxDnaLateralExtend * 2.0;
+
+	@Parameter ( label = "Axial Spindle Poles Refinement Search Radius [um]" )
+	public double axialPoleRefinementRadius = settings.axialPoleRefinementRadius;
+
+	@Parameter ( label = "Lateral Spindle Poles Refinement Search Radius [um]" )
+	public double lateralPoleRefinementRadius = settings.lateralPoleRefinementRadius;
 
 	@Parameter ( label = "DNA Channel [one-based index]" )
 	public long dnaChannelIndexOneBased = 2;
@@ -108,14 +114,9 @@ public class Spindle3DAdvancedCommand< R extends RealType< R > > implements Comm
 	{
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.workingVoxelSize = voxelSpacingDuringAnalysis;
-		settings.maxDnaLateralRadius = 6;
-		settings.derivativeDelta = 3.0; // TODO: how to set this?
-		settings.spindleDerivativeDelta = 1.0;
-		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
-		settings.watershedSeedsLocalMaximaDistanceThreshold = 1.0;
-		settings.watershedSeedsGlobalDistanceThreshold = 2.0;
-		settings.maxSpindlePoleRefinementDistance = maxSpindlePoleRefinementDistance;
-		settings.interestPointsRadius = 0.5;
+		settings.maxDnaLateralExtend = maxDnaLateralExtend;
+		settings.axialPoleRefinementRadius = axialPoleRefinementRadius;
+		settings.lateralPoleRefinementRadius = lateralPoleRefinementRadius;
 		settings.outputDirectory = outputDirectory;
 		settings.dnaThresholdFactor = dnaThresholdFactor;
 		settings.minimalDynamicRange = minimalDynamicRange;

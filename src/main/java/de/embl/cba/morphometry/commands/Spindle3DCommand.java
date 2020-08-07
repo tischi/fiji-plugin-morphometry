@@ -101,14 +101,6 @@ public class Spindle3DCommand< R extends RealType< R > > implements Command
 	{
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.workingVoxelSize = voxelSpacingDuringAnalysis;
-		settings.maxDnaLateralRadius = 6;
-		settings.derivativeDelta = 3.0; // TODO: how to set this?
-		settings.spindleDerivativeDelta = 1.0;
-		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
-		settings.watershedSeedsLocalMaximaDistanceThreshold = 1.0;
-		settings.watershedSeedsGlobalDistanceThreshold = 2.0;
-		settings.maxSpindlePoleRefinementDistance = 3.0;
-		settings.interestPointsRadius = 0.5;
 		settings.outputDirectory = outputDirectory;
 		settings.dnaThresholdFactor = dnaThresholdFactor;
 		settings.minimalDynamicRange = minimalDynamicRange;
