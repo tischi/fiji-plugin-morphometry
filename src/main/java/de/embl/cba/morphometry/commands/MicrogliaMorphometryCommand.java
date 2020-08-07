@@ -1,4 +1,4 @@
-package de.embl.cba.morphometry.microglia;
+package de.embl.cba.morphometry.commands;
 
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;

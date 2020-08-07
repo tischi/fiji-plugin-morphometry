@@ -1,10 +1,10 @@
 package de.embl.cba.morphometry.tracking;
 
 import de.embl.cba.morphometry.Algorithms;
+import de.embl.cba.morphometry.Constants;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
-import de.embl.cba.morphometry.microglia.Constants;
 import de.embl.cba.morphometry.microglia.MicrogliaSettings;
 import de.embl.cba.morphometry.regions.Regions;
 import de.embl.cba.morphometry.splitting.ShapeAndIntensitySplitter;

@@ -1,7 +1,7 @@
 package de.embl.cba.morphometry.splitting;
 
+import de.embl.cba.morphometry.Constants;
 import de.embl.cba.morphometry.measurements.Measurements;
-import de.embl.cba.morphometry.microglia.Constants;
 import de.embl.cba.morphometry.microglia.MicrogliaSettings;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.roi.labeling.ImgLabeling;
@@ -20,7 +20,7 @@ public class SplittingUtils
 			MicrogliaSettings settings )
 	{
 		HashMap< Integer, Map< String, Object > > skeletonMeasurements = new HashMap<>();
-		Measurements.measureSumIntensities( skeletonMeasurements, imgLabeling, skeleton, Constants.SKELETON );
+		Measurements.measureSumIntensities( skeletonMeasurements, imgLabeling, skeleton, de.embl.cba.morphometry.Constants.SKELETON );
 		HashMap< Integer, Integer > numObjects = new HashMap<>();
 		for ( int label : skeletonMeasurements.keySet() )
 		{

@@ -1,6 +1,6 @@
 package users.tobias;
 
-import de.embl.cba.morphometry.spindle.SpindleMorphometryCommand;
+import de.embl.cba.morphometry.commands.Spindle3DCommand;
 import net.imagej.ImageJ;
 import net.imglib2.type.numeric.RealType;
 
@@ -13,7 +13,7 @@ public class TrySpindleMorphometryWithCATS
 		final ImageJ ij = new ImageJ();
 		ij.ui().showUI();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(

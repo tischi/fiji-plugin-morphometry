@@ -21,23 +21,35 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 
 	public double[] inputCalibration;
 
-	public double maxDnaAxisDist;
 	public double interestPointsRadius;
 	public File outputDirectory;
 	public String inputDataSetName;
 	public double derivativeDelta;
 
+	/**
+	 * Spatial
+	 */
+	// TODO: make all micrometer everything relative to something
+	public double maxDnaLateralRadius = 6; // um
 	public double minimalDnaFragmentsVolume = 5; // um^3
 	public double maxCentralObjectRegionsDistance = 7; // um
 	public double cellRadius = 6.0; // um
 	public double erosionOfDnaMaskInCalibratedUnits = 1.0; // um
-	public Calibration imagePlusCalibration;
-	public double maxSpindlePoleRefinementDistance;
+	public double maxSpindlePoleRefinementDistance = 3.0;
 	public double spindleDerivativeDelta = 1;
+
+	/**
+	 * Intensity
+	 */
 	public double dnaThresholdFactor = 0.5;
 	public double dnaThresholdResolution = 1.5;
 	public int minimalDynamicRange = 7;
+
+	/**
+	 * Other
+	 */
 	public String version;
+	public Calibration imagePlusCalibration;
 	public long dnaChannelIndex;
 	public long tubulinChannelIndex;
 	public boolean showOutputImage = false;
@@ -53,11 +65,9 @@ public class SpindleMorphometrySettings <T extends RealType<T> & NativeType< T >
 		BlurredTubulinImage
 	}
 
-	// TODO: this could be removed once the Command's can have enums as choices
 	public static final String CCDM_NONE = "None";
 	public static final String CCDM_DNA = "BlurredDnaImage";
 	public static final String CCDM_TUBULIN = "BlurredTubulinImage";
-
 
 	public String toString()
 	{

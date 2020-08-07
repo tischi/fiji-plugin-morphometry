@@ -1,6 +1,6 @@
 package microglia;
 
-import de.embl.cba.morphometry.microglia.MicrogliaMorphometryCommand;
+import de.embl.cba.morphometry.commands.MicrogliaMorphometryCommand;
 import net.imagej.ImageJ;
 
 import java.io.File;

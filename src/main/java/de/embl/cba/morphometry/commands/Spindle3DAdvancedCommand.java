@@ -1,9 +1,12 @@
-package de.embl.cba.morphometry.spindle;
+package de.embl.cba.morphometry.commands;
 
 import de.embl.cba.morphometry.ImageScience;
 import de.embl.cba.morphometry.Logger;
 import de.embl.cba.morphometry.Utils;
 import de.embl.cba.morphometry.measurements.Measurements;
+import de.embl.cba.morphometry.spindle.SpindleMeasurements;
+import de.embl.cba.morphometry.spindle.SpindleMorphometry;
+import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import de.embl.cba.tables.Tables;
 import ij.CompositeImage;
 import ij.IJ;
@@ -12,6 +15,7 @@ import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
+import org.scijava.Context;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
@@ -24,13 +28,18 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-import static de.embl.cba.morphometry.spindle.SpindleMorphometrySettings.*;
+import static de.embl.cba.morphometry.commands.Spindle3DVersion.VERSION;
+import static de.embl.cba.morphometry.spindle.SpindleMorphometrySettings.CCDM_NONE;
+import static de.embl.cba.morphometry.spindle.SpindleMorphometrySettings.CellCenterDetectionMethod;
 
 
-@Plugin(type = Command.class, menuPath = "Plugins>Measure>Spindle Morphometry" )
-public class SpindleMorphometryCommand< R extends RealType< R > > implements Command
+@Plugin(type = Command.class, menuPath = "Plugins>Spindle3D>Spindle3D Advanced..." )
+public class Spindle3DAdvancedCommand< R extends RealType< R > > implements Command
 {
 	public SpindleMorphometrySettings settings = new SpindleMorphometrySettings();
+
+	@Parameter
+	private Context context;
 
 	@Parameter
 	public OpService opService;
@@ -55,6 +64,9 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	@Parameter ( label = "Minimum Dynamic Range [segmentation threshold gray value]" )
 	public int minimalDynamicRange = settings.minimalDynamicRange;
 
+	@Parameter ( label = "Spindle Poles Refinement Search Radius [um]" )
+	public double maxSpindlePoleRefinementDistance = settings.maxSpindlePoleRefinementDistance;
+
 	@Parameter ( label = "DNA Channel [one-based index]" )
 	public long dnaChannelIndexOneBased = 2;
 
@@ -75,7 +87,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 	public boolean showIntermediateResults = false;
 
 	@Parameter( visibility = ItemVisibility.MESSAGE )
-	private String version = "Spindle Morphometry Version: 0.5.9";
+	private String version = "Spindle Morphometry Version: " + VERSION;
 
 	@Parameter( type = ItemIO.OUTPUT )
 	private double spindleVolume;
@@ -92,18 +104,17 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		processFile( inputImageFile );
 	}
 
-
 	private void setSettingsFromUI()
 	{
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.workingVoxelSize = voxelSpacingDuringAnalysis;
-		settings.maxDnaAxisDist = 6;
+		settings.maxDnaLateralRadius = 6;
 		settings.derivativeDelta = 3.0; // TODO: how to set this?
 		settings.spindleDerivativeDelta = 1.0;
 		settings.thresholdInUnitsOfBackgroundPeakHalfWidth = 5.0;
 		settings.watershedSeedsLocalMaximaDistanceThreshold = 1.0;
 		settings.watershedSeedsGlobalDistanceThreshold = 2.0;
-		settings.maxSpindlePoleRefinementDistance = 3.0;
+		settings.maxSpindlePoleRefinementDistance = maxSpindlePoleRefinementDistance;
 		settings.interestPointsRadius = 0.5;
 		settings.outputDirectory = outputDirectory;
 		settings.dnaThresholdFactor = dnaThresholdFactor;
@@ -111,7 +122,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.version = version;
 		settings.useCATS = useCATS;
 		settings.classifier  = classifier;
-		settings.cellCenterDetectionMethod = SpindleMorphometrySettings.CellCenterDetectionMethod.valueOf( cellCenterDetectionMethodChoice );
+		settings.cellCenterDetectionMethod = CellCenterDetectionMethod.valueOf( cellCenterDetectionMethodChoice );
 
 		Logger.log( settings.toString() );
 	}
@@ -135,6 +146,7 @@ public class SpindleMorphometryCommand< R extends RealType< R > > implements Com
 		settings.dnaChannelIndex = dnaChannelIndexOneBased - 1;
 		settings.tubulinChannelIndex = spindleChannelIndexOneBased - 1;
 
+		//final OpService service = context.service( OpService.class );
 		SpindleMorphometry morphometry = new SpindleMorphometry( settings, opService );
 		final String log = morphometry.run( raiXYCZ );
 		Logger.log( log );

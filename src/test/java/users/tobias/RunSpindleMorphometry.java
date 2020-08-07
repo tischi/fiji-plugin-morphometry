@@ -1,6 +1,6 @@
 package users.tobias;
 
-import de.embl.cba.morphometry.spindle.SpindleMorphometryCommand;
+import de.embl.cba.morphometry.commands.Spindle3DCommand;
 import net.imagej.ImageJ;
 import net.imglib2.type.numeric.RealType;
 
@@ -13,10 +13,12 @@ public class RunSpindleMorphometry
 		final ImageJ ij = new ImageJ();
 		ij.ui().showUI();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
-		command.inputImageFile = new File("/Users/tischer/Downloads/Composite_calibrated.tif");
+		command.inputImageFile = new File("/Users/tischer/Downloads/20190827_T0248_A-8degrees.tif");
+//		command.inputImageFile = new File("/Users/tischer/Downloads/20190827_T0145_C-28degrees.tif");
+//		command.inputImageFile = new File( "/Users/tischer/Downloads/20190827_T0075_B-8degrees.tif" );
 
 		command.outputDirectory = new File( "/Users/tischer/Desktop/kletter" );
 		command.inputImageFilesParentDirectory = new File( "/Users/tischer/Desktop/kletter" );
@@ -24,7 +26,7 @@ public class RunSpindleMorphometry
 		command.spindleChannelIndexOneBased = 1;
 		command.dnaChannelIndexOneBased = 2;
 
-		command.voxelSpacingDuringAnalysis = 0.24; // normally 0.25
+		command.voxelSpacingDuringAnalysis = 0.25; // normally 0.25
 
 		command.showIntermediateResults = false;
 

@@ -1,6 +1,6 @@
 package command;
 
-import de.embl.cba.morphometry.commands.TranslocationCommand;
+import de.embl.cba.morphometry.commands.MembraneTranslocationCommand;
 import ij.IJ;
 import ij.plugin.frame.RoiManager;
 import net.imagej.ImageJ;
@@ -18,6 +18,6 @@ public class RunTranslocationCommand
 		rm.runCommand( "open", "/Users/tischer/Documents/fiji-plugin-morphometry/src/test/resources/translocation/test01-rois.zip" );
 
 		// invoke the plugin
-		ij.command().run( TranslocationCommand.class, true );
+		ij.command().run( MembraneTranslocationCommand.class, true );
 	}
 }

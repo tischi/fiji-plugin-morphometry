@@ -37,7 +37,6 @@ public abstract class FCCF
 	public static final String VIEW_PROCESSED_OVERLAY = "Processed Overlay";
 	public static final String VIEW_PROCESSED_OVERLAY_AND_INDIVIDUAL_CHANNELS = "Processed Overlay And Individual Channels";
 
-
 	public static final String VIEW_RAW_AND_MONTAGE = "Raw and Processed Montage";
 	private static HashMap< String, Integer > colorToSlice = new HashMap<>(  );
 	private static HashMap< String, double[] > colorToRange = new HashMap<>(  );

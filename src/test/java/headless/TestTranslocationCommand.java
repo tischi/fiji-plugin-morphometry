@@ -1,6 +1,6 @@
 package headless;
 
-import de.embl.cba.morphometry.commands.TranslocationCommand;
+import de.embl.cba.morphometry.commands.MembraneTranslocationCommand;
 import ij.IJ;
 import ij.plugin.frame.RoiManager;
 import net.imagej.ImageJ;
@@ -19,7 +19,7 @@ public class TestTranslocationCommand
 		final RoiManager rm = new RoiManager();
 		rm.runCommand( "open", "/Users/tischer/Documents/fiji-plugin-morphometry/src/test/resources/translocation/test01-rois.zip" );
 
-		final TranslocationCommand command = new TranslocationCommand();
+		final MembraneTranslocationCommand command = new MembraneTranslocationCommand();
 
 		command.reviewMembraneSegmentation = true;
 		command.intensitiesImp = IJ.getImage();

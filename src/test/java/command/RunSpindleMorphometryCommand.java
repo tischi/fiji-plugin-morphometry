@@ -1,6 +1,6 @@
 package command;
 
-import de.embl.cba.morphometry.spindle.SpindleMorphometryCommand;
+import de.embl.cba.morphometry.commands.Spindle3DCommand;
 import net.imagej.ImageJ;
 
 public class RunSpindleMorphometryCommand
@@ -11,6 +11,6 @@ public class RunSpindleMorphometryCommand
 		ij.ui().showUI();
 
 		// invoke the plugin
-		ij.command().run( SpindleMorphometryCommand.class, true );
+		ij.command().run( Spindle3DCommand.class, true );
 	}
 }

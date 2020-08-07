@@ -54,7 +54,7 @@ import java.util.*;
 import java.util.List;
 
 import static de.embl.cba.morphometry.Constants.*;
-import static de.embl.cba.morphometry.microglia.Constants.SEGMENTATION;
+import static de.embl.cba.morphometry.Constants.SEGMENTATION;
 import static de.embl.cba.morphometry.viewing.BdvViewer.show;
 import static java.lang.Math.*;
 

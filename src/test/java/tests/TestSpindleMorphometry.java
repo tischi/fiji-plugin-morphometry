@@ -1,6 +1,6 @@
 package tests;
 
-import de.embl.cba.morphometry.spindle.SpindleMorphometryCommand;
+import de.embl.cba.morphometry.commands.Spindle3DCommand;
 import de.embl.cba.morphometry.spindle.SpindleMeasurements;
 import de.embl.cba.morphometry.spindle.SpindleMorphometrySettings;
 import loci.common.DebugTools;
@@ -26,7 +26,7 @@ public class TestSpindleMorphometry
 
 		final ImageJ ij = new ImageJ();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(
@@ -64,7 +64,7 @@ public class TestSpindleMorphometry
 
 		final ImageJ ij = new ImageJ();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(
@@ -99,7 +99,7 @@ public class TestSpindleMorphometry
 
 		final ImageJ ij = new ImageJ();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(
@@ -137,7 +137,7 @@ public class TestSpindleMorphometry
 
 		final ImageJ ij = new ImageJ();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(
@@ -174,7 +174,7 @@ public class TestSpindleMorphometry
 
 		final ImageJ ij = new ImageJ();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(
@@ -211,7 +211,7 @@ public class TestSpindleMorphometry
 
 		final ImageJ ij = new ImageJ();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(
@@ -248,7 +248,7 @@ public class TestSpindleMorphometry
 
 		final ImageJ ij = new ImageJ();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(
@@ -285,7 +285,7 @@ public class TestSpindleMorphometry
 
 		final ImageJ ij = new ImageJ();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(
@@ -324,7 +324,7 @@ public class TestSpindleMorphometry
 		final ImageJ ij = new ImageJ();
 		//ij.ui().showUI();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(
@@ -357,7 +357,7 @@ public class TestSpindleMorphometry
 		final ImageJ ij = new ImageJ();
 		//ij.ui().showUI();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(
@@ -388,7 +388,7 @@ public class TestSpindleMorphometry
 		final ImageJ ij = new ImageJ();
 		//ij.ui().showUI();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(
@@ -423,7 +423,7 @@ public class TestSpindleMorphometry
 		final ImageJ ij = new ImageJ();
 		//ij.ui().showUI();
 
-		final SpindleMorphometryCommand< R > command = new SpindleMorphometryCommand<>();
+		final Spindle3DCommand< R > command = new Spindle3DCommand<>();
 		command.opService = ij.op();
 
 		command.inputImageFile = new File(

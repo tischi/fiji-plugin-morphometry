@@ -26,7 +26,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Measure>Membrane Translocation" )
-public class TranslocationCommand< R extends RealType< R > & NativeType< R > > implements Command
+public class MembraneTranslocationCommand< R extends RealType< R > & NativeType< R > > implements Command
 {
 	@Parameter
 	public OpService opService;
